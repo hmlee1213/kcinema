@@ -721,12 +721,15 @@ function toggleChip(e, el) {
   cb.checked = el.classList.contains("inactive") ? false : true;
 }
 
-function initDates() {
-  const today = new Date();
-  const end = new Date();
-  end.setDate(end.getDate() + 13);
-  document.getElementById("dateFrom").value = fmt(today);
-  document.getElementById("dateTo").value = fmt(end);
+async function initDates() {
+  try {
+    const d = await fetch("/api/stats").then(r => r.json());
+    document.getElementById("dateFrom").value = d.date_min || fmt(new Date());
+    document.getElementById("dateTo").value   = d.date_max || fmt(new Date());
+  } catch {
+    document.getElementById("dateFrom").value = fmt(new Date());
+    document.getElementById("dateTo").value   = fmt(new Date());
+  }
 }
 
 function fmt(d) {
@@ -777,7 +780,7 @@ function resetFilters() {
   document.getElementById("movieSearch").value = "";
   document.getElementById("timeFrom").value = "00:00";
   document.getElementById("timeTo").value = "23:59";
-  initDates();
+  await initDates();
   document.querySelectorAll(".cinema-chip").forEach(el => {
     el.classList.remove("inactive");
     el.querySelector("input").checked = true;
