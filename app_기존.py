@@ -288,7 +288,15 @@ def run_crawl():
     log.info(f"총 {len(all_rows)}건 저장 완료, 처리시간: {time.time()-start_time:.2f}초")
     return len(all_rows)
 
-
+def start_scheduler():
+    try:
+        from apscheduler.schedulers.background import BackgroundScheduler
+        sched = BackgroundScheduler(timezone="Asia/Seoul")
+        sched.add_job(run_crawl, "cron", hour=6, minute=0)
+        sched.start()
+        log.info("스케줄러: 매일 06:00 자동 갱신")
+    except Exception as e:
+        log.warning(f"스케줄러 비활성화: {e}")
 
 # ── API ──────────────────────────────────────────────
 @app.route("/")
@@ -331,13 +339,9 @@ def api_stats():
     cur.execute("SELECT COUNT(DISTINCT cinema) AS c FROM screenings"); cc = cur.fetchone()["c"]
     cur.execute("SELECT COUNT(DISTINCT movie) AS c FROM screenings"); mc = cur.fetchone()["c"]
     cur.execute("SELECT value FROM meta WHERE key='last_updated'"); lu = cur.fetchone()
-    cur.execute("SELECT MIN(start_dt::date) AS mn, MAX(start_dt::date) AS mx FROM screenings WHERE start_dt IS NOT NULL")
-    dr = cur.fetchone()
     cur.close(); conn.close()
     return jsonify({"total": total, "cinemas": cc, "movies": mc,
-                    "last_updated": lu["value"] if lu else None,
-                    "date_min": str(dr["mn"]) if dr and dr["mn"] else None,
-                    "date_max": str(dr["mx"]) if dr and dr["mx"] else None})
+                    "last_updated": lu["value"] if lu else None})
 
 @app.route("/api/refresh", methods=["POST"])
 def api_refresh():
@@ -410,6 +414,7 @@ def initial_crawl_if_empty():
         log.error(f"DB 초기화 오류: {e}")
 
 initial_crawl_if_empty()
+start_scheduler()
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
