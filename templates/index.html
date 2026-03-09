@@ -143,14 +143,14 @@ select { width: 160px; }
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  background: #fff;
-  border: 2px solid #111827;
+  background: #6B7280;
+  border: 2px solid #6B7280;
   border-radius: 7px;
   padding: 6px 13px;
   cursor: pointer;
   font-size: 13px;
   font-weight: 700;
-  color: #111827;
+  color: #fff;
   transition: all 0.12s;
   user-select: none;
   line-height: 1;
@@ -163,14 +163,14 @@ select { width: 160px; }
   font-weight: 500;
 }
 .cinema-chip.inactive:hover {
-  border-color: #111827;
-  color: #111827;
+  border-color: #6B7280;
+  color: #6B7280;
   background: var(--accent-light);
 }
 .cinema-chip.free {
-  background: #6B7280;
-  border-color: #6B7280;
-  color: #fff;
+  background: #fff;
+  border: 2px solid #111827;
+  color: #111827;
 }
 .cinema-chip.free.inactive {
   background: var(--surface2);
@@ -178,13 +178,13 @@ select { width: 160px; }
   color: var(--text-sub);
 }
 .cinema-chip.free.inactive:hover {
-  border-color: #6B7280;
-  color: #6B7280;
-  background: var(--surface2);
+  border-color: #111827;
+  color: #111827;
+  background: var(--accent-light);
 }
 .free-tag {
   display: inline-block;
-  background: rgba(255,255,255,0.3);
+  background: #111827;
   color: #fff;
   font-size: 9px;
   font-weight: 700;
@@ -310,7 +310,9 @@ thead {
   z-index: 10;
 }
 @media (max-width: 768px) {
-  thead { top: 50px; }
+  thead { top: 0 !important; }
+}
+@media (max-width: 768px) {
 }
 th {
   padding: 11px 16px;
@@ -640,7 +642,7 @@ tr:hover td { background: var(--accent-light); }
         <button class="btn btn-primary" onclick="loadScreenings()">🔍 조회</button>
         <button class="btn btn-secondary" id="excelBtn" onclick="exportExcel()">📊 엑셀 다운로드</button>
         <button class="btn btn-secondary" onclick="resetFilters()">초기화</button>
-        <span class="filter-note">정시 상영 기준 (더숲아트시네마 10분 지연 상영)</span>
+        <span class="filter-note">정시 상영 기준 (더숲아트시네마는 10분 지연 상영)</span>
       </div>
     </div>
 
