@@ -1,25 +1,23 @@
-# app.py — 서울 독립극장 시간표 서비스
-import sqlite3, io, os, threading, logging, time, re
+# app.py — 서울 독립극장 시간표 서비스 (PostgreSQL)
+import io, os, threading, logging, time, re
 from datetime import datetime, date, timedelta
 from flask import Flask, jsonify, request, send_file
 import requests
 from bs4 import BeautifulSoup
+import psycopg2
+from psycopg2.extras import RealDictCursor
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger(__name__)
 
 app = Flask(__name__, template_folder="templates")
-DB_PATH = os.environ.get("DB_PATH", "screenings.db")
+DATABASE_URL = os.environ.get("DATABASE_URL")
 
 CINEMA_ORDER = [
     "KU시네마테크","KT&G상상마당시네마","서울아트시네마","한국영상자료원",
     "라이카시네마","씨네큐브","더숲아트시네마","아트하우스모모",
     "서울영화센터","아리랑시네센터","에무시네마","아트나인"
 ]
-
-# ═══════════════════════════════════════════════════════
-#  아래는 getdb.py 원본 코드 그대로 복사
-# ═══════════════════════════════════════════════════════
 
 CINEMAS = [
     {"name":"KU시네마테크","source":"moviee","t_id":"121"},
@@ -38,6 +36,61 @@ CINEMAS = [
 
 DTRYX_CGID = "FE8EF4D2-F22D-4802-A39A-D58F23A29C1E"
 
+# ── DB ───────────────────────────────────────────────
+def get_db():
+    conn = psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
+    return conn
+
+def ensure_db():
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS screenings (
+            cinema TEXT,
+            movie TEXT,
+            start_dt TEXT,
+            end_dt TEXT,
+            runtime INTEGER,
+            screen TEXT,
+            source TEXT,
+            show_type TEXT,
+            program TEXT,
+            PRIMARY KEY(cinema, start_dt, screen)
+        )
+    """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS meta (
+            key TEXT PRIMARY KEY,
+            value TEXT
+        )
+    """)
+    conn.commit(); cur.close(); conn.close()
+
+def save_to_db(rows):
+    if not rows: return
+    conn = get_db(); cur = conn.cursor()
+    for r in rows:
+        cur.execute("""
+            INSERT INTO screenings (cinema,movie,start_dt,end_dt,runtime,screen,source,show_type,program)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            ON CONFLICT (cinema, start_dt, screen) DO UPDATE SET
+                movie=EXCLUDED.movie, end_dt=EXCLUDED.end_dt,
+                runtime=EXCLUDED.runtime, source=EXCLUDED.source,
+                show_type=EXCLUDED.show_type, program=EXCLUDED.program
+        """, (
+            r["cinema"], r["movie"],
+            str(r["start_dt"]) if r["start_dt"] else None,
+            str(r["end_dt"])   if r["end_dt"]   else None,
+            r["runtime"], r["screen"], r["source"],
+            r.get("show_type",""), r.get("program","")
+        ))
+    cur.execute("""
+        INSERT INTO meta (key, value) VALUES ('last_updated', %s)
+        ON CONFLICT (key) DO UPDATE SET value=EXCLUDED.value
+    """, (datetime.now().isoformat(),))
+    conn.commit(); cur.close(); conn.close()
+
+# ── 공통 함수 (getdb.py 원본) ─────────────────────────
 def make_datetime(date_obj, time_str):
     if not time_str: return None
     try:
@@ -45,7 +98,7 @@ def make_datetime(date_obj, time_str):
     except:
         return None
 
-def compute_end_dt(start_dt,runtime):
+def compute_end_dt(start_dt, runtime):
     return start_dt+timedelta(minutes=runtime) if start_dt and runtime else None
 
 def compute_runtime(start_time, end_time):
@@ -56,6 +109,7 @@ def compute_runtime(start_time, end_time):
     except:
         return None
 
+# ── fetch 함수들 (getdb.py 원본 그대로) ──────────────
 def fetch_dtryx(cinema, start_date, days=14):
     rows=[]
     for i in range(days):
@@ -152,12 +206,10 @@ def fetch_seoulart(cinema):
                             runtime=int(runtime_match.group(1)) if runtime_match else None
                             start_dt=make_datetime(date_obj,start)
                             end_dt=compute_end_dt(start_dt,runtime)
-                            show_type=""
-                            program=""
                             rows.append({"cinema":theater_name,"movie":title,
                                          "start_dt":start_dt,"end_dt":end_dt,"runtime":runtime,
                                          "screen":"","source":"seoulart",
-                                         "show_type":show_type,"program":program})
+                                         "show_type":"","program":""})
                         except:
                             continue
                 next_tr=next_tr.find_next_sibling()
@@ -206,57 +258,14 @@ def fetch_kofa(cinema):
             program_tag=s.select_one(".layer-txt-1")
             program=program_tag.get_text(strip=True) if program_tag else ""
             rows.append({
-                "cinema":cinema["name"],
-                "movie":title,
-                "start_dt":make_datetime(date_obj,start),
-                "end_dt":end_dt,
-                "runtime":runtime,
-                "screen":screen,
-                "source":"kofa",
-                "show_type":show_type,
-                "program":program
+                "cinema":cinema["name"], "movie":title,
+                "start_dt":make_datetime(date_obj,start), "end_dt":end_dt,
+                "runtime":runtime, "screen":screen, "source":"kofa",
+                "show_type":show_type, "program":program
             })
     return rows
 
-# ═══════════════════════════════════════════════════════
-#  DB / 크롤링 / 스케줄러
-# ═══════════════════════════════════════════════════════
-
-def get_db():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
-
-def ensure_db():
-    conn = sqlite3.connect(DB_PATH)
-    conn.execute("""CREATE TABLE IF NOT EXISTS screenings (
-        cinema TEXT, movie TEXT, start_dt TEXT, end_dt TEXT,
-        runtime INTEGER, screen TEXT, source TEXT,
-        show_type TEXT, program TEXT,
-        PRIMARY KEY(cinema, start_dt, screen))""")
-    conn.execute("CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT)")
-    conn.commit(); conn.close()
-
-def save_to_db(rows):
-    if not rows: return
-    conn = sqlite3.connect(DB_PATH)
-    conn.execute("""CREATE TABLE IF NOT EXISTS screenings (
-        cinema TEXT, movie TEXT, start_dt TEXT, end_dt TEXT,
-        runtime INTEGER, screen TEXT, source TEXT,
-        show_type TEXT, program TEXT,
-        PRIMARY KEY(cinema, start_dt, screen))""")
-    conn.execute("CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT)")
-    for r in rows:
-        conn.execute("INSERT OR REPLACE INTO screenings VALUES(?,?,?,?,?,?,?,?,?)",
-            (r["cinema"], r["movie"],
-             str(r["start_dt"]) if r["start_dt"] else None,
-             str(r["end_dt"])   if r["end_dt"]   else None,
-             r["runtime"], r["screen"], r["source"],
-             r.get("show_type",""), r.get("program","")))
-    conn.execute("INSERT OR REPLACE INTO meta VALUES('last_updated',?)",
-                 (datetime.now().isoformat(),))
-    conn.commit(); conn.close()
-
+# ── 크롤링 ───────────────────────────────────────────
 def run_crawl():
     log.info("크롤링 시작")
     start_time = time.time()
@@ -265,10 +274,10 @@ def run_crawl():
     for cinema in CINEMAS:
         src = cinema["source"]
         try:
-            if src=="dtryx":    rows=fetch_dtryx(cinema,today,days=14)
-            elif src=="moviee": rows=fetch_moviee(cinema,today,days=14)
+            if src=="dtryx":      rows=fetch_dtryx(cinema,today,days=14)
+            elif src=="moviee":   rows=fetch_moviee(cinema,today,days=14)
             elif src=="seoulart": rows=fetch_seoulart(cinema)
-            elif src=="kofa":   rows=fetch_kofa(cinema)
+            elif src=="kofa":     rows=fetch_kofa(cinema)
             else: rows=[]
             all_rows += rows
             log.info(f"  {cinema['name']} 수집 완료: {len(rows)}건")
@@ -289,10 +298,7 @@ def start_scheduler():
     except Exception as e:
         log.warning(f"스케줄러 비활성화: {e}")
 
-# ═══════════════════════════════════════════════════════
-#  API
-# ═══════════════════════════════════════════════════════
-
+# ── API ──────────────────────────────────────────────
 @app.route("/")
 def index():
     with open(os.path.join(app.template_folder, "index.html"), encoding="utf-8") as f:
@@ -304,35 +310,38 @@ def api_screenings():
     dt = request.args.get("date_to",   date.today().isoformat())
     cinemas = request.args.getlist("cinema")
     mq = request.args.get("movie", "").strip()
-    conn = get_db()
-    sql = "SELECT * FROM screenings WHERE date(start_dt) BETWEEN ? AND ?"
+    conn = get_db(); cur = conn.cursor()
+    sql = "SELECT * FROM screenings WHERE start_dt::date BETWEEN %s AND %s"
     params = [df, dt]
     if cinemas:
-        sql += f" AND cinema IN ({','.join('?'*len(cinemas))})"; params += cinemas
+        sql += f" AND cinema = ANY(%s)"; params.append(cinemas)
     if mq:
-        sql += " AND movie LIKE ?"; params.append(f"%{mq}%")
+        sql += " AND movie ILIKE %s"; params.append(f"%{mq}%")
     sql += " ORDER BY start_dt ASC"
-    rows = conn.execute(sql, params).fetchall(); conn.close()
-    return jsonify([dict(r) for r in rows])
+    cur.execute(sql, params)
+    rows = [dict(r) for r in cur.fetchall()]
+    cur.close(); conn.close()
+    return jsonify(rows)
 
 @app.route("/api/cinemas")
 def api_cinemas():
-    conn = get_db()
-    names = [r["cinema"] for r in conn.execute("SELECT DISTINCT cinema FROM screenings").fetchall()]
-    conn.close()
+    conn = get_db(); cur = conn.cursor()
+    cur.execute("SELECT DISTINCT cinema FROM screenings")
+    names = [r["cinema"] for r in cur.fetchall()]
+    cur.close(); conn.close()
     ordered = [c for c in CINEMA_ORDER if c in names] + [c for c in names if c not in CINEMA_ORDER]
     return jsonify(ordered)
 
 @app.route("/api/stats")
 def api_stats():
-    conn = get_db()
-    total = conn.execute("SELECT COUNT(*) FROM screenings").fetchone()[0]
-    cc    = conn.execute("SELECT COUNT(DISTINCT cinema) FROM screenings").fetchone()[0]
-    mc    = conn.execute("SELECT COUNT(DISTINCT movie) FROM screenings").fetchone()[0]
-    lu    = conn.execute("SELECT value FROM meta WHERE key='last_updated'").fetchone()
-    conn.close()
+    conn = get_db(); cur = conn.cursor()
+    cur.execute("SELECT COUNT(*) AS c FROM screenings"); total = cur.fetchone()["c"]
+    cur.execute("SELECT COUNT(DISTINCT cinema) AS c FROM screenings"); cc = cur.fetchone()["c"]
+    cur.execute("SELECT COUNT(DISTINCT movie) AS c FROM screenings"); mc = cur.fetchone()["c"]
+    cur.execute("SELECT value FROM meta WHERE key='last_updated'"); lu = cur.fetchone()
+    cur.close(); conn.close()
     return jsonify({"total": total, "cinemas": cc, "movies": mc,
-                    "last_updated": lu[0] if lu else None})
+                    "last_updated": lu["value"] if lu else None})
 
 @app.route("/api/refresh", methods=["POST"])
 def api_refresh():
@@ -349,14 +358,15 @@ def export_excel():
     df = request.args.get("date_from", date.today().isoformat())
     dt = request.args.get("date_to",   date.today().isoformat())
     cinemas = request.args.getlist("cinema"); mq = request.args.get("movie", "").strip()
-    conn = get_db()
-    sql = "SELECT * FROM screenings WHERE date(start_dt) BETWEEN ? AND ?"
+    conn = get_db(); cur = conn.cursor()
+    sql = "SELECT * FROM screenings WHERE start_dt::date BETWEEN %s AND %s"
     params = [df, dt]
     if cinemas:
-        sql += f" AND cinema IN ({','.join('?'*len(cinemas))})"; params += cinemas
+        sql += " AND cinema = ANY(%s)"; params.append(cinemas)
     if mq:
-        sql += " AND movie LIKE ?"; params.append(f"%{mq}%")
-    rows = conn.execute(sql + " ORDER BY start_dt", params).fetchall(); conn.close()
+        sql += " AND movie ILIKE %s"; params.append(f"%{mq}%")
+    cur.execute(sql + " ORDER BY start_dt", params)
+    rows = cur.fetchall(); cur.close(); conn.close()
 
     wb = openpyxl.Workbook(); ws = wb.active; ws.title = "시간표"
     headers = ["극장","영화제목","날짜","시작","종료","런타임(분)","상영관","상영유형","프로그램"]
@@ -374,8 +384,8 @@ def export_excel():
             colors[r["cinema"]] = palette[pidx % len(palette)]; pidx += 1
         fill = PatternFill("solid", fgColor=colors[r["cinema"]])
         sdt = r["start_dt"] or ""
-        for col, v in enumerate([r["cinema"], r["movie"], sdt[:10], sdt[11:16],
-                (r["end_dt"] or "")[11:16], r["runtime"], r["screen"],
+        for col, v in enumerate([r["cinema"], r["movie"], str(sdt)[:10], str(sdt)[11:16],
+                str(r["end_dt"] or "")[11:16], r["runtime"], r["screen"],
                 r["show_type"], r["program"]], 1):
             c = ws.cell(row=ri, column=col, value=v)
             c.fill = fill; c.border = bdr; c.alignment = Alignment(vertical="center")
@@ -387,19 +397,21 @@ def export_excel():
                      download_name=f"시간표_{df}_{dt}.xlsx",
                      mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
-# ═══════════════════════════════════════════════════════
-#  시작
-# ═══════════════════════════════════════════════════════
+# ── 시작 ─────────────────────────────────────────────
 ensure_db()
 
 def initial_crawl_if_empty():
-    conn = sqlite3.connect(DB_PATH)
-    count = conn.execute("SELECT COUNT(*) FROM screenings").fetchone()[0]; conn.close()
-    if count == 0:
-        log.info("DB 비어있음 → 최초 수집 시작 (백그라운드)")
-        threading.Thread(target=run_crawl, daemon=True).start()
-    else:
-        log.info(f"기존 DB 사용: {count}건")
+    try:
+        conn = get_db(); cur = conn.cursor()
+        cur.execute("SELECT COUNT(*) AS c FROM screenings")
+        count = cur.fetchone()["c"]; cur.close(); conn.close()
+        if count == 0:
+            log.info("DB 비어있음 → 최초 수집 시작 (백그라운드)")
+            threading.Thread(target=run_crawl, daemon=True).start()
+        else:
+            log.info(f"기존 DB 사용: {count}건")
+    except Exception as e:
+        log.error(f"DB 초기화 오류: {e}")
 
 initial_crawl_if_empty()
 start_scheduler()
