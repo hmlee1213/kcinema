@@ -13,13 +13,15 @@
   --surface2: #F0F2F5;
   --border: #E2E5EB;
   --border2: #CDD2DB;
-  --accent: #2563EB;
-  --accent-light: #EFF6FF;
+  --accent: #111827;
+  --accent-light: #F0F2F5;
   --accent2: #7C3AED;
   --accent2-light: #F5F3FF;
   --text: #111827;
   --text-muted: #6B7280;
   --text-sub: #9CA3AF;
+  --time-start: #DC2626;
+  --time-end: #2563EB;
   --red: #EF4444;
   --sat: #2563EB;
   --sun: #EF4444;
@@ -337,27 +339,36 @@ tr:last-child td { border-bottom: none; }
 tr:hover td { background: var(--accent-light); }
 .cinema-badge {
   display: inline-block;
-  padding: 3px 8px;
+  padding: 3px 9px;
   border-radius: 5px;
   font-size: 11px;
   font-weight: 700;
   white-space: nowrap;
+}
+.badge-paid {
+  background: #111827;
+  color: #fff;
+}
+.badge-free {
+  background: #fff;
+  color: #111827;
+  border: 1.5px solid #111827;
 }
 .time-cell {
   font-family: 'DM Mono', monospace;
   font-size: 13px;
   white-space: nowrap;
 }
-.time-start { color: var(--accent); font-weight: 600; }
-.time-end { color: var(--text-sub); font-size: 12px; }
+.time-start { color: var(--time-start); font-weight: 700; }
+.time-end { color: var(--time-end); font-size: 12px; font-weight: 600; }
 .runtime-badge {
-  background: var(--surface2);
-  border: 1px solid var(--border);
+  background: #374151;
+  border: none;
   padding: 2px 7px;
   border-radius: 4px;
   font-size: 11px;
-  color: var(--text-muted);
-  font-weight: 500;
+  color: #fff;
+  font-weight: 600;
   white-space: nowrap;
 }
 .show-type-tag {
@@ -784,7 +795,7 @@ function renderTable() {
       const color = cinemaColors[r.cinema];
       return `<tr>
         <td>
-          <span class="cinema-badge" style="background:${color}22;color:${color};border:1px solid ${color}44">${r.cinema}</span>
+          <span class="cinema-badge ${color === 'free' ? 'badge-free' : 'badge-paid'}">${r.cinema}</span>
           ${r.screen ? `<span class="screen-tag">${esc(r.screen)}</span>` : ""}
         </td>
         <td class="time-cell" style="color:var(--text-muted)">${date}</td>
@@ -816,7 +827,7 @@ function renderCards() {
     return `<div class="card">
       <div class="card-header">
         <div class="card-title">${esc(r.movie)}</div>
-        <span class="cinema-badge" style="background:${color}22;color:${color};border:1px solid ${color}44;flex-shrink:0">${r.cinema}</span>
+        <span class="cinema-badge ${color === 'free' ? 'badge-free' : 'badge-paid'}" style="flex-shrink:0">${r.cinema}</span>
       </div>
       <div class="card-time">${time} <span>→ ${endTime||"?"}</span></div>
       <div class="card-meta">
@@ -963,9 +974,12 @@ function esc(s) {
   return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
 }
 
+const FREE_CINEMAS = ["서울영화센터", "한국영상자료원"];
 function buildColorMap(data) {
   const map = {};
-  data.forEach(r => { if (!map[r.cinema]) map[r.cinema] = "#2563EB"; });
+  data.forEach(r => {
+    if (!map[r.cinema]) map[r.cinema] = FREE_CINEMAS.includes(r.cinema) ? "free" : "paid";
+  });
   return map;
 }
 
