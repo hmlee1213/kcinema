@@ -8,27 +8,27 @@
 <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg: #F7F8FA;
-  --surface: #FFFFFF;
-  --surface2: #F0F2F5;
-  --border: #E2E5EB;
-  --border2: #CDD2DB;
-  --accent: #111827;
-  --accent-light: #F0F2F5;
-  --accent2: #7C3AED;
-  --accent2-light: #F5F3FF;
-  --text: #111827;
-  --text-muted: #6B7280;
-  --text-sub: #9CA3AF;
-  --time-start: #DC2626;
-  --time-end: #2563EB;
-  --red: #EF4444;
-  --sat: #2563EB;
-  --sun: #EF4444;
-  --green: #10B981;
+  --bg: #0D0D14;
+  --surface: #16161F;
+  --surface2: #1E1E2A;
+  --border: #2A2A38;
+  --border2: #3A3A4A;
+  --accent: #E8C547;
+  --accent-light: #2A2510;
+  --accent2: #FB923C;
+  --accent2-light: #2A1A0A;
+  --text: #F0EEF8;
+  --text-muted: #8A869A;
+  --text-sub: #5A5670;
+  --time-start: #E8C547;
+  --time-end: #FB923C;
+  --red: #FF5C7A;
+  --sat: #7C6EF5;
+  --sun: #FF5C7A;
+  --green: #4ADE80;
   --radius: 10px;
-  --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
-  --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+  --shadow: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
@@ -125,7 +125,7 @@ input[type="text"]:focus,
 input[type="time"]:focus,
 select:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+  box-shadow: 0 0 0 3px rgba(232,197,71,0.15);
 }
 input[type="text"] { width: 180px; }
 input[type="date"] { width: 145px; }
@@ -143,19 +143,21 @@ select { width: 160px; }
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  background: #111827;
-  border: 2px solid #111827;
+  background: var(--accent);
+  border: 2px solid var(--accent);
   border-radius: 7px;
   padding: 6px 13px;
   cursor: pointer;
   font-size: 13px;
-  font-weight: 700;
-  color: #fff;
+  font-weight: 600;
+  color: #111827;
   transition: all 0.12s;
   user-select: none;
   line-height: 1;
 }
-.cinema-chip:hover { opacity: 0.75; }
+.cinema-chip:hover {
+  opacity: 0.85;
+}
 .cinema-chip.inactive {
   background: var(--surface2);
   border-color: var(--border2);
@@ -163,14 +165,14 @@ select { width: 160px; }
   font-weight: 500;
 }
 .cinema-chip.inactive:hover {
-  border-color: #111827;
-  color: #111827;
+  border-color: var(--accent);
+  color: var(--accent);
   background: var(--accent-light);
 }
 .cinema-chip.free {
-  background: #fff;
-  border-color: #111827;
-  color: #111827;
+  background: #059669;
+  border-color: #059669;
+  color: #fff;
 }
 .cinema-chip.free.inactive {
   background: var(--surface2);
@@ -178,9 +180,9 @@ select { width: 160px; }
   color: var(--text-sub);
 }
 .cinema-chip.free.inactive:hover {
-  border-color: #111827;
-  color: #111827;
-  background: var(--surface2);
+  border-color: #059669;
+  color: #059669;
+  background: #ECFDF5;
 }
 .free-tag {
   display: inline-block;
@@ -334,7 +336,7 @@ td {
   vertical-align: middle;
 }
 tr:last-child td { border-bottom: none; }
-tr:hover td { background: var(--accent-light); }
+tr:hover td { background: rgba(232,197,71,0.06); }
 .cinema-badge {
   display: inline-block;
   padding: 3px 9px;
@@ -344,13 +346,12 @@ tr:hover td { background: var(--accent-light); }
   white-space: nowrap;
 }
 .badge-paid {
-  background: #111827;
-  color: #fff;
+  background: #F0EEF8;
+  color: #111827;
 }
 .badge-free {
-  background: #fff;
-  color: #111827;
-  border: 1.5px solid #111827;
+  background: #374151;
+  color: #fff;
 }
 .time-cell {
   font-family: 'DM Mono', monospace;
@@ -360,19 +361,19 @@ tr:hover td { background: var(--accent-light); }
 .time-start { color: var(--time-start); font-weight: 700; }
 .time-end { color: var(--time-end); font-size: 12px; font-weight: 600; }
 .runtime-badge {
-  background: #374151;
+  background: #0E4272;
   border: none;
   padding: 2px 7px;
   border-radius: 4px;
   font-size: 11px;
-  color: #fff;
+  color: #7DD3FC;
   font-weight: 600;
   white-space: nowrap;
 }
 .show-type-tag {
-  background: var(--accent2-light);
-  color: var(--accent2);
-  border: 1px solid rgba(124,58,237,0.2);
+  background: rgba(251,146,60,0.15);
+  color: #FB923C;
+  border: 1px solid rgba(251,146,60,0.3);
   padding: 2px 7px;
   border-radius: 4px;
   font-size: 11px;
@@ -501,13 +502,6 @@ tr:hover td { background: var(--accent-light); }
 .refreshing { animation: pulse 1s ease-in-out infinite; }
 @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
 
-/* ── 안내 문구 ── */
-.filter-note {
-  font-size: 11px;
-  color: var(--text-sub);
-  padding-left: 4px;
-}
-
 /* ── 상영관 태그 ── */
 .movie-title-row {
   display: flex;
@@ -563,59 +557,9 @@ tr:hover td { background: var(--accent-light); }
       <div class="filter-group">
         <label>시간대</label>
         <div style="display:flex;gap:6px;align-items:center;">
-          <select id="timeFrom" style="width:90px">
-            <option value="00:00" selected>00시</option>
-            <option value="01:00">01시</option>
-            <option value="02:00">02시</option>
-            <option value="03:00">03시</option>
-            <option value="04:00">04시</option>
-            <option value="05:00">05시</option>
-            <option value="06:00">06시</option>
-            <option value="07:00">07시</option>
-            <option value="08:00">08시</option>
-            <option value="09:00">09시</option>
-            <option value="10:00">10시</option>
-            <option value="11:00">11시</option>
-            <option value="12:00">12시</option>
-            <option value="13:00">13시</option>
-            <option value="14:00">14시</option>
-            <option value="15:00">15시</option>
-            <option value="16:00">16시</option>
-            <option value="17:00">17시</option>
-            <option value="18:00">18시</option>
-            <option value="19:00">19시</option>
-            <option value="20:00">20시</option>
-            <option value="21:00">21시</option>
-            <option value="22:00">22시</option>
-            <option value="23:00">23시</option>
-          </select>
+          <input type="time" id="timeFrom" value="00:00" style="width:110px">
           <span style="color:var(--text-muted);font-size:12px">~</span>
-          <select id="timeTo" style="width:90px">
-            <option value="00:59">00시</option>
-            <option value="01:59">01시</option>
-            <option value="02:59">02시</option>
-            <option value="03:59">03시</option>
-            <option value="04:59">04시</option>
-            <option value="05:59">05시</option>
-            <option value="06:59">06시</option>
-            <option value="07:59">07시</option>
-            <option value="08:59">08시</option>
-            <option value="09:59">09시</option>
-            <option value="10:59">10시</option>
-            <option value="11:59">11시</option>
-            <option value="12:59">12시</option>
-            <option value="13:59">13시</option>
-            <option value="14:59">14시</option>
-            <option value="15:59">15시</option>
-            <option value="16:59">16시</option>
-            <option value="17:59">17시</option>
-            <option value="18:59">18시</option>
-            <option value="19:59">19시</option>
-            <option value="20:59">20시</option>
-            <option value="21:59">21시</option>
-            <option value="22:59">22시</option>
-            <option value="23:59" selected>23시</option>
-          </select>
+          <input type="time" id="timeTo" value="23:59" style="width:110px">
         </div>
       </div>
     </div>
@@ -633,12 +577,11 @@ tr:hover td { background: var(--accent-light); }
     </div>
 
     <!-- 3행: 버튼 -->
-    <div class="filter-row" style="align-items:center;">
+    <div class="filter-row">
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
         <button class="btn btn-primary" onclick="loadScreenings()">🔍 조회</button>
         <button class="btn btn-secondary" id="excelBtn" onclick="exportExcel()">📊 엑셀 다운로드</button>
         <button class="btn btn-secondary" onclick="resetFilters()">초기화</button>
-        <span class="filter-note">정시 상영 기준 (더숲아트시네마는 10분 지연 상영)</span>
       </div>
     </div>
 
@@ -854,7 +797,7 @@ function renderTable() {
           <span class="cinema-badge ${color === 'free' ? 'badge-free' : 'badge-paid'}">${r.cinema}</span>
           ${r.screen ? `<span class="screen-tag">${esc(r.screen)}</span>` : ""}
         </td>
-        <td class="time-cell">${date}</td>
+        <td class="time-cell" style="color:var(--text-muted)">${date}</td>
         <td class="time-cell">
           <div class="time-start">${time}</div>
           <div class="time-end">${endTime || ""}</div>
@@ -932,7 +875,7 @@ function renderCinemaGroup() {
           ${rows.map(r => {
             const [date,time] = splitDt(r.start_dt);
             return `<tr>
-              <td class="time-cell">${date} <span class="time-start">${time}</span></td>
+              <td class="time-cell"><span style="color:var(--text-muted)">${date}</span> <span class="time-start">${time}</span></td>
               <td class="movie-title">${esc(r.movie)}</td>
               <td>${r.runtime ? `<span class="runtime-badge">${r.runtime}분</span>` : ""}</td>
               <td class="col-screen" style="font-size:12px;color:var(--text-muted)">${esc(r.screen||"")}</td>
