@@ -8,27 +8,27 @@
 <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg: #0D0D14;
-  --surface: #16161F;
-  --surface2: #1E1E2A;
-  --border: #2A2A38;
-  --border2: #3A3A4A;
-  --accent: #E8C547;
-  --accent-light: #2A2510;
-  --accent2: #FB923C;
-  --accent2-light: #2A1A0A;
-  --text: #F0EEF8;
-  --text-muted: #8A869A;
-  --text-sub: #5A5670;
-  --time-start: #E8C547;
-  --time-end: #FB923C;
-  --red: #FF5C7A;
-  --sat: #7C6EF5;
-  --sun: #FF5C7A;
-  --green: #4ADE80;
+  --bg: #F7F8FA;
+  --surface: #FFFFFF;
+  --surface2: #F0F2F5;
+  --border: #E2E5EB;
+  --border2: #CDD2DB;
+  --accent: #111827;
+  --accent-light: #F0F2F5;
+  --accent2: #7C3AED;
+  --accent2-light: #F5F3FF;
+  --text: #111827;
+  --text-muted: #6B7280;
+  --text-sub: #9CA3AF;
+  --time-start: #DC2626;
+  --time-end: #2563EB;
+  --red: #EF4444;
+  --sat: #2563EB;
+  --sun: #EF4444;
+  --green: #10B981;
   --radius: 10px;
-  --shadow: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
-  --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
+  --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
@@ -125,7 +125,7 @@ input[type="text"]:focus,
 input[type="time"]:focus,
 select:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(232,197,71,0.15);
+  box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
 }
 input[type="text"] { width: 180px; }
 input[type="date"] { width: 145px; }
@@ -150,7 +150,7 @@ select { width: 160px; }
   cursor: pointer;
   font-size: 13px;
   font-weight: 600;
-  color: #111827;
+  color: #fff;
   transition: all 0.12s;
   user-select: none;
   line-height: 1;
@@ -336,7 +336,7 @@ td {
   vertical-align: middle;
 }
 tr:last-child td { border-bottom: none; }
-tr:hover td { background: rgba(232,197,71,0.06); }
+tr:hover td { background: var(--accent-light); }
 .cinema-badge {
   display: inline-block;
   padding: 3px 9px;
@@ -346,12 +346,13 @@ tr:hover td { background: rgba(232,197,71,0.06); }
   white-space: nowrap;
 }
 .badge-paid {
-  background: #F0EEF8;
-  color: #111827;
+  background: #111827;
+  color: #fff;
 }
 .badge-free {
-  background: #374151;
-  color: #fff;
+  background: #fff;
+  color: #111827;
+  border: 1.5px solid #111827;
 }
 .time-cell {
   font-family: 'DM Mono', monospace;
@@ -361,19 +362,19 @@ tr:hover td { background: rgba(232,197,71,0.06); }
 .time-start { color: var(--time-start); font-weight: 700; }
 .time-end { color: var(--time-end); font-size: 12px; font-weight: 600; }
 .runtime-badge {
-  background: #0E4272;
+  background: #374151;
   border: none;
   padding: 2px 7px;
   border-radius: 4px;
   font-size: 11px;
-  color: #7DD3FC;
+  color: #fff;
   font-weight: 600;
   white-space: nowrap;
 }
 .show-type-tag {
-  background: rgba(251,146,60,0.15);
-  color: #FB923C;
-  border: 1px solid rgba(251,146,60,0.3);
+  background: var(--accent2-light);
+  color: var(--accent2);
+  border: 1px solid rgba(124,58,237,0.2);
   padding: 2px 7px;
   border-radius: 4px;
   font-size: 11px;
