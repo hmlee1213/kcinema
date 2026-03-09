@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>서울 독립극장 시간표</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0D0D14;
+  --surface: #16161F;
+  --surface2: #1E1E2A;
+  --border: #2A2A38;
+  --accent: #E8C547;
+  --accent2: #7C6EF5;
+  --text: #F0EEF8;
+  --text-muted: #7E7A9A;
+  --red: #FF5C7A;
+  --green: #4ADE80;
+  --radius: 10px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Noto Sans KR', sans-serif;
+  min-height: 100vh;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* ── 헤더 ── */
+header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 20px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  backdrop-filter: blur(12px);
+}
+.header-inner {
+  max-width: 1400px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 56px;
+  gap: 16px;
+}
+.logo {
+  font-family: 'Space Mono', monospace;
+  font-size: 13px;
+  color: var(--accent);
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.logo span { color: var(--text-muted); }
+.stats-bar {
+  display: flex;
+  gap: 20px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.stats-bar strong { color: var(--text); }
+
+/* ── 필터 패널 ── */
+.filter-panel {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 20px;
+}
+.filter-inner {
+  max-width: 1400px;
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-end;
+}
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.filter-group label {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+input[type="date"], input[type="text"], select {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  padding: 7px 11px;
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s;
+}
+input[type="date"]:focus,
+input[type="text"]:focus,
+select:focus { border-color: var(--accent2); }
+input[type="text"] { width: 180px; }
+input[type="date"] { width: 145px; }
+select { width: 160px; }
+.cinema-checkboxes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-width: 680px;
+}
+.cinema-chip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 4px 10px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.15s;
+  user-select: none;
+}
+.cinema-chip:hover { border-color: var(--accent2); color: var(--accent2); }
+.cinema-chip.active {
+  background: var(--accent2);
+  border-color: var(--accent2);
+  color: #fff;
+}
+.cinema-chip input { display: none; }
+
+.btn {
+  padding: 8px 18px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  font-family: inherit;
+  font-weight: 500;
+  transition: all 0.15s;
+}
+.btn-primary {
+  background: var(--accent);
+  color: #000;
+}
+.btn-primary:hover { background: #F5D05A; transform: translateY(-1px); }
+.btn-secondary {
+  background: var(--surface2);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+.btn-secondary:hover { border-color: var(--green); color: var(--green); }
+.btn-icon { font-size: 15px; }
+
+/* ── 뷰 토글 ── */
+.view-controls {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 12px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.view-toggle {
+  display: flex;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.view-btn {
+  padding: 7px 16px;
+  font-size: 12px;
+  font-family: inherit;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.view-btn.active {
+  background: var(--accent2);
+  color: #fff;
+}
+.result-count {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.result-count strong { color: var(--accent); }
+
+/* ── 메인 컨텐츠 ── */
+.main {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 20px 40px;
+}
+
+/* ── 로딩 ── */
+.loading {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+.spinner {
+  width: 32px; height: 32px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  margin: 0 auto 16px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── 테이블 뷰 ── */
+.table-wrap { overflow-x: auto; border-radius: var(--radius); border: 1px solid var(--border); }
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+thead { background: var(--surface2); position: sticky; top: 56px; z-index: 10; }
+th {
+  padding: 11px 14px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+}
+th:hover { color: var(--accent); }
+th.sort-asc::after { content: " ↑"; color: var(--accent); }
+th.sort-desc::after { content: " ↓"; color: var(--accent); }
+td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: rgba(124,110,245,0.06); }
+.cinema-badge {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.time-cell {
+  font-family: 'Space Mono', monospace;
+  font-size: 13px;
+  white-space: nowrap;
+}
+.time-start { color: var(--accent); }
+.time-end { color: var(--text-muted); font-size: 12px; }
+.runtime-badge {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.show-type-tag {
+  background: rgba(124,110,245,0.15);
+  color: var(--accent2);
+  border: 1px solid rgba(124,110,245,0.3);
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 11px;
+}
+.movie-title { font-weight: 500; }
+.program-text { color: var(--text-muted); font-size: 12px; }
+
+/* ── 카드 뷰 ── */
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 14px;
+}
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  transition: border-color 0.15s, transform 0.15s;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.card:hover { border-color: var(--accent2); transform: translateY(-2px); }
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+.card-title { font-weight: 600; font-size: 14px; line-height: 1.4; flex: 1; }
+.card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.card-time {
+  font-family: 'Space Mono', monospace;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--accent);
+}
+.card-time span { font-size: 13px; color: var(--text-muted); font-weight: 400; }
+
+/* ── 극장별 그룹 뷰 ── */
+.cinema-group {
+  margin-bottom: 28px;
+}
+.cinema-group-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius) var(--radius) 0 0;
+  border-bottom: 2px solid var(--accent2);
+}
+.cinema-group-name {
+  font-weight: 700;
+  font-size: 15px;
+}
+.cinema-group-count {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.cinema-group-body {
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 var(--radius) var(--radius);
+  overflow: hidden;
+}
+
+/* ── 날짜별 그룹 뷰 ── */
+.date-group-header {
+  padding: 10px 16px;
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--accent);
+  font-family: 'Space Mono', monospace;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.date-group-header .dow {
+  background: var(--accent);
+  color: #000;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 700;
+}
+.date-group-header .dow.sat { background: var(--accent2); color: #fff; }
+.date-group-header .dow.sun { background: var(--red); color: #fff; }
+
+/* ── 빈 상태 ── */
+.empty {
+  text-align: center;
+  padding: 80px 20px;
+  color: var(--text-muted);
+}
+.empty-icon { font-size: 48px; margin-bottom: 16px; }
+
+/* ── 반응형 ── */
+@media (max-width: 768px) {
+  .stats-bar { display: none; }
+  .filter-inner { gap: 10px; }
+  input[type="text"] { width: 140px; }
+  .header-inner { height: 50px; }
+  .logo { font-size: 11px; }
+  .cards-grid { grid-template-columns: 1fr; }
+  .view-controls { padding: 10px 16px; }
+  .main { padding: 0 16px 40px; }
+  .filter-panel { padding: 12px 16px; }
+  th, td { padding: 9px 10px; }
+  /* 모바일에서 테이블 일부 컬럼 숨기기 */
+  .col-screen, .col-end, .col-program { display: none; }
+}
+
+/* ── 스크롤바 ── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--accent2); }
+
+/* ── 새로고침 버튼 펄스 ── */
+.refreshing { animation: pulse 1s ease-in-out infinite; }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="logo">SEOUL<span> // </span>INDIE CINEMA</div>
+    <div class="stats-bar" id="statsBar">
+      <span>극장 <strong id="statCinemas">—</strong></span>
+      <span>상영 <strong id="statTotal">—</strong>건</span>
+      <span>영화 <strong id="statMovies">—</strong>편</span>
+    </div>
+    <button class="btn btn-secondary" id="refreshBtn" onclick="refreshData()" title="데이터 새로고침">
+      ↻ 새로고침
+    </button>
+  </div>
+</header>
+
+<div class="filter-panel">
+  <div class="filter-inner">
+    <div class="filter-group">
+      <label>기간</label>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <input type="date" id="dateFrom">
+        <span style="color:var(--text-muted);font-size:12px">~</span>
+        <input type="date" id="dateTo">
+      </div>
+    </div>
+
+    <div class="filter-group">
+      <label>영화 검색</label>
+      <input type="text" id="movieSearch" placeholder="제목 입력…" oninput="debounceSearch()">
+    </div>
+
+    <div class="filter-group">
+      <label>극장 선택</label>
+      <div class="cinema-checkboxes" id="cinemaChips"></div>
+    </div>
+
+    <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;">
+      <button class="btn btn-primary" onclick="loadScreenings()">🔍 조회</button>
+      <button class="btn btn-secondary" id="excelBtn" onclick="exportExcel()">📊 엑셀 다운로드</button>
+      <button class="btn btn-secondary" onclick="resetFilters()">초기화</button>
+    </div>
+  </div>
+</div>
+
+<div class="view-controls">
+  <div class="result-count" id="resultCount"></div>
+  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+    <div class="view-toggle">
+      <button class="view-btn active" onclick="setView('table')" id="btn-table">☰ 테이블</button>
+      <button class="view-btn" onclick="setView('cards')" id="btn-cards">⊞ 카드</button>
+      <button class="view-btn" onclick="setView('cinema')" id="btn-cinema">🎬 극장별</button>
+      <button class="view-btn" onclick="setView('date')" id="btn-date">📅 날짜별</button>
+    </div>
+  </div>
+</div>
+
+<div class="main">
+  <div id="content">
+    <div class="loading"><div class="spinner"></div>데이터 로딩 중…</div>
+  </div>
+</div>
+
+<script>
+const API = "";  // same origin
+let allData = [];
+let currentView = "table";
+let sortCol = "start_dt";
+let sortDir = 1;
+let debounceTimer = null;
+
+const DOW = ["일","월","화","수","목","금","토"];
+
+// 초기화
+async function init() {
+  await loadCinemas();
+  initDates();
+  await loadStats();
+  await loadScreenings();
+}
+
+async function loadStats() {
+  try {
+    const r = await fetch("/api/stats");
+    const d = await r.json();
+    document.getElementById("statCinemas").textContent = d.cinemas;
+    document.getElementById("statTotal").textContent = d.total.toLocaleString();
+    document.getElementById("statMovies").textContent = d.movies;
+  } catch(e) {}
+}
+
+async function loadCinemas() {
+  try {
+    const r = await fetch("/api/cinemas");
+    const cinemas = await r.json();
+    const container = document.getElementById("cinemaChips");
+    container.innerHTML = cinemas.map(c => `
+      <label class="cinema-chip active" onclick="toggleChip(this)">
+        <input type="checkbox" value="${c}" checked>
+        ${c}
+      </label>
+    `).join("");
+  } catch(e) {}
+}
+
+function toggleChip(el) {
+  el.classList.toggle("active");
+  const cb = el.querySelector("input");
+  cb.checked = !cb.checked;
+}
+
+function initDates() {
+  const today = new Date();
+  const end = new Date();
+  end.setDate(end.getDate() + 13);
+  document.getElementById("dateFrom").value = fmt(today);
+  document.getElementById("dateTo").value = fmt(end);
+}
+
+function fmt(d) {
+  return d.toISOString().slice(0,10);
+}
+
+function getSelectedCinemas() {
+  return [...document.querySelectorAll(".cinema-chip.active input")].map(el => el.value);
+}
+
+async function loadScreenings() {
+  const from  = document.getElementById("dateFrom").value;
+  const to    = document.getElementById("dateTo").value;
+  const movie = document.getElementById("movieSearch").value;
+  const cinemas = getSelectedCinemas();
+
+  document.getElementById("content").innerHTML = `<div class="loading"><div class="spinner"></div>조회 중…</div>`;
+
+  const params = new URLSearchParams({ date_from: from, date_to: to, movie });
+  cinemas.forEach(c => params.append("cinema", c));
+
+  try {
+    const r = await fetch(`/api/screenings?${params}`);
+    allData = await r.json();
+    renderView();
+    document.getElementById("resultCount").innerHTML =
+      `<strong>${allData.length.toLocaleString()}</strong>건 조회됨`;
+  } catch(e) {
+    document.getElementById("content").innerHTML = `
+      <div class="empty"><div class="empty-icon">⚠️</div>
+      <div>데이터를 불러오지 못했습니다<br><small>getdb.py를 먼저 실행해 DB를 생성해 주세요</small></div></div>`;
+  }
+}
+
+function debounceSearch() {
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(loadScreenings, 500);
+}
+
+function resetFilters() {
+  document.getElementById("movieSearch").value = "";
+  initDates();
+  document.querySelectorAll(".cinema-chip").forEach(el => {
+    el.classList.add("active");
+    el.querySelector("input").checked = true;
+  });
+  loadScreenings();
+}
+
+async function refreshData() {
+  const btn = document.getElementById("refreshBtn");
+  btn.classList.add("refreshing");
+  btn.textContent = "↻ 갱신 중…";
+  await loadStats();
+  await loadScreenings();
+  btn.classList.remove("refreshing");
+  btn.textContent = "↻ 새로고침";
+}
+
+function setView(v) {
+  currentView = v;
+  ["table","cards","cinema","date"].forEach(id => {
+    document.getElementById("btn-"+id).classList.toggle("active", id === v);
+  });
+  renderView();
+}
+
+function renderView() {
+  if (!allData.length) {
+    document.getElementById("content").innerHTML = `
+      <div class="empty"><div class="empty-icon">🎞️</div>
+      <div>조회 결과가 없습니다</div></div>`;
+    return;
+  }
+  if (currentView === "table") renderTable();
+  else if (currentView === "cards") renderCards();
+  else if (currentView === "cinema") renderCinemaGroup();
+  else if (currentView === "date") renderDateGroup();
+}
+
+// ─── 테이블 뷰 ───
+function renderTable() {
+  const cols = [
+    { key: "cinema",    label: "극장" },
+    { key: "start_dt",  label: "날짜" },
+    { key: "start_dt",  label: "시작",  id: "col-start" },
+    { key: "end_dt",    label: "종료",  cls: "col-end" },
+    { key: "movie",     label: "영화" },
+    { key: "runtime",   label: "런타임", cls: "col-screen" },
+    { key: "screen",    label: "상영관", cls: "col-screen" },
+    { key: "show_type", label: "상영유형" },
+    { key: "program",   label: "프로그램", cls: "col-program" },
+  ];
+  const sorted = [...allData].sort((a,b) => {
+    const av = a[sortCol] ?? "", bv = b[sortCol] ?? "";
+    return av < bv ? -sortDir : av > bv ? sortDir : 0;
+  });
+
+  const cinemaColors = buildColorMap(allData);
+
+  const html = `
+  <div class="table-wrap">
+  <table>
+    <thead><tr>
+      <th onclick="sort('cinema')">극장</th>
+      <th onclick="sort('start_dt')">날짜</th>
+      <th onclick="sort('start_dt')">시간</th>
+      <th onclick="sort('movie')">영화</th>
+      <th onclick="sort('runtime')">런타임</th>
+      <th class="col-screen" onclick="sort('screen')">상영관</th>
+      <th onclick="sort('show_type')">상영유형</th>
+      <th class="col-program" onclick="sort('program')">프로그램</th>
+    </tr></thead>
+    <tbody>
+    ${sorted.map(r => {
+      const [date, time] = splitDt(r.start_dt);
+      const [, endTime] = splitDt(r.end_dt);
+      const color = cinemaColors[r.cinema];
+      return `<tr>
+        <td><span class="cinema-badge" style="background:${color}22;color:${color};border:1px solid ${color}44">${r.cinema}</span></td>
+        <td class="time-cell" style="color:var(--text-muted)">${date}</td>
+        <td class="time-cell">
+          <div class="time-start">${time}</div>
+          <div class="time-end">${endTime || ""}</div>
+        </td>
+        <td>
+          <div class="movie-title">${esc(r.movie)}</div>
+        </td>
+        <td>${r.runtime ? `<span class="runtime-badge">${r.runtime}분</span>` : ""}</td>
+        <td class="col-screen" style="color:var(--text-muted);font-size:12px">${esc(r.screen||"")}</td>
+        <td>${r.show_type ? `<span class="show-type-tag">${esc(r.show_type)}</span>` : ""}</td>
+        <td class="col-program"><span class="program-text">${esc(r.program||"")}</span></td>
+      </tr>`;
+    }).join("")}
+    </tbody>
+  </table></div>`;
+  document.getElementById("content").innerHTML = html;
+}
+
+// ─── 카드 뷰 ───
+function renderCards() {
+  const cinemaColors = buildColorMap(allData);
+  const html = `<div class="cards-grid">
+  ${allData.map(r => {
+    const [date, time] = splitDt(r.start_dt);
+    const [, endTime] = splitDt(r.end_dt);
+    const color = cinemaColors[r.cinema];
+    return `<div class="card">
+      <div class="card-header">
+        <div class="card-title">${esc(r.movie)}</div>
+        <span class="cinema-badge" style="background:${color}22;color:${color};border:1px solid ${color}44;flex-shrink:0">${r.cinema}</span>
+      </div>
+      <div class="card-time">${time} <span>→ ${endTime||"?"}</span></div>
+      <div class="card-meta">
+        <span style="font-size:12px;color:var(--text-muted)">${date}</span>
+        ${r.runtime ? `<span class="runtime-badge">${r.runtime}분</span>` : ""}
+        ${r.show_type ? `<span class="show-type-tag">${esc(r.show_type)}</span>` : ""}
+      </div>
+      ${r.screen ? `<div style="font-size:12px;color:var(--text-muted)">${esc(r.screen)}</div>` : ""}
+      ${r.program ? `<div class="program-text">${esc(r.program)}</div>` : ""}
+    </div>`;
+  }).join("")}
+  </div>`;
+  document.getElementById("content").innerHTML = html;
+}
+
+// ─── 극장별 그룹 뷰 ───
+function renderCinemaGroup() {
+  const cinemaColors = buildColorMap(allData);
+  const groups = {};
+  allData.forEach(r => {
+    if (!groups[r.cinema]) groups[r.cinema] = [];
+    groups[r.cinema].push(r);
+  });
+
+  const ORDER = ["KU시네마테크","KT&G상상마당시네마","서울아트시네마","한국영상자료원",
+    "라이카시네마","씨네큐브","더숲아트시네마","아트하우스모모",
+    "서울영화센터","아리랑시네센터","에무시네마","아트나인"];
+  const cinemas = [...ORDER.filter(c => groups[c]), ...Object.keys(groups).filter(c => !ORDER.includes(c))];
+
+  const html = cinemas.map(cinema => {
+    const rows = groups[cinema];
+    const color = cinemaColors[cinema];
+    return `<div class="cinema-group">
+      <div class="cinema-group-header" style="border-bottom-color:${color}">
+        <span class="cinema-group-name" style="color:${color}">${cinema}</span>
+        <span class="cinema-group-count">${rows.length}건</span>
+      </div>
+      <div class="cinema-group-body">
+        <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th>날짜/시간</th><th>영화</th><th>런타임</th>
+            <th class="col-screen">상영관</th><th>상영유형</th>
+          </tr></thead>
+          <tbody>
+          ${rows.map(r => {
+            const [date,time] = splitDt(r.start_dt);
+            return `<tr>
+              <td class="time-cell"><span style="color:var(--text-muted)">${date}</span> <span class="time-start">${time}</span></td>
+              <td class="movie-title">${esc(r.movie)}</td>
+              <td>${r.runtime ? `<span class="runtime-badge">${r.runtime}분</span>` : ""}</td>
+              <td class="col-screen" style="font-size:12px;color:var(--text-muted)">${esc(r.screen||"")}</td>
+              <td>${r.show_type ? `<span class="show-type-tag">${esc(r.show_type)}</span>` : ""}</td>
+            </tr>`;
+          }).join("")}
+          </tbody>
+        </table></div>
+      </div>
+    </div>`;
+  }).join("");
+  document.getElementById("content").innerHTML = html;
+}
+
+// ─── 날짜별 그룹 뷰 ───
+function renderDateGroup() {
+  const cinemaColors = buildColorMap(allData);
+  const groups = {};
+  allData.forEach(r => {
+    const d = (r.start_dt||"").slice(0,10);
+    if (!groups[d]) groups[d] = [];
+    groups[d].push(r);
+  });
+
+  const html = Object.keys(groups).sort().map(date => {
+    const rows = groups[date];
+    const d = new Date(date + "T00:00:00");
+    const dow = DOW[d.getDay()];
+    const dowCls = d.getDay()===0 ? "sun" : d.getDay()===6 ? "sat" : "";
+    return `<div class="cinema-group">
+      <div class="date-group-header">
+        ${date} <span class="dow ${dowCls}">${dow}</span>
+        <span style="font-size:12px;color:var(--text-muted);font-family:inherit">${rows.length}건</span>
+      </div>
+      <div class="cinema-group-body">
+        <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th>극장</th><th>시간</th><th>영화</th>
+            <th>런타임</th><th class="col-screen">상영관</th><th>상영유형</th>
+          </tr></thead>
+          <tbody>
+          ${rows.map(r => {
+            const [,time] = splitDt(r.start_dt);
+            const [,endTime] = splitDt(r.end_dt);
+            const color = cinemaColors[r.cinema];
+            return `<tr>
+              <td><span class="cinema-badge" style="background:${color}22;color:${color};border:1px solid ${color}44">${r.cinema}</span></td>
+              <td class="time-cell"><span class="time-start">${time}</span><br><span class="time-end">${endTime||""}</span></td>
+              <td class="movie-title">${esc(r.movie)}</td>
+              <td>${r.runtime ? `<span class="runtime-badge">${r.runtime}분</span>` : ""}</td>
+              <td class="col-screen" style="font-size:12px;color:var(--text-muted)">${esc(r.screen||"")}</td>
+              <td>${r.show_type ? `<span class="show-type-tag">${esc(r.show_type)}</span>` : ""}</td>
+            </tr>`;
+          }).join("")}
+          </tbody>
+        </table></div>
+      </div>
+    </div>`;
+  }).join("");
+  document.getElementById("content").innerHTML = html;
+}
+
+// ─── 엑셀 다운로드 ───
+function exportExcel() {
+  const from   = document.getElementById("dateFrom").value;
+  const to     = document.getElementById("dateTo").value;
+  const movie  = document.getElementById("movieSearch").value;
+  const cinemas = getSelectedCinemas();
+  const params = new URLSearchParams({ date_from: from, date_to: to, movie });
+  cinemas.forEach(c => params.append("cinema", c));
+  window.location.href = `/api/export/excel?${params}`;
+}
+
+// ─── 정렬 ───
+function sort(col) {
+  if (sortCol === col) sortDir *= -1;
+  else { sortCol = col; sortDir = 1; }
+  renderView();
+}
+
+// ─── 유틸 ───
+function splitDt(dt) {
+  if (!dt) return ["",""];
+  return [dt.slice(0,10), dt.slice(11,16)];
+}
+function esc(s) {
+  return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+const PALETTE = [
+  "#E8C547","#7C6EF5","#FF5C7A","#4ADE80","#38BDF8",
+  "#FB923C","#F472B6","#A78BFA","#34D399","#FDE68A"
+];
+function buildColorMap(data) {
+  const map = {};
+  let i = 0;
+  data.forEach(r => { if (!map[r.cinema]) map[r.cinema] = PALETTE[i++ % PALETTE.length]; });
+  return map;
+}
+
+// 실행
+init();
+</script>
+</body>
+</html>
