@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>서울 독립극장 시간표</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&family=Playfair+Display:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root {
   --bg: #F7F8FA;
@@ -61,7 +61,7 @@ header {
   gap: 16px;
 }
 .logo {
-  font-family: 'Playfair Display', Georgia, serif;
+  font-family: inherit;
   font-size: 13px;
   font-weight: 500;
   color: var(--accent);
@@ -146,17 +146,17 @@ select { width: 160px; }
   background: #111827;
   border: 2px solid #111827;
   border-radius: 7px;
-  padding: 6px 13px;
+  padding: 6px 12px;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
   color: #fff;
   transition: all 0.15s;
   user-select: none;
   line-height: 1;
 }
-.cinema-chip:hover { opacity: 0.8; }
-/* 일반 해제: 흰 배경, 회색 테두리, 회색 글씨 */
+.cinema-chip:hover { opacity: 0.75; }
+/* 해제: 흰 배경, 연회색 테두리, 연회색 글씨 */
 .cinema-chip.inactive {
   background: #fff;
   border-color: #D1D5DB;
@@ -164,40 +164,24 @@ select { width: 160px; }
   font-weight: 500;
 }
 .cinema-chip.inactive:hover {
-  border-color: #111827;
-  color: #111827;
+  border-color: #374151;
+  color: #374151;
 }
-/* 무료 선택: 보라 배경 흰 글씨 */
-.cinema-chip.free {
-  background: #7C3AED;
-  border-color: #7C3AED;
-  color: #fff;
-}
-.cinema-chip.free:hover { opacity: 0.8; }
-/* 무료 해제: 흰 배경, 연보라 테두리, 연보라 글씨 */
-.cinema-chip.free.inactive {
-  background: #fff;
-  border-color: #DDD6FE;
-  color: #C4B5FD;
-  font-weight: 500;
-}
-.cinema-chip.free.inactive:hover {
-  border-color: #7C3AED;
-  color: #7C3AED;
-}
+/* 무료: 선택/해제 모양 동일, free-tag로만 구분 */
 .free-tag {
   display: inline-block;
-  background: rgba(255,255,255,0.25);
-  color: #fff;
+  background: #fff;
+  color: #111827;
   font-size: 9px;
-  font-weight: 700;
+  font-weight: 800;
   padding: 1px 4px;
   border-radius: 3px;
   vertical-align: middle;
+  line-height: 1.4;
 }
 .cinema-chip.inactive .free-tag {
-  background: #EDE9FE;
-  color: #7C3AED;
+  background: #E5E7EB;
+  color: #9CA3AF;
 }
 .cinema-chip input { display: none; }
 
@@ -358,12 +342,14 @@ tr:hover td { background: var(--accent-light); }
   border: 1.5px solid #111827;
 }
 .time-cell {
-  font-family: 'Playfair Display', Georgia, serif;
   font-size: 13px;
   white-space: nowrap;
 }
-.time-start { color: var(--time-start); font-weight: 700; }
-.time-end { color: var(--time-end); font-size: 12px; font-weight: 600; }
+/* 날짜: 영화명 크기(14px)에 맞춤 */
+.date-cell { font-size: 14px; font-weight: 500; color: var(--text); }
+/* 시작/종료시간: 극장 뱃지(11px)에 맞춤 */
+.time-start { font-size: 13px; color: var(--time-start); font-weight: 600; }
+.time-end   { font-size: 13px; color: var(--time-end);   font-weight: 500; opacity: 0.7; }
 .runtime-badge {
   background: #374151;
   border: none;
@@ -389,65 +375,57 @@ tr:hover td { background: var(--accent-light); }
 /* ── 카드 뷰 ── */
 .cards-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+}
+@media (max-width: 768px) {
+  .cards-grid { grid-template-columns: 1fr; }
 }
 .card {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 16px;
+  padding: 14px 16px;
   box-shadow: var(--shadow);
   transition: box-shadow 0.15s, transform 0.15s;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-}
-.card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
   gap: 8px;
 }
-.card-title { font-weight: 700; font-size: 14px; line-height: 1.4; flex: 1; color: var(--text); }
-.card-meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+/* 1줄: 영화명 */
+.card-title { font-weight: 700; font-size: 15px; line-height: 1.4; color: var(--text); }
+/* 2줄: 날짜 시작 종료 */
 .card-time {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 .card-date {
-  font-family: 'Playfair Display', Georgia, serif;
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--text);
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  padding: 3px 8px;
-  border-radius: 5px;
-  white-space: nowrap;
-}
-.card-times {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
 }
 .card-time-start {
-  font-family: 'Playfair Display', Georgia, serif;
-  font-size: 15px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--time-start);
-  line-height: 1.2;
+}
+.card-time-sep {
+  font-size: 12px;
+  color: var(--text-sub);
 }
 .card-time-end {
-  font-family: 'Playfair Display', Georgia, serif;
   font-size: 13px;
   font-weight: 500;
-  color: var(--time-start);
-  opacity: 0.55;
-  line-height: 1.2;
+  color: var(--time-end);
+  opacity: 0.85;
 }
+/* 3줄: 극장 + 상영관 */
+.card-cinema { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+/* 4줄: 런타임 + 프로그램 */
+.card-meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 
 /* ── 극장별 그룹 ── */
 .cinema-group { margin-bottom: 24px; }
@@ -480,7 +458,7 @@ tr:hover td { background: var(--accent-light); }
   font-weight: 700;
   font-size: 13px;
   color: var(--text);
-  font-family: 'Playfair Display', Georgia, serif;
+  font-family: inherit;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -534,6 +512,32 @@ tr:hover td { background: var(--accent-light); }
 /* ── 펄스 ── */
 .refreshing { animation: pulse 1s ease-in-out infinite; }
 @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+/* ── 날짜 바로가기 ── */
+.date-shortcuts { display: flex; gap: 5px; flex-wrap: wrap; }
+.date-shortcut {
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: inherit;
+  background: var(--surface2);
+  border: 1.5px solid var(--border2);
+  border-radius: 5px;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: all 0.12s;
+  white-space: nowrap;
+}
+.date-shortcut:hover {
+  background: #111827;
+  border-color: #111827;
+  color: #fff;
+}
+.date-shortcut.active {
+  background: #111827;
+  border-color: #111827;
+  color: #fff;
+}
 
 /* ── 안내 문구 ── */
 .filter-note {
@@ -590,10 +594,18 @@ tr:hover td { background: var(--accent-light); }
     <div class="filter-row">
       <div class="filter-group">
         <label>기간</label>
-        <div style="display:flex;gap:6px;align-items:center;">
-          <input type="date" id="dateFrom">
-          <span style="color:var(--text-muted);font-size:12px">~</span>
-          <input type="date" id="dateTo">
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <div style="display:flex;gap:6px;align-items:center;">
+            <input type="date" id="dateFrom">
+            <span style="color:var(--text-muted);font-size:12px">~</span>
+            <input type="date" id="dateTo">
+          </div>
+          <div class="date-shortcuts">
+            <button class="date-shortcut" onclick="setDateRange('today')">오늘</button>
+            <button class="date-shortcut" onclick="setDateRange('tomorrow')">내일</button>
+            <button class="date-shortcut" onclick="setDateRange('week')">1주일</button>
+            <button class="date-shortcut" onclick="setDateRange('weekend')">이번 주말</button>
+          </div>
         </div>
       </div>
       <div class="filter-group">
@@ -775,6 +787,38 @@ function fmt(d) {
   return d.toISOString().slice(0,10);
 }
 
+function setDateRange(type) {
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  let from, to;
+
+  if (type === 'today') {
+    from = to = fmt(today);
+  } else if (type === 'tomorrow') {
+    const t = new Date(today); t.setDate(t.getDate()+1);
+    from = to = fmt(t);
+  } else if (type === 'week') {
+    const t = new Date(today); t.setDate(t.getDate()+6);
+    from = fmt(today); to = fmt(t);
+  } else if (type === 'weekend') {
+    const day = today.getDay(); // 0=일,6=토
+    const sat = new Date(today);
+    const daysToSat = day === 0 ? 6 : (6 - day);
+    sat.setDate(today.getDate() + daysToSat);
+    const sun = new Date(sat); sun.setDate(sat.getDate()+1);
+    from = fmt(sat); to = fmt(sun);
+  }
+
+  document.getElementById("dateFrom").value = from;
+  document.getElementById("dateTo").value = to;
+
+  // 활성 버튼 표시
+  document.querySelectorAll(".date-shortcut").forEach(b => b.classList.remove("active"));
+  event.target.classList.add("active");
+
+  loadScreenings();
+}
+
 function getSelectedCinemas() {
   return [...document.querySelectorAll(".cinema-chip:not(.inactive) input")].map(el => el.value);
 }
@@ -900,7 +944,7 @@ function renderTable() {
           <span class="cinema-badge ${color === 'free' ? 'badge-free' : 'badge-paid'}">${r.cinema}</span>
           ${r.screen ? `<span class="screen-tag">${esc(r.screen)}</span>` : ""}
         </td>
-        <td class="time-cell">${date}</td>
+        <td class="date-cell">${date}</td>
         <td class="time-cell">
           <div class="time-start">${time}</div>
           <div class="time-end">${endTime || ""}</div>
@@ -927,22 +971,18 @@ function renderCards() {
     const [, endTime] = splitDt(r.end_dt);
     const color = cinemaColors[r.cinema];
     return `<div class="card">
-      <div class="card-header">
-        <div class="card-title">${esc(r.movie)}</div>
+      <div class="card-title">${esc(r.movie)}</div>
+      <div class="card-time">
+        <span class="card-date">${date}</span>
+        <span class="card-time-start">${time}</span>
+        ${endTime ? `<span class="card-time-sep">—</span><span class="card-time-end">${endTime}</span>` : ""}
       </div>
-      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+      <div class="card-cinema">
         <span class="cinema-badge ${color === 'free' ? 'badge-free' : 'badge-paid'}">${r.cinema}</span>
         ${r.screen ? `<span class="screen-tag">${esc(r.screen)}</span>` : ""}
       </div>
-      <div class="card-time">
-        <span class="card-date">${date}</span>
-        <div class="card-times">
-          <span class="card-time-start">${time}</span>
-          ${endTime ? `<span class="card-time-end">${endTime}</span>` : ""}
-        </div>
-        ${r.runtime ? `<span class="runtime-badge" style="margin-left:auto">${r.runtime}분</span>` : ""}
-      </div>
       <div class="card-meta">
+        ${r.runtime ? `<span class="runtime-badge">${r.runtime}분</span>` : ""}
         ${r.show_type ? `<span class="show-type-tag">${esc(r.show_type)}</span>` : ""}
         ${r.program ? `<span class="program-text">${esc(r.program)}</span>` : ""}
       </div>
