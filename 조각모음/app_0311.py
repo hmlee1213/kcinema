@@ -1,7 +1,7 @@
 # app.py — 서울 독립극장 시간표 서비스 (PostgreSQL)
 import io, os, threading, logging, time, re
 from datetime import datetime, date, timedelta
-from flask import Flask, jsonify, request, send_file, session, redirect, url_for, render_template_string
+from flask import Flask, jsonify, request, send_file
 import requests
 from bs4 import BeautifulSoup
 import psycopg2
@@ -11,48 +11,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 log = logging.getLogger(__name__)
 
 app = Flask(__name__, template_folder="templates")
-
-# SECRET_KEY: Railway 고유값 조합 자동생성 (별도 설정 불필요)
-# 직접 설정한 값이 있으면 그걸 우선 사용
-app.secret_key = os.environ.get("SECRET_KEY") or (
-    os.environ.get("RAILWAY_PROJECT_ID", "local") + "-" +
-    os.environ.get("RAILWAY_SERVICE_ID", "dev")
-)
-
-# ADMIN_PASSWORD: Railway Variables에서 반드시 직접 설정
-# 설정 안 하면 어드민 페이지 자체가 비활성화됨
-ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")
-
 DATABASE_URL = os.environ.get("DATABASE_URL")
-
-# ── 브루트포스 방어 (IP별 시도 횟수, 메모리 저장) ───────
-# { ip: {"count": int, "locked_until": datetime | None} }
-_login_attempts: dict = {}
-MAX_ATTEMPTS    = 10
-LOCKOUT_MINUTES = 30
-
-def _get_ip():
-    return request.headers.get("X-Forwarded-For", request.remote_addr or "").split(",")[0].strip()
-
-def _is_locked(ip):
-    rec = _login_attempts.get(ip)
-    if not rec: return False
-    if rec["locked_until"] and datetime.now() < rec["locked_until"]:
-        return True
-    if rec["locked_until"] and datetime.now() >= rec["locked_until"]:
-        # 잠금 해제 — 카운트 초기화
-        _login_attempts.pop(ip, None)
-    return False
-
-def _record_failure(ip):
-    rec = _login_attempts.setdefault(ip, {"count": 0, "locked_until": None})
-    rec["count"] += 1
-    if rec["count"] >= MAX_ATTEMPTS:
-        rec["locked_until"] = datetime.now() + timedelta(minutes=LOCKOUT_MINUTES)
-        log.warning(f"관리자 로그인 잠금: {ip} ({MAX_ATTEMPTS}회 실패)")
-
-def _clear_attempts(ip):
-    _login_attempts.pop(ip, None)
 
 CINEMA_ORDER = [
     "KU시네마테크","KT&G상상마당시네마","서울아트시네마","한국영상자료원",
@@ -94,7 +53,6 @@ def ensure_db():
         )
     """)
     cur.execute("ALTER TABLE screenings ADD COLUMN IF NOT EXISTS movie_url TEXT")
-    cur.execute("ALTER TABLE screenings ADD COLUMN IF NOT EXISTS movie_cd TEXT")
     cur.execute("""
         CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT)
     """)
@@ -147,18 +105,6 @@ def ensure_db():
             "INSERT INTO cinemas (name,address,url,phone,description,is_free,note) VALUES (%s,%s,%s,%s,%s,%s,%s) ON CONFLICT (name) DO NOTHING",
             c
         )
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS recommended (
-            id SERIAL PRIMARY KEY,
-            title TEXT UNIQUE NOT NULL,
-            description TEXT DEFAULT '',
-            awards TEXT DEFAULT '',
-            created_at TIMESTAMP DEFAULT NOW()
-        )
-    """)
-    # 기존 테이블 마이그레이션 (reason 컬럼이 있을 경우 대비)
-    cur.execute("ALTER TABLE recommended ADD COLUMN IF NOT EXISTS description TEXT DEFAULT ''")
-    cur.execute("ALTER TABLE recommended ADD COLUMN IF NOT EXISTS awards TEXT DEFAULT ''")
     conn.commit(); cur.close(); conn.close()
 
 def save_to_db(rows):
@@ -398,65 +344,17 @@ def api_screenings():
     cinemas = request.args.getlist("cinema")
     mq = request.args.get("movie", "").strip()
     conn = get_db(); cur = conn.cursor()
-    sql = """
-        SELECT s.*, COALESCE(m.poster_url, '') AS poster_url
-        FROM screenings s
-        LEFT JOIN movies m ON m.title = s.movie
-        WHERE s.start_dt::date BETWEEN %s AND %s
-    """
+    sql = "SELECT * FROM screenings WHERE start_dt::date BETWEEN %s AND %s"
     params = [df, dt]
     if cinemas:
-        sql += f" AND s.cinema = ANY(%s)"; params.append(cinemas)
+        sql += f" AND cinema = ANY(%s)"; params.append(cinemas)
     if mq:
-        sql += " AND s.movie ILIKE %s"; params.append(f"%{mq}%")
-    sql += " ORDER BY s.start_dt ASC"
+        sql += " AND movie ILIKE %s"; params.append(f"%{mq}%")
+    sql += " ORDER BY start_dt ASC"
     cur.execute(sql, params)
     rows = [dict(r) for r in cur.fetchall()]
     cur.close(); conn.close()
     return jsonify(rows)
-
-@app.route("/api/movies")
-def api_movies():
-    conn = get_db(); cur = conn.cursor()
-    cur.execute("SELECT title, director, synopsis, poster_url FROM movies WHERE poster_url != '' ORDER BY title")
-    rows = [dict(r) for r in cur.fetchall()]
-    cur.close(); conn.close()
-    return jsonify(rows)
-
-@app.route("/api/recommended", methods=["GET"])
-def api_recommended_get():
-    conn = get_db(); cur = conn.cursor()
-    cur.execute("SELECT id, title, description, awards, created_at FROM recommended ORDER BY created_at DESC")
-    rows = [dict(r) for r in cur.fetchall()]
-    cur.close(); conn.close()
-    return jsonify(rows)
-
-@app.route("/api/recommended", methods=["POST"])
-def api_recommended_post():
-    if not session.get("admin"):
-        return jsonify({"error": "unauthorized"}), 401
-    data = request.get_json()
-    title = (data.get("title") or "").strip()
-    description = (data.get("description") or "").strip()
-    awards = (data.get("awards") or "").strip()
-    if not title:
-        return jsonify({"error": "title required"}), 400
-    conn = get_db(); cur = conn.cursor()
-    cur.execute("""
-        INSERT INTO recommended (title, description, awards) VALUES (%s, %s, %s)
-        ON CONFLICT (title) DO UPDATE SET description=EXCLUDED.description, awards=EXCLUDED.awards
-    """, (title, description, awards))
-    conn.commit(); cur.close(); conn.close()
-    return jsonify({"ok": True})
-
-@app.route("/api/recommended/<int:rid>", methods=["DELETE"])
-def api_recommended_delete(rid):
-    if not session.get("admin"):
-        return jsonify({"error": "unauthorized"}), 401
-    conn = get_db(); cur = conn.cursor()
-    cur.execute("DELETE FROM recommended WHERE id=%s", (rid,))
-    conn.commit(); cur.close(); conn.close()
-    return jsonify({"ok": True})
 
 @app.route("/api/cinemas")
 def api_cinemas():
@@ -597,27 +495,11 @@ if __name__ == "__main__":
 # ── 관리자 ────────────────────────────────────────────
 @app.route("/admin", methods=["GET", "POST"])
 def admin():
-    if not ADMIN_PASSWORD:
-        return "관리자 페이지가 비활성화되어 있습니다. ADMIN_PASSWORD 환경변수를 설정해주세요.", 503
-    ip = _get_ip()
     if request.method == "POST" and "password" in request.form:
-        if _is_locked(ip):
-            rec = _login_attempts.get(ip, {})
-            remain = int((rec["locked_until"] - datetime.now()).total_seconds() // 60) + 1 if rec.get("locked_until") else LOCKOUT_MINUTES
-            return render_template_string(ADMIN_LOGIN_TEMPLATE,
-                error=f"로그인 시도가 너무 많습니다. {remain}분 후 다시 시도해주세요.")
         if request.form["password"] == ADMIN_PASSWORD:
-            _clear_attempts(ip)
             session["admin"] = True
             return redirect(url_for("admin_dashboard"))
-        _record_failure(ip)
-        rec = _login_attempts.get(ip, {})
-        if rec.get("locked_until"):
-            error = f"비밀번호가 틀렸습니다. 시도 횟수 초과로 {LOCKOUT_MINUTES}분간 잠금됩니다."
-        else:
-            left = MAX_ATTEMPTS - rec.get("count", 0)
-            error = f"비밀번호가 틀렸습니다. (남은 시도: {left}회)"
-        return render_template_string(ADMIN_LOGIN_TEMPLATE, error=error)
+        return render_template_string(ADMIN_LOGIN_TEMPLATE, error="비밀번호가 틀렸습니다.")
     if session.get("admin"):
         return redirect(url_for("admin_dashboard"))
     return render_template_string(ADMIN_LOGIN_TEMPLATE, error=None)
@@ -804,7 +686,6 @@ a{color:#336600}
   <div class="tabs">
     <div class="tab active" onclick="switchTab('cinemas')">🎬 극장 관리</div>
     <div class="tab" onclick="switchTab('movies')">🎞 영화 관리</div>
-    <div class="tab" onclick="switchTab('recommended')">★ 추천 관리</div>
   </div>
 
   <div id="tab-cinemas" class="section active">
@@ -882,92 +763,15 @@ a{color:#336600}
       {% else %}<p style="color:#9CA3AF;font-size:14px">등록된 영화가 없습니다.</p>{% endif %}
     </div>
   </div>
-
-  <div id="tab-recommended" class="section">
-    <div class="card">
-      <div class="card-title">★ 관리자 추천 영화 등록 / 수정</div>
-      <p style="font-size:13px;color:#6B7280;margin-bottom:16px;">
-        영화 제목은 상영 DB에 등록된 제목과 <strong>정확히 일치</strong>해야 합니다.<br>
-        수상 내역은 쉼표(,)로 구분해 입력하면 자동으로 칩 형태로 표시됩니다.
-      </p>
-      <div class="form-grid">
-        <div class="fg"><label>영화 제목 *</label>
-          <input type="text" id="rec-title" placeholder="예: 사랑의 기억"></div>
-        <div class="fg"><label>수상 내역 (쉼표 구분)</label>
-          <input type="text" id="rec-awards" placeholder="예: 2025 칸:황금종려상 수상, 2024 아카데미:각본상 후보"></div>
-        <div class="fg full"><label>소개글</label>
-          <textarea id="rec-desc" style="min-height:80px" placeholder="관람 포인트나 추천 이유를 자유롭게 적어주세요"></textarea></div>
-      </div>
-      <div class="save-btn"><button class="btn btn-primary" onclick="addRecommended()">저장</button></div>
-    </div>
-    <div class="card">
-      <div class="card-title">현재 추천 목록</div>
-      <div id="rec-list"><p style="color:#9CA3AF;font-size:14px">로딩 중…</p></div>
-    </div>
-  </div>
 </div>
 
 <script>
-const TABS = ["cinemas","movies","recommended"];
 function switchTab(name) {
-  document.querySelectorAll(".tab").forEach((t,i)=>t.classList.toggle("active",TABS[i]===name));
+  document.querySelectorAll(".tab").forEach((t,i)=>t.classList.toggle("active",["cinemas","movies"][i]===name));
   document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
   document.getElementById("tab-"+name).classList.add("active");
-  if(name==="recommended") loadRecommended();
 }
 if(location.hash==="#movies") switchTab("movies");
-if(location.hash==="#recommended") switchTab("recommended");
-
-async function loadRecommended(){
-  const res = await fetch("/api/recommended");
-  const rows = await res.json();
-  const el = document.getElementById("rec-list");
-  if(!rows.length){ el.innerHTML='<p style="color:#9CA3AF;font-size:14px">등록된 추천이 없습니다.</p>'; return; }
-  el.innerHTML = `<table><thead><tr>
-    <th>영화 제목</th><th>수상 내역</th><th>소개글</th><th>등록일</th><th>수정</th><th>삭제</th>
-  </tr></thead><tbody>
-    ${rows.map(r=>`<tr>
-      <td><strong>${r.title}</strong></td>
-      <td style="font-size:12px;color:#6B7280">${(r.awards||"").split(",").filter(Boolean).map(a=>{
-        const [fest,...rest]=a.trim().split(":");
-        return `<span style="display:inline-flex;align-items:center;margin:1px 4px 1px 0;">
-          <span style="background:#555;color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:3px 0 0 3px;">${fest.trim()}</span
-          ><span style="font-size:10px;color:#111;padding:1px 5px;border:1px solid #ddd;border-left:none;border-radius:0 3px 3px 0;">${(rest.join("|")||"").trim()}</span>
-        </span>`;}).join("") || "—"}</td>
-      <td style="font-size:12px;color:#6B7280;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.description||"—"}</td>
-      <td style="font-size:12px;color:#9CA3AF;white-space:nowrap">${(r.created_at||"").slice(0,10)}</td>
-      <td><button class="btn btn-secondary" style="font-size:11px;padding:3px 10px;" onclick="editRecommended('${r.title.replace(/'/g,"\\'")}','${(r.awards||"").replace(/'/g,"\\'")}',\`${(r.description||"").replace(/`/g,"\\`")}\`)">수정</button></td>
-      <td><button class="btn btn-danger" onclick="deleteRecommended(${r.id})">삭제</button></td>
-    </tr>`).join("")}
-  </tbody></table>`;
-}
-function editRecommended(title, awards, desc){
-  document.getElementById("rec-title").value = title;
-  document.getElementById("rec-awards").value = awards;
-  document.getElementById("rec-desc").value = desc;
-  document.getElementById("rec-title").scrollIntoView({behavior:"smooth", block:"center"});
-}
-async function addRecommended(){
-  const title = document.getElementById("rec-title").value.trim();
-  const awards = document.getElementById("rec-awards").value.trim();
-  const description = document.getElementById("rec-desc").value.trim();
-  if(!title){ alert("영화 제목을 입력하세요."); return; }
-  const res = await fetch("/api/recommended",{
-    method:"POST", headers:{"Content-Type":"application/json"},
-    body: JSON.stringify({title, description, awards})
-  });
-  if(res.ok){
-    document.getElementById("rec-title").value="";
-    document.getElementById("rec-awards").value="";
-    document.getElementById("rec-desc").value="";
-    loadRecommended();
-  } else { const d=await res.json(); alert(d.error||"오류 발생"); }
-}
-async function deleteRecommended(id){
-  if(!confirm("삭제할까요?")) return;
-  await fetch(`/api/recommended/${id}`,{method:"DELETE"});
-  loadRecommended();
-}
 </script>
 </body>
 </html>"""
