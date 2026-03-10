@@ -304,11 +304,8 @@ table {
 thead {
   background: var(--surface2);
   position: sticky;
-  top: 56px;
+  top: 56px; /* JS가 동적으로 덮어씀 */
   z-index: 10;
-}
-@media (max-width: 768px) {
-  thead { top: 0 !important; }
 }
 @media (max-width: 768px) {
 }
@@ -370,13 +367,13 @@ tr:hover td { background: var(--accent-light); }
 .dow {
   display: inline-block;
   font-size: 10px; font-weight: 700;
-  background: #FFFFFF; color: #111827;
-  border: 1px solid #D1D5DB;
+  background: #111827; color: #fff;
+  border: 1px solid #111827;
   padding: 1px 5px; border-radius: 3px;
   vertical-align: middle;
 }
-.dow.sat { background: #111827; color: #fff; border-color: #111827; }
-.dow.sun { background: #111827; color: #fff; border-color: #111827; }
+.dow.sat { background: #990000; border-color: #990000; }
+.dow.sun { background: #990000; border-color: #990000; }
 /* 시간 컬러 박스 */
 .time-box {
   display: inline-block;
@@ -562,6 +559,19 @@ tr:hover td { background: var(--accent-light); }
 
 /* ── 날짜 바로가기 ── */
 .date-shortcuts { display: flex; gap: 5px; flex-wrap: wrap; }
+.chip-ctrl-btn {
+  padding: 3px 9px;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: inherit;
+  background: var(--surface2);
+  border: 1.5px solid var(--border2);
+  border-radius: 5px;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: all 0.12s;
+}
+.chip-ctrl-btn:hover { background: #111827; border-color: #111827; color: #fff; }
 .date-shortcut {
   padding: 4px 10px;
   font-size: 11px;
@@ -640,18 +650,20 @@ tr:hover td { background: var(--accent-light); }
     <!-- 1행: 기간 + 바로가기 + 시간대 -->
     <div class="filter-row" style="align-items:flex-end;flex-wrap:wrap;gap:12px;">
       <div class="filter-group">
-        <label>기간</label>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <label style="margin:0;white-space:nowrap;">기간</label>
+          <div class="date-shortcuts" style="margin:0;">
+            <button class="date-shortcut" onclick="setDateRange('today')">오늘</button>
+            <button class="date-shortcut" onclick="setDateRange('tomorrow')">내일</button>
+            <button class="date-shortcut" onclick="setDateRange('week')">1주일</button>
+            <button class="date-shortcut" onclick="setDateRange('weekend')">이번 주말</button>
+          </div>
+        </div>
         <div style="display:flex;gap:6px;align-items:center;">
           <input type="date" id="dateFrom">
           <span style="color:var(--text-muted);font-size:12px">~</span>
           <input type="date" id="dateTo">
         </div>
-      </div>
-      <div class="date-shortcuts" style="padding-bottom:1px;">
-        <button class="date-shortcut" onclick="setDateRange('today')">오늘</button>
-        <button class="date-shortcut" onclick="setDateRange('tomorrow')">내일</button>
-        <button class="date-shortcut" onclick="setDateRange('week')">1주일</button>
-        <button class="date-shortcut" onclick="setDateRange('weekend')">이번 주말</button>
       </div>
       <div class="filter-group">
         <label>시간대</label>
@@ -701,7 +713,11 @@ tr:hover td { background: var(--accent-light); }
     <!-- 3행: 극장 선택 -->
     <div class="filter-row">
       <div class="filter-group" style="width:100%;">
-        <label>극장 선택</label>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+          <label style="margin:0;">극장 선택</label>
+          <button class="chip-ctrl-btn" onclick="selectAllCinemas()">전체 선택</button>
+          <button class="chip-ctrl-btn" onclick="deselectAllCinemas()">전체 해제</button>
+        </div>
         <div class="cinema-checkboxes" id="cinemaChips"></div>
       </div>
     </div>
@@ -807,7 +823,19 @@ function toggleChip(e, el) {
     el.classList.remove("inactive");
   }
   const cb = el.querySelector("input");
-  cb.checked = el.classList.contains("inactive") ? false : true;
+  cb.checked = !el.classList.contains("inactive");
+}
+function selectAllCinemas() {
+  document.querySelectorAll(".cinema-chip").forEach(el => {
+    el.classList.remove("inactive");
+    el.querySelector("input").checked = true;
+  });
+}
+function deselectAllCinemas() {
+  document.querySelectorAll(".cinema-chip").forEach(el => {
+    el.classList.add("inactive");
+    el.querySelector("input").checked = false;
+  });
 }
 
 async function initDates() {
@@ -935,6 +963,14 @@ function setView(v) {
   renderView();
 }
 
+function updateTheadTop() {
+  const header = document.querySelector("header");
+  const top = header ? header.offsetHeight : 56;
+  document.querySelectorAll("thead").forEach(el => {
+    el.style.top = top + "px";
+  });
+}
+
 function renderView() {
   if (!allData.length) {
     document.getElementById("content").innerHTML = `
@@ -946,6 +982,7 @@ function renderView() {
   else if (currentView === "cards") renderCards();
   else if (currentView === "cinema") renderCinemaGroup();
   else if (currentView === "date") renderDateGroup();
+  setTimeout(updateTheadTop, 0);
 }
 
 // ─── 테이블 뷰 ───
