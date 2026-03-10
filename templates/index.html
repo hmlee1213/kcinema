@@ -815,7 +815,7 @@ function debounceSearch() {
   debounceTimer = setTimeout(loadScreenings, 500);
 }
 
-function resetFilters() {
+async function resetFilters() {
   document.getElementById("movieSearch").value = "";
   document.getElementById("timeFrom").value = "00:00";
   document.getElementById("timeTo").value = "23:59";
