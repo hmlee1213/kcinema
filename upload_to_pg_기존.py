@@ -8,10 +8,9 @@ from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
-if not DATABASE_URL:
-    print("❌ DATABASE_URL 환경변수가 없어요.")
-    print("   실행 방법: DATABASE_URL='postgresql://...' python upload_to_pg.py")
-    exit(1)
+DATABASE_URL = "postgresql://postgres:DlxSOXYfQtaaFLuzIlKJODgYWprljMKS@metro.proxy.rlwy.net:44454/railway"
+# postgres:// → postgresql:// 자동 변환
+DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
 # ── getdb.py 원본 코드 그대로 ──────────────────────────
 
@@ -184,9 +183,6 @@ def fetch_kofa(cinema):
             screen_tag=s.select_one(".txt-room")
             type_tag=s.select_one(".fomat")
             program_tag=s.select_one(".layer-txt-1")
-            # kofa 영화 상세 링크 추출
-            movie_href = title_tag.get("href","") if title_tag else ""
-            movie_url = ("https://www.koreafilm.or.kr" + movie_href) if movie_href else ""
             rows.append({
                 "cinema":cinema["name"],
                 "movie":title_tag.get_text(strip=True) if title_tag else "",
@@ -195,8 +191,7 @@ def fetch_kofa(cinema):
                 "screen":screen_tag.get_text(strip=True) if screen_tag else "",
                 "source":"kofa",
                 "show_type":type_tag.get_text(strip=True)[4:] if type_tag else "",
-                "program":program_tag.get_text(strip=True) if program_tag else "",
-                "movie_url": movie_url
+                "program":program_tag.get_text(strip=True) if program_tag else ""
             })
     return rows
 
@@ -209,30 +204,24 @@ def save_to_pg(rows):
         CREATE TABLE IF NOT EXISTS screenings (
             cinema TEXT, movie TEXT, start_dt TEXT, end_dt TEXT,
             runtime INTEGER, screen TEXT, source TEXT,
-            show_type TEXT, program TEXT, movie_url TEXT,
+            show_type TEXT, program TEXT,
             PRIMARY KEY(cinema, start_dt, screen))
-    """)
-    # 기존 테이블에 컬럼 없으면 추가
-    cur.execute("""
-        ALTER TABLE screenings ADD COLUMN IF NOT EXISTS movie_url TEXT
     """)
     cur.execute("CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT)")
     for r in rows:
         cur.execute("""
-            INSERT INTO screenings (cinema,movie,start_dt,end_dt,runtime,screen,source,show_type,program,movie_url)
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            INSERT INTO screenings (cinema,movie,start_dt,end_dt,runtime,screen,source,show_type,program)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
             ON CONFLICT (cinema, start_dt, screen) DO UPDATE SET
                 movie=EXCLUDED.movie, end_dt=EXCLUDED.end_dt,
                 runtime=EXCLUDED.runtime, source=EXCLUDED.source,
-                show_type=EXCLUDED.show_type, program=EXCLUDED.program,
-                movie_url=EXCLUDED.movie_url
+                show_type=EXCLUDED.show_type, program=EXCLUDED.program
         """, (
             r["cinema"], r["movie"],
             str(r["start_dt"]) if r["start_dt"] else None,
             str(r["end_dt"])   if r["end_dt"]   else None,
             r["runtime"], r["screen"], r["source"],
-            r.get("show_type",""), r.get("program",""),
-            r.get("movie_url","")
+            r.get("show_type",""), r.get("program","")
         ))
     cur.execute("""
         INSERT INTO meta (key,value) VALUES ('last_updated',%s)

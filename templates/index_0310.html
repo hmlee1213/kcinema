@@ -144,55 +144,51 @@ select { width: 160px; }
   flex-wrap: wrap;
   gap: 6px;
 }
-/* 칩: 선택(기본)=흰배경 검정테두리, 해제=연회색 취소선 */
 .cinema-chip {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  background: #FFFFFF;
+  background: #111827;
   border: 2px solid #111827;
   border-radius: 7px;
   padding: 6px 12px;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
-  color: #111827;
-  font-family: inherit;
-  line-height: 1;
+  color: #FFFFFF;
+  -webkit-font-smoothing: antialiased;
   transition: all 0.15s;
   user-select: none;
+  line-height: 1;
 }
-.cinema-chip:hover { background: #111827; color: #FFFFFF; }
-.cinema-chip:hover .free-tag { background: #E5E7EB; color: #111827; }
-/* 해제 상태: 연회색 배경, 흐린 글씨, 취소선 */
+.cinema-chip:hover { background: #374151; border-color: #374151; }
+/* 해제: 흰 배경, 회색 테두리, 진한 회색 글씨 */
 .cinema-chip.inactive {
-  background: #F3F4F6;
+  background: #F9FAFB;
   border-color: #D1D5DB;
-  color: #9CA3AF;
+  color: #6B7280;
   font-weight: 500;
-  text-decoration: line-through;
 }
 .cinema-chip.inactive:hover {
-  background: #E5E7EB;
-  border-color: #6B7280;
-  color: #6B7280;
+  border-color: #111827;
+  color: #111827;
+  background: #F3F4F6;
 }
-/* 무료 태그 */
+/* 무료태그: 밝은 회색 배경 검정 글씨 (선택시), 더 연하게 (해제시) */
 .free-tag {
   display: inline-block;
   background: #E5E7EB;
-  color: #374151;
+  color: #111827;
   font-size: 9px;
   font-weight: 800;
   padding: 1px 5px;
   border-radius: 3px;
+  vertical-align: middle;
   line-height: 1.5;
-  text-decoration: none;
 }
 .cinema-chip.inactive .free-tag {
-  background: #E5E7EB;
+  background: #F3F4F6;
   color: #9CA3AF;
-  text-decoration: none;
 }
 .cinema-chip input { display: none; }
 
@@ -326,19 +322,8 @@ th {
   user-select: none;
 }
 th:hover { color: var(--accent); }
-th[data-sort] { position: relative; }
-th.sort-asc  { background: #F0FDF4; color: #15803D; }
-th.sort-asc::after  { content: " ↑"; font-size: 10px; }
-th.sort-desc { background: #FFF7ED; color: #C2410C; }
-th.sort-desc::after { content: " ↓"; font-size: 10px; }
-.sort-reset-th { padding: 0 8px; }
-.sort-reset-btn {
-  font-size: 10px; font-family: inherit; font-weight: 600;
-  padding: 3px 7px; border-radius: 4px; cursor: pointer;
-  background: var(--surface2); border: 1px solid var(--border2);
-  color: var(--text-muted); white-space: nowrap;
-}
-.sort-reset-btn:hover { background: #111827; color: #fff; border-color: #111827; }
+th.sort-asc::after { content: " ↑"; color: var(--accent); }
+th.sort-desc::after { content: " ↓"; color: var(--accent); }
 td {
   padding: 11px 16px;
   border-bottom: 1px solid var(--border);
@@ -370,13 +355,12 @@ tr:hover td { background: var(--accent-light); }
 .dow {
   display: inline-block;
   font-size: 10px; font-weight: 700;
-  background: #FFFFFF; color: #111827;
-  border: 1px solid #D1D5DB;
+  background: #374151; color: #fff;
   padding: 1px 5px; border-radius: 3px;
   vertical-align: middle;
 }
-.dow.sat { background: #111827; color: #fff; border-color: #111827; }
-.dow.sun { background: #111827; color: #fff; border-color: #111827; }
+.dow.sat { background: #2563EB; }
+.dow.sun { background: #EF4444; }
 /* 시간 컬러 박스 */
 .time-box {
   display: inline-block;
@@ -386,7 +370,6 @@ tr:hover td { background: var(--accent-light); }
 }
 .time-box.t-start { background: #FEE2E2; color: #DC2626; }
 .time-box.t-end   { background: #DBEAFE; color: #1D4ED8; }
-.time-tilde { font-size: 11px; color: var(--text-sub); margin: 0 3px; vertical-align: middle; }
 .runtime-badge {
   display: inline-block;
   flex-shrink: 0;
@@ -408,15 +391,6 @@ tr:hover td { background: var(--accent-light); }
   font-weight: 400;
 }
 .movie-title { font-weight: 600; color: var(--text); }
-.movie-link {
-  font-weight: 600;
-  color: var(--text);
-  text-decoration: none;
-  border-bottom: 1.5px solid #336600;
-}
-.movie-link:hover {
-  color: #336600;
-}
 .program-text { color: var(--text); font-size: 12px; font-weight: 400; }
 
 /* ── 카드 뷰 ── */
@@ -518,8 +492,8 @@ tr:hover td { background: var(--accent-light); }
   font-size: 11px;
   font-weight: 700;
 }
-.date-group-header .dow.sat { background: #111827; color: #fff; border-color: #111827; }
-.date-group-header .dow.sun { background: #111827; color: #fff; border-color: #111827; }
+.date-group-header .dow.sat { background: var(--sat); }
+.date-group-header .dow.sun { background: var(--sun); }
 
 /* ── 빈 상태 ── */
 .empty {
@@ -723,10 +697,10 @@ tr:hover td { background: var(--accent-light); }
   <div class="result-count" id="resultCount"></div>
   <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
     <div class="view-toggle">
-      <button class="view-btn active" onclick="setView('table')" id="btn-table">테이블</button>
-      <button class="view-btn" onclick="setView('cards')" id="btn-cards">카드</button>
-      <button class="view-btn" onclick="setView('cinema')" id="btn-cinema">극장별</button>
-      <button class="view-btn" onclick="setView('date')" id="btn-date">날짜별</button>
+      <button class="view-btn active" onclick="setView('table')" id="btn-table">☰ 테이블</button>
+      <button class="view-btn" onclick="setView('cards')" id="btn-cards">⊞ 카드</button>
+      <button class="view-btn" onclick="setView('cinema')" id="btn-cinema">🎬 극장별</button>
+      <button class="view-btn" onclick="setView('date')" id="btn-date">📅 날짜별</button>
     </div>
   </div>
 </div>
@@ -839,20 +813,12 @@ function setDateRange(type) {
     const t = new Date(today); t.setDate(t.getDate()+6);
     from = fmt(today); to = fmt(t);
   } else if (type === 'weekend') {
-    const day = today.getDay(); // 0=일, 6=토
-    if (day === 0) {
-      // 일요일 → 당일만
-      from = to = fmt(today);
-    } else if (day === 6) {
-      // 토요일 → 토+일
-      const sun = new Date(today); sun.setDate(today.getDate() + 1);
-      from = fmt(today); to = fmt(sun);
-    } else {
-      // 평일 → 이번 주 토+일
-      const sat = new Date(today); sat.setDate(today.getDate() + (6 - day));
-      const sun = new Date(sat); sun.setDate(sat.getDate() + 1);
-      from = fmt(sat); to = fmt(sun);
-    }
+    const day = today.getDay(); // 0=일,6=토
+    const sat = new Date(today);
+    const daysToSat = day === 0 ? 6 : (6 - day);
+    sat.setDate(today.getDate() + daysToSat);
+    const sun = new Date(sat); sun.setDate(sat.getDate()+1);
+    from = fmt(sat); to = fmt(sun);
   }
 
   document.getElementById("dateFrom").value = from;
@@ -972,14 +938,13 @@ function renderTable() {
   <div class="table-wrap">
   <table>
     <thead><tr>
-      <th data-sort="cinema" onclick="sort('cinema')">극장</th>
-      <th data-sort="start_dt" onclick="sort('start_dt')">날짜</th>
-      <th data-sort="start_dt" onclick="sort('start_dt')">시작시각 ~ 종료시각</th>
-      <th data-sort="movie" onclick="sort('movie')">영화명</th>
-      <th data-sort="runtime" onclick="sort('runtime')">상영시간(분)</th>
-      <th data-sort="show_type" onclick="sort('show_type')">상영유형</th>
-      <th data-sort="program" class="col-program" onclick="sort('program')">프로그램</th>
-      <th class="sort-reset-th"><button class="sort-reset-btn" onclick="resetSort()">정렬 초기화</button></th>
+      <th onclick="sort('cinema')">극장</th>
+      <th onclick="sort('start_dt')">날짜</th>
+      <th onclick="sort('start_dt')">시작시각<br><span style="font-weight:600;font-size:11px">종료시각</span></th>
+      <th onclick="sort('movie')">영화명</th>
+      <th onclick="sort('runtime')">상영시간(분)</th>
+      <th onclick="sort('show_type')">상영유형</th>
+      <th class="col-program" onclick="sort('program')">프로그램</th>
     </tr></thead>
     <tbody>
     ${sorted.map(r => {
@@ -993,12 +958,11 @@ function renderTable() {
         </td>
         <td class="date-cell">${renderDate(date, dow, dowIdx)}</td>
         <td class="time-cell">
-          ${renderTimeBox(time, "t-start")}${endTime ? `<span class="time-tilde">~</span>${renderTimeBox(endTime, "t-end")}` : ""}
+          ${renderTimeBox(time, "t-start")}
+          ${endTime ? renderTimeBox(endTime, "t-end") : ""}
         </td>
         <td>
-          ${r.movie_url
-            ? `<a class="movie-link" href="${r.movie_url}" target="_blank" rel="noopener">${esc(r.movie)}</a>`
-            : `<span class="movie-title">${esc(r.movie)}</span>`}
+          <div class="movie-title" data-movie="${esc(r.movie)}" style="cursor:pointer" title="영화 정보 (준비 중)">${esc(r.movie)}</div>
         </td>
         <td>${r.runtime ? `<span class="runtime-badge">${r.runtime}분</span>` : ""}</td>
         <td>${r.show_type ? `<span class="show-type-tag">${esc(r.show_type)}</span>` : ""}</td>
@@ -1008,7 +972,6 @@ function renderTable() {
     </tbody>
   </table></div>`;
   document.getElementById("content").innerHTML = html;
-  updateSortIndicators();
 }
 
 // ─── 카드 뷰 ───
@@ -1020,9 +983,7 @@ function renderCards() {
     const [, endTime] = splitDt(r.end_dt);
     const color = cinemaColors[r.cinema];
     return `<div class="card">
-      ${r.movie_url
-        ? `<a class="movie-link card-title" href="${r.movie_url}" target="_blank" rel="noopener">${esc(r.movie)}</a>`
-        : `<div class="card-title">${esc(r.movie)}</div>`}
+      <div class="card-title">${esc(r.movie)}</div>
       <div class="card-time">
         <span class="card-date">${date}</span> ${renderDate("",dow,dowIdx).replace('<span class="mmdd"></span> ','')}
         ${renderTimeBox(time,"t-start")}
@@ -1077,9 +1038,7 @@ function renderCinemaGroup() {
             const [date,time] = splitDt(r.start_dt);
             return `<tr>
               <td class="time-cell">${date} <span class="time-start">${time}</span></td>
-              <td>${r.movie_url
-                ? `<a class="movie-link" href="${r.movie_url}" target="_blank" rel="noopener">${esc(r.movie)}</a>`
-                : `<span class="movie-title">${esc(r.movie)}</span>`}</td>
+              <td class="movie-title">${esc(r.movie)}</td>
               <td>${r.runtime ? `<span class="runtime-badge">${r.runtime}분</span>` : ""}</td>
               <td class="col-screen" style="font-size:12px;color:var(--text-muted)">${esc(r.screen||"")}</td>
               <td>${r.show_type ? `<span class="show-type-tag">${esc(r.show_type)}</span>` : ""}</td>
@@ -1117,7 +1076,7 @@ function renderDateGroup() {
         <div class="table-wrap">
         <table>
           <thead><tr>
-            <th>극장</th><th>시작시각 ~ 종료시각</th><th>영화명</th>
+            <th>극장</th><th>시작시각<br><span style="font-weight:600;font-size:11px">종료시각</span></th><th>영화명</th>
             <th>상영시간(분)</th><th class="col-screen">상영관</th><th>상영유형</th>
           </tr></thead>
           <tbody>
@@ -1128,10 +1087,10 @@ function renderDateGroup() {
             return `<tr>
               <td><span class="cinema-badge ${color === 'free' ? 'badge-free' : 'badge-paid'}">${r.cinema}</span>
               ${r.screen ? `<span class="screen-tag">${esc(r.screen)}</span>` : ""}</td>
-              <td class="time-cell">${renderTimeBox(time,"t-start")}${endTime ? `<span class="time-tilde">~</span>${renderTimeBox(endTime,"t-end")}` : ""}</td>
-              <td>${r.movie_url
-                ? `<a class="movie-link" href="${r.movie_url}" target="_blank" rel="noopener">${esc(r.movie)}</a>`
-                : `<span class="movie-title">${esc(r.movie)}</span>`}</td>
+              <td class="time-cell">${renderTimeBox(time,"t-start")}<br>${endTime ? renderTimeBox(endTime,"t-end") : ""}</td>
+              <td>
+                <div class="movie-title">${esc(r.movie)}</div>
+              </td>
               <td>${r.runtime ? `<span class="runtime-badge">${r.runtime}분</span>` : ""}</td>
               <td class="col-screen">${esc(r.screen||"")}</td>
               <td>${r.show_type ? `<span class="show-type-tag">${esc(r.show_type)}</span>` : ""}</td>
@@ -1161,20 +1120,6 @@ function sort(col) {
   if (sortCol === col) sortDir *= -1;
   else { sortCol = col; sortDir = 1; }
   renderView();
-  updateSortIndicators();
-}
-function resetSort() {
-  sortCol = "start_dt"; sortDir = 1;
-  renderView();
-  updateSortIndicators();
-}
-function updateSortIndicators() {
-  document.querySelectorAll("th[data-sort]").forEach(th => {
-    th.classList.remove("sort-asc","sort-desc");
-    if (th.dataset.sort === sortCol) {
-      th.classList.add(sortDir === 1 ? "sort-asc" : "sort-desc");
-    }
-  });
 }
 
 // ─── 유틸 ───
