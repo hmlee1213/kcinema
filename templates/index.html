@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>서울 독립극장 시간표</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&family=Playfair+Display:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
 :root {
   --bg: #F7F8FA;
@@ -61,7 +61,7 @@ header {
   gap: 16px;
 }
 .logo {
-  font-family: 'DM Mono', monospace;
+  font-family: 'Playfair Display', Georgia, serif;
   font-size: 13px;
   font-weight: 500;
   color: var(--accent);
@@ -143,48 +143,51 @@ select { width: 160px; }
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  background: #000000;
-  border: 2px solid #000000;
+  background: #111827;
+  border: 2px solid #111827;
   border-radius: 7px;
   padding: 6px 13px;
   cursor: pointer;
   font-size: 13px;
   font-weight: 700;
-  color: #FFFFFF;
-  transition: all 0.12s;
+  color: #fff;
+  transition: all 0.15s;
   user-select: none;
   line-height: 1;
 }
-.cinema-chip:hover { opacity: 0.75; }
+.cinema-chip:hover { opacity: 0.8; }
+/* 일반 해제: 흰 배경, 회색 테두리, 회색 글씨 */
 .cinema-chip.inactive {
-  background: var(--surface2);
-  border-color: var(--border2);
-  color: var(--text-sub);
+  background: #fff;
+  border-color: #D1D5DB;
+  color: #9CA3AF;
   font-weight: 500;
 }
 .cinema-chip.inactive:hover {
-  border-color: #484c52;
-  color: #484c52;
-  background: var(--accent-light);
-}
-.cinema-chip.free {
-  background: #fff;
-  border: 2px solid #111827;
-  color: #111827;
-}
-.cinema-chip.free.inactive {
-  background: var(--surface2);
-  border-color: var(--border2);
-  color: var(--text-sub);
-}
-.cinema-chip.free.inactive:hover {
   border-color: #111827;
   color: #111827;
-  background: var(--accent-light);
+}
+/* 무료 선택: 보라 배경 흰 글씨 */
+.cinema-chip.free {
+  background: #7C3AED;
+  border-color: #7C3AED;
+  color: #fff;
+}
+.cinema-chip.free:hover { opacity: 0.8; }
+/* 무료 해제: 흰 배경, 연보라 테두리, 연보라 글씨 */
+.cinema-chip.free.inactive {
+  background: #fff;
+  border-color: #DDD6FE;
+  color: #C4B5FD;
+  font-weight: 500;
+}
+.cinema-chip.free.inactive:hover {
+  border-color: #7C3AED;
+  color: #7C3AED;
 }
 .free-tag {
   display: inline-block;
-  background: #111827;
+  background: rgba(255,255,255,0.25);
   color: #fff;
   font-size: 9px;
   font-weight: 700;
@@ -193,8 +196,8 @@ select { width: 160px; }
   vertical-align: middle;
 }
 .cinema-chip.inactive .free-tag {
-  background: #E5E7EB;
-  color: #6B7280;
+  background: #EDE9FE;
+  color: #7C3AED;
 }
 .cinema-chip input { display: none; }
 
@@ -355,7 +358,7 @@ tr:hover td { background: var(--accent-light); }
   border: 1.5px solid #111827;
 }
 .time-cell {
-  font-family: 'DM Mono', monospace;
+  font-family: 'Playfair Display', Georgia, serif;
   font-size: 13px;
   white-space: nowrap;
 }
@@ -410,12 +413,41 @@ tr:hover td { background: var(--accent-light); }
 .card-title { font-weight: 700; font-size: 14px; line-height: 1.4; flex: 1; color: var(--text); }
 .card-meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .card-time {
-  font-family: 'DM Mono', monospace;
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--accent);
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
-.card-time span { font-size: 13px; color: var(--text-muted); font-weight: 400; }
+.card-date {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  padding: 3px 8px;
+  border-radius: 5px;
+  white-space: nowrap;
+}
+.card-times {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.card-time-start {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--time-start);
+  line-height: 1.2;
+}
+.card-time-end {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--time-start);
+  opacity: 0.55;
+  line-height: 1.2;
+}
 
 /* ── 극장별 그룹 ── */
 .cinema-group { margin-bottom: 24px; }
@@ -448,7 +480,7 @@ tr:hover td { background: var(--accent-light); }
   font-weight: 700;
   font-size: 13px;
   color: var(--text);
-  font-family: 'DM Mono', monospace;
+  font-family: 'Playfair Display', Georgia, serif;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -721,12 +753,15 @@ function toggleChip(e, el) {
   cb.checked = el.classList.contains("inactive") ? false : true;
 }
 
-function initDates() {
-  const today = new Date();
-  const end = new Date();
-  end.setDate(end.getDate() + 13);
-  document.getElementById("dateFrom").value = fmt(today);
-  document.getElementById("dateTo").value = fmt(end);
+async function initDates() {
+  try {
+    const d = await fetch("/api/stats").then(r => r.json());
+    document.getElementById("dateFrom").value = d.date_min || fmt(new Date());
+    document.getElementById("dateTo").value   = d.date_max || fmt(new Date());
+  } catch {
+    document.getElementById("dateFrom").value = fmt(new Date());
+    document.getElementById("dateTo").value   = fmt(new Date());
+  }
 }
 
 function fmt(d) {
@@ -777,7 +812,7 @@ function resetFilters() {
   document.getElementById("movieSearch").value = "";
   document.getElementById("timeFrom").value = "00:00";
   document.getElementById("timeTo").value = "23:59";
-  initDates();
+  await initDates();
   document.querySelectorAll(".cinema-chip").forEach(el => {
     el.classList.remove("inactive");
     el.querySelector("input").checked = true;
@@ -842,9 +877,9 @@ function renderTable() {
     <thead><tr>
       <th onclick="sort('cinema')">극장</th>
       <th onclick="sort('start_dt')">날짜</th>
-      <th onclick="sort('start_dt')">시간</th>
-      <th onclick="sort('movie')">영화 / 상영관</th>
-      <th onclick="sort('runtime')">런타임</th>
+      <th onclick="sort('start_dt')">시작시간<br><span style="font-weight:400;color:var(--time-end);font-size:10px">종료시간</span></th>
+      <th onclick="sort('movie')">영화명</th>
+      <th onclick="sort('runtime')">상영시간(분)</th>
       <th onclick="sort('show_type')">상영유형</th>
       <th class="col-program" onclick="sort('program')">프로그램</th>
     </tr></thead>
@@ -864,7 +899,7 @@ function renderTable() {
           <div class="time-end">${endTime || ""}</div>
         </td>
         <td>
-          <div class="movie-title">${esc(r.movie)}</div>
+          <div class="movie-title" data-movie="${esc(r.movie)}" style="cursor:pointer" title="영화 정보 (준비 중)">${esc(r.movie)}</div>
         </td>
         <td>${r.runtime ? `<span class="runtime-badge">${r.runtime}분</span>` : ""}</td>
         <td>${r.show_type ? `<span class="show-type-tag">${esc(r.show_type)}</span>` : ""}</td>
@@ -887,16 +922,23 @@ function renderCards() {
     return `<div class="card">
       <div class="card-header">
         <div class="card-title">${esc(r.movie)}</div>
-        <span class="cinema-badge ${color === 'free' ? 'badge-free' : 'badge-paid'}" style="flex-shrink:0">${r.cinema}</span>
       </div>
-      <div class="card-time">${time} <span>→ ${endTime||"?"}</span></div>
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+        <span class="cinema-badge ${color === 'free' ? 'badge-free' : 'badge-paid'}">${r.cinema}</span>
+        ${r.screen ? `<span class="screen-tag">${esc(r.screen)}</span>` : ""}
+      </div>
+      <div class="card-time">
+        <span class="card-date">${date}</span>
+        <div class="card-times">
+          <span class="card-time-start">${time}</span>
+          ${endTime ? `<span class="card-time-end">${endTime}</span>` : ""}
+        </div>
+        ${r.runtime ? `<span class="runtime-badge" style="margin-left:auto">${r.runtime}분</span>` : ""}
+      </div>
       <div class="card-meta">
-        <span style="font-size:12px;color:var(--text-muted)">${date}</span>
-        ${r.runtime ? `<span class="runtime-badge">${r.runtime}분</span>` : ""}
         ${r.show_type ? `<span class="show-type-tag">${esc(r.show_type)}</span>` : ""}
+        ${r.program ? `<span class="program-text">${esc(r.program)}</span>` : ""}
       </div>
-      ${r.screen ? `<div style="font-size:12px;color:var(--text-muted)">${esc(r.screen)}</div>` : ""}
-      ${r.program ? `<div class="program-text">${esc(r.program)}</div>` : ""}
     </div>`;
   }).join("")}
   </div>`;
@@ -929,7 +971,7 @@ function renderCinemaGroup() {
         <div class="table-wrap">
         <table>
           <thead><tr>
-            <th>날짜/시간</th><th>영화</th><th>런타임</th>
+            <th>날짜/시작시간</th><th>영화명</th><th>상영시간(분)</th>
             <th class="col-screen">상영관</th><th>상영유형</th>
           </tr></thead>
           <tbody>
@@ -975,8 +1017,8 @@ function renderDateGroup() {
         <div class="table-wrap">
         <table>
           <thead><tr>
-            <th>극장</th><th>시간</th><th>영화</th>
-            <th>런타임</th><th class="col-screen">상영관</th><th>상영유형</th>
+            <th>극장</th><th>시작시간<br><span style="font-weight:400;color:var(--time-end);font-size:10px">종료시간</span></th><th>영화명</th>
+            <th>상영시간(분)</th><th class="col-screen">상영관</th><th>상영유형</th>
           </tr></thead>
           <tbody>
           ${rows.map(r => {
@@ -984,12 +1026,14 @@ function renderDateGroup() {
             const [,endTime] = splitDt(r.end_dt);
             const color = cinemaColors[r.cinema];
             return `<tr>
+              <td><span class="cinema-badge ${color === 'free' ? 'badge-free' : 'badge-paid'}">${r.cinema}</span>
+              ${r.screen ? `<span class="screen-tag">${esc(r.screen)}</span>` : ""}</td>
               <td class="time-cell"><span class="time-start">${time}</span><br><span class="time-end">${endTime||""}</span></td>
               <td>
                 <div class="movie-title">${esc(r.movie)}</div>
-                ${r.screen ? `<span class="screen-tag">${esc(r.screen)}</span>` : ""}
               </td>
               <td>${r.runtime ? `<span class="runtime-badge">${r.runtime}분</span>` : ""}</td>
+              <td class="col-screen">${esc(r.screen||"")}</td>
               <td>${r.show_type ? `<span class="show-type-tag">${esc(r.show_type)}</span>` : ""}</td>
             </tr>`;
           }).join("")}
@@ -1021,6 +1065,7 @@ function sort(col) {
 
 // ─── 유틸 ───
 const DOW_SHORT = ["일","월","화","수","목","금","토"];
+const DOW = DOW_SHORT;
 function splitDt(dt) {
   if (!dt) return ["",""];
   const date = dt.slice(0,10);
