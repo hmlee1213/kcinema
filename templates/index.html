@@ -883,7 +883,9 @@ async function initDates() {
 }
 
 function fmt(d) {
-  return d.toISOString().slice(0,10);
+  // UTC+9(KST) 기준으로 날짜 포맷
+  const kst = new Date(d.getTime() + 9 * 60 * 60 * 1000);
+  return kst.toISOString().slice(0, 10);
 }
 
 function setDateRange(type) {
