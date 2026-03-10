@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title id="pageTitle">극장 정보 — SEOUL INDIE CINEMA</title>
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Pretendard',sans-serif;background:#F7F8FA;color:#111827;line-height:1.6}
+a{text-decoration:none;color:inherit}
+header{background:#fff;border-bottom:1px solid #E2E5EB;padding:0 24px;position:sticky;top:0;z-index:100;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.header-inner{max-width:1100px;margin:0 auto;height:56px;display:flex;align-items:center;justify-content:space-between}
+.logo{font-size:13px;font-weight:500;color:#336600;letter-spacing:.04em}
+.back-btn{font-size:13px;color:#6B7280;padding:6px 14px;border:1.5px solid #D1D5DB;border-radius:7px;cursor:pointer;background:#fff;font-family:inherit;transition:all .15s}
+.back-btn:hover{border-color:#111827;color:#111827}
+.main{max-width:1100px;margin:0 auto;padding:32px 24px 80px}
+.cinema-header{background:#fff;border:1px solid #E2E5EB;border-radius:12px;padding:28px 32px;margin-bottom:20px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.cinema-name{font-size:26px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:10px}
+.free-badge{display:inline-block;background:#D1FAE5;color:#065F46;font-size:11px;font-weight:700;padding:3px 9px;border-radius:4px}
+.cinema-meta{display:flex;flex-wrap:wrap;gap:16px;font-size:13px;color:#6B7280}
+.cinema-meta a{color:#336600;border-bottom:1px solid #33660055}
+.cinema-meta a:hover{color:#2a5200}
+.cinema-desc{margin-top:16px;font-size:14px;color:#374151;line-height:1.8;white-space:pre-line}
+.section{background:#fff;border:1px solid #E2E5EB;border-radius:12px;padding:24px 28px;margin-bottom:20px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.section-title{font-size:14px;font-weight:700;margin-bottom:16px;padding-bottom:8px;border-bottom:2px solid #111827;display:inline-block;letter-spacing:.02em}
+.movie-chips{display:flex;flex-wrap:wrap;gap:6px}
+.movie-chip{display:inline-block;background:#F1F5F9;color:#111827;font-size:13px;font-weight:600;padding:5px 12px;border-radius:6px;border:1px solid #E2E5EB;transition:all .12s}
+.movie-chip:hover{background:#111827;color:#fff;border-color:#111827}
+.movie-chip.linked{border-bottom:2px solid #336600}
+table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px}
+thead{background:#F8FAFC}
+th{padding:10px 14px;text-align:left;font-weight:700;font-size:11px;letter-spacing:.04em;color:#6B7280;border-bottom:1.5px solid #E2E5EB;white-space:nowrap}
+td{padding:10px 14px;border-bottom:1px solid #F0F2F5;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#FAFAFA}
+.time-box{display:inline-block;font-size:12px;font-weight:700;padding:2px 7px;border-radius:4px;white-space:nowrap}
+.t-start{background:#FEE2E2;color:#DC2626}
+.t-end{background:#DBEAFE;color:#1D4ED8}
+.t-dash{font-size:13px;font-weight:700;margin:0 3px;color:#374151}
+.screen-tag{background:#E5E7EB;color:#111827;font-size:12px;font-weight:600;padding:2px 8px;border-radius:4px}
+.dow{display:inline-block;font-size:10px;font-weight:700;background:#111827;color:#fff;padding:1px 5px;border-radius:3px;vertical-align:middle;margin-left:3px}
+.dow.weekend{background:#990000}
+.movie-link{color:#111827;border-bottom:1.5px solid #336600}
+.movie-link:hover{color:#336600}
+.runtime-badge{background:#E5E7EB;color:#111827;font-size:12px;font-weight:600;padding:2px 8px;border-radius:4px}
+.empty{text-align:center;padding:40px;color:#9CA3AF;font-size:14px}
+.loading{text-align:center;padding:60px;color:#9CA3AF}
+.spinner{display:inline-block;width:24px;height:24px;border:3px solid #E5E7EB;border-top-color:#336600;border-radius:50%;animation:spin .8s linear infinite;margin-bottom:12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media(max-width:768px){.main{padding:16px 12px 60px}.cinema-header{padding:20px 16px}.section{padding:18px 16px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="header-inner">
+    <a href="/" class="logo">SEOUL // INDIE CINEMA</a>
+    <button class="back-btn" onclick="history.length>1?history.back():location.href='/'">← 목록으로</button>
+  </div>
+</header>
+
+<div class="main">
+  <div id="cinemaHeader" class="cinema-header">
+    <div class="loading"><div class="spinner"></div><br>불러오는 중…</div>
+  </div>
+  <div class="section">
+    <div class="section-title">현재 상영 영화</div>
+    <div id="movieChips" class="movie-chips"><div class="empty">불러오는 중…</div></div>
+  </div>
+  <div class="section">
+    <div class="section-title">상영 일정</div>
+    <div id="scheduleArea"><div class="empty">불러오는 중…</div></div>
+  </div>
+</div>
+
+<script>
+const DOW = ["일","월","화","수","목","금","토"];
+
+function getCinemaName() {
+  return decodeURIComponent(location.pathname.replace("/cinema/",""));
+}
+
+function fmtDt(dt) {
+  if (!dt) return ["","","",""];
+  const d = new Date(dt.slice(0,10) + "T00:00:00");
+  return [dt.slice(5,10).replace("-","/"), dt.slice(11,16), DOW[d.getDay()], d.getDay()];
+}
+
+function dowTag(dow, idx) {
+  return `<span class="dow${(idx===0||idx===6)?' weekend':''}">${dow}</span>`;
+}
+
+function esc(s) {
+  return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+async function load() {
+  const name = getCinemaName();
+  if (!name) return;
+  document.title = name + " — SEOUL INDIE CINEMA";
+
+  try {
+    const res = await fetch(`/api/cinema/${encodeURIComponent(name)}`);
+    const data = await res.json();
+    const c = data.cinema;
+    const screenings = data.screenings || [];
+
+    // 헤더
+    const hasInfo = c.address || c.url || c.description;
+    document.getElementById("cinemaHeader").innerHTML = `
+      <div class="cinema-name">
+        ${esc(c.name)}
+        ${c.is_free ? '<span class="free-badge">무료 상영</span>' : ''}
+      </div>
+      <div class="cinema-meta">
+        ${c.address ? `<span>📍 ${esc(c.address)}</span>` : ''}
+        ${c.phone   ? `<span>📞 ${esc(c.phone)}</span>` : ''}
+        ${c.url     ? `<a href="${esc(c.url)}" target="_blank">🔗 홈페이지</a>` : ''}
+      </div>
+      ${c.description ? `<div class="cinema-desc">${esc(c.description)}</div>` : ''}
+      ${!hasInfo ? '<div style="color:#9CA3AF;font-size:13px;margin-top:8px">극장 정보가 아직 등록되지 않았습니다.</div>' : ''}
+    `;
+
+    // 영화 칩 (중복 제거)
+    const seen = new Set();
+    const uniq = screenings.filter(s => !seen.has(s.movie) && seen.add(s.movie));
+    document.getElementById("movieChips").innerHTML = uniq.length
+      ? uniq.map(s => s.movie_url
+          ? `<a class="movie-chip linked" href="${esc(s.movie_url)}" target="_blank">${esc(s.movie)}</a>`
+          : `<span class="movie-chip">${esc(s.movie)}</span>`
+        ).join("")
+      : '<div class="empty">현재 상영 중인 영화가 없습니다.</div>';
+
+    // 일정 테이블
+    if (screenings.length) {
+      const rows = screenings.map(s => {
+        const [mmdd, t, dow, dowIdx] = fmtDt(s.start_dt);
+        const [, te] = fmtDt(s.end_dt);
+        return `<tr>
+          <td style="white-space:nowrap">${mmdd}${dowTag(dow,dowIdx)}</td>
+          <td style="white-space:nowrap">
+            <span class="time-box t-start">${t}</span>
+            ${te ? `<span class="t-dash">–</span><span class="time-box t-end">${te}</span>` : ""}
+          </td>
+          <td>${s.movie_url
+            ? `<a class="movie-link" href="${esc(s.movie_url)}" target="_blank">${esc(s.movie)}</a>`
+            : esc(s.movie)}</td>
+          <td>${s.screen ? `<span class="screen-tag">${esc(s.screen)}</span>` : ""}</td>
+          <td>${s.runtime ? `<span class="runtime-badge">${s.runtime}분</span>` : ""}</td>
+          <td style="font-size:12px;color:#6B7280">${esc(s.show_type||"")}</td>
+        </tr>`;
+      }).join("");
+      document.getElementById("scheduleArea").innerHTML = `
+        <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>날짜</th><th>시작 – 종료</th><th>영화명</th><th>상영관</th><th>상영시간</th><th>상영유형</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table></div>`;
+    } else {
+      document.getElementById("scheduleArea").innerHTML = '<div class="empty">상영 일정이 없습니다.</div>';
+    }
+  } catch(e) {
+    document.getElementById("cinemaHeader").innerHTML = '<div class="empty">정보를 불러올 수 없습니다.</div>';
+  }
+}
+
+load();
+</script>
+</body>
+</html>
