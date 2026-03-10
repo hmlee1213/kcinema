@@ -341,60 +341,12 @@ tr:hover td{background:#FAFAF8;}
         <div>
           <div class="filter-label">시간대</div>
           <div style="display:flex;align-items:center;gap:6px;">
-           <select class="filter-input" id="timeFrom" style="width:88px;">
-<option value="00:00" selected>00시</option>
-<option value="01:00">01시</option>
-<option value="02:00">02시</option>
-<option value="03:00">03시</option>
-<option value="04:00">04시</option>
-<option value="05:00">05시</option>
-<option value="06:00">06시</option>
-<option value="07:00">07시</option>
-<option value="08:00">08시</option>
-<option value="09:00">09시</option>
-<option value="10:00">10시</option>
-<option value="11:00">11시</option>
-<option value="12:00">12시</option>
-<option value="13:00">13시</option>
-<option value="14:00">14시</option>
-<option value="15:00">15시</option>
-<option value="16:00">16시</option>
-<option value="17:00">17시</option>
-<option value="18:00">18시</option>
-<option value="19:00">19시</option>
-<option value="20:00">20시</option>
-<option value="21:00">21시</option>
-<option value="22:00">22시</option>
-<option value="23:00">23시</option>
-</select>
+            <select class="filter-input" id="timeFrom" style="width:88px;">
+              ${Array.from({length:24},(_,i)=>`<option value="${String(i).padStart(2,'0')}:00"${i===0?' selected':''}>${String(i).padStart(2,'0')}시</option>`).join('')}
             </select>
             <span style="color:var(--text-sub)">~</span>
             <select class="filter-input" id="timeTo" style="width:88px;">
-<option value="00:59">00시</option>
-<option value="01:59">01시</option>
-<option value="02:59">02시</option>
-<option value="03:59">03시</option>
-<option value="04:59">04시</option>
-<option value="05:59">05시</option>
-<option value="06:59">06시</option>
-<option value="07:59">07시</option>
-<option value="08:59">08시</option>
-<option value="09:59">09시</option>
-<option value="10:59">10시</option>
-<option value="11:59">11시</option>
-<option value="12:59">12시</option>
-<option value="13:59">13시</option>
-<option value="14:59">14시</option>
-<option value="15:59">15시</option>
-<option value="16:59">16시</option>
-<option value="17:59">17시</option>
-<option value="18:59">18시</option>
-<option value="19:59">19시</option>
-<option value="20:59">20시</option>
-<option value="21:59">21시</option>
-<option value="22:59">22시</option>
-<option value="23:59" selected>23시</option>
-</select>
+              ${Array.from({length:24},(_,i)=>`<option value="${String(i).padStart(2,'0')}:59"${i===23?' selected':''}>${String(i).padStart(2,'0')}시</option>`).join('')}
             </select>
           </div>
         </div>
