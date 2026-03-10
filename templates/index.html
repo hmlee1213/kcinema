@@ -135,9 +135,14 @@ select { width: 160px; }
 /* ── 극장 칩 ── */
 .cinema-checkboxes {
   display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 100%;
+}
+.chip-row {
+  display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  max-width: 900px;
 }
 .cinema-chip {
   display: inline-flex;
@@ -150,37 +155,39 @@ select { width: 160px; }
   cursor: pointer;
   font-size: 12px;
   font-weight: 700;
-  color: #fff;
+  color: #FFFFFF;
+  -webkit-font-smoothing: antialiased;
   transition: all 0.15s;
   user-select: none;
   line-height: 1;
 }
-.cinema-chip:hover { opacity: 0.75; }
-/* 해제: 흰 배경, 연회색 테두리, 연회색 글씨 */
+.cinema-chip:hover { background: #374151; border-color: #374151; }
+/* 해제: 흰 배경, 회색 테두리, 진한 회색 글씨 */
 .cinema-chip.inactive {
-  background: #fff;
+  background: #F9FAFB;
   border-color: #D1D5DB;
-  color: #9CA3AF;
+  color: #6B7280;
   font-weight: 500;
 }
 .cinema-chip.inactive:hover {
-  border-color: #374151;
-  color: #374151;
+  border-color: #111827;
+  color: #111827;
+  background: #F3F4F6;
 }
-/* 무료: 선택/해제 모양 동일, free-tag로만 구분 */
+/* 무료태그: 밝은 회색 배경 검정 글씨 (선택시), 더 연하게 (해제시) */
 .free-tag {
   display: inline-block;
-  background: #fff;
+  background: #E5E7EB;
   color: #111827;
   font-size: 9px;
   font-weight: 800;
-  padding: 1px 4px;
+  padding: 1px 5px;
   border-radius: 3px;
   vertical-align: middle;
-  line-height: 1.4;
+  line-height: 1.5;
 }
 .cinema-chip.inactive .free-tag {
-  background: #E5E7EB;
+  background: #F3F4F6;
   color: #9CA3AF;
 }
 .cinema-chip input { display: none; }
@@ -197,11 +204,11 @@ select { width: 160px; }
   transition: all 0.12s;
 }
 .btn-primary {
-  background: #7C3AED;
+  background: #336600;
   color: #fff;
-  box-shadow: 0 1px 3px rgba(124,58,237,0.3);
+  box-shadow: 0 1px 3px rgba(51,102,0,0.3);
 }
-.btn-primary:hover { background: #6D28D9; transform: translateY(-1px); box-shadow: 0 3px 8px rgba(124,58,237,0.4); }
+.btn-primary:hover { background: #2a5200; transform: translateY(-1px); box-shadow: 0 3px 8px rgba(51,102,0,0.35); }
 .btn-secondary {
   background: var(--surface);
   color: var(--text);
@@ -341,36 +348,50 @@ tr:hover td { background: var(--accent-light); }
   color: #111827;
   border: 1.5px solid #111827;
 }
-.time-cell {
-  font-size: 13px;
+.time-cell { white-space: nowrap; }
+.date-cell { white-space: nowrap; }
+/* 날짜 */
+.mmdd { font-size: 13px; font-weight: 600; color: var(--text); }
+.dow {
+  display: inline-block;
+  font-size: 10px; font-weight: 700;
+  background: #374151; color: #fff;
+  padding: 1px 5px; border-radius: 3px;
+  vertical-align: middle;
+}
+.dow.sat { background: #2563EB; }
+.dow.sun { background: #EF4444; }
+/* 시간 컬러 박스 */
+.time-box {
+  display: inline-block;
+  font-size: 12px; font-weight: 700;
+  padding: 2px 7px; border-radius: 4px;
   white-space: nowrap;
 }
-/* 날짜: 영화명 크기(14px)에 맞춤 */
-.date-cell { font-size: 14px; font-weight: 500; color: var(--text); }
-/* 시작/종료시간: 극장 뱃지(11px)에 맞춤 */
-.time-start { font-size: 13px; color: var(--time-start); font-weight: 600; }
-.time-end   { font-size: 13px; color: var(--time-end);   font-weight: 500; opacity: 0.7; }
+.time-box.t-start { background: #FEE2E2; color: #DC2626; }
+.time-box.t-end   { background: #DBEAFE; color: #1D4ED8; }
 .runtime-badge {
-  background: #374151;
+  display: inline-block;
+  flex-shrink: 0;
+  background: #E5E7EB;
   border: none;
-  padding: 2px 7px;
-  border-radius: 4px;
-  font-size: 11px;
-  color: #fff;
+  color: #111827;
+  font-size: 13px;
   font-weight: 600;
+  padding: 2px 9px;
+  border-radius: 4px;
   white-space: nowrap;
 }
 .show-type-tag {
-  background: var(--accent2-light);
-  color: var(--accent2);
-  border: 1px solid rgba(124,58,237,0.2);
-  padding: 2px 7px;
-  border-radius: 4px;
-  font-size: 11px;
-  font-weight: 600;
+  background: transparent;
+  color: var(--text);
+  border: none;
+  padding: 0;
+  font-size: 12px;
+  font-weight: 400;
 }
 .movie-title { font-weight: 600; color: var(--text); }
-.program-text { color: var(--text-muted); font-size: 12px; }
+.program-text { color: var(--text); font-size: 12px; font-weight: 400; }
 
 /* ── 카드 뷰 ── */
 .cards-grid {
@@ -542,8 +563,8 @@ tr:hover td { background: var(--accent-light); }
 /* ── 안내 문구 ── */
 .filter-note {
   font-size: 11px;
-  color: #7C3AED;
-  font-weight: 500;
+  color: #336600;
+  font-weight: 600;
   padding-left: 4px;
 }
 
@@ -560,9 +581,9 @@ tr:hover td { background: var(--accent-light); }
   background: #E5E7EB;
   border: none;
   color: #111827;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 600;
-  padding: 2px 7px;
+  padding: 2px 9px;
   border-radius: 4px;
   white-space: nowrap;
   margin-left: 5px;
@@ -590,97 +611,76 @@ tr:hover td { background: var(--accent-light); }
 <div class="filter-panel">
   <div class="filter-inner">
 
-    <!-- 1행: 기간 + 시간대 -->
-    <div class="filter-row">
+    <!-- 1행: 기간 + 바로가기 + 시간대 -->
+    <div class="filter-row" style="align-items:flex-end;flex-wrap:wrap;gap:12px;">
       <div class="filter-group">
         <label>기간</label>
-        <div style="display:flex;flex-direction:column;gap:6px;">
-          <div style="display:flex;gap:6px;align-items:center;">
-            <input type="date" id="dateFrom">
-            <span style="color:var(--text-muted);font-size:12px">~</span>
-            <input type="date" id="dateTo">
-          </div>
-          <div class="date-shortcuts">
-            <button class="date-shortcut" onclick="setDateRange('today')">오늘</button>
-            <button class="date-shortcut" onclick="setDateRange('tomorrow')">내일</button>
-            <button class="date-shortcut" onclick="setDateRange('week')">1주일</button>
-            <button class="date-shortcut" onclick="setDateRange('weekend')">이번 주말</button>
-          </div>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <input type="date" id="dateFrom">
+          <span style="color:var(--text-muted);font-size:12px">~</span>
+          <input type="date" id="dateTo">
         </div>
+      </div>
+      <div class="date-shortcuts" style="padding-bottom:1px;">
+        <button class="date-shortcut" onclick="setDateRange('today')">오늘</button>
+        <button class="date-shortcut" onclick="setDateRange('tomorrow')">내일</button>
+        <button class="date-shortcut" onclick="setDateRange('week')">1주일</button>
+        <button class="date-shortcut" onclick="setDateRange('weekend')">이번 주말</button>
       </div>
       <div class="filter-group">
         <label>시간대</label>
         <div style="display:flex;gap:6px;align-items:center;">
           <select id="timeFrom" style="width:90px">
             <option value="00:00" selected>00시</option>
-            <option value="01:00">01시</option>
-            <option value="02:00">02시</option>
-            <option value="03:00">03시</option>
-            <option value="04:00">04시</option>
-            <option value="05:00">05시</option>
-            <option value="06:00">06시</option>
-            <option value="07:00">07시</option>
-            <option value="08:00">08시</option>
-            <option value="09:00">09시</option>
-            <option value="10:00">10시</option>
-            <option value="11:00">11시</option>
-            <option value="12:00">12시</option>
-            <option value="13:00">13시</option>
-            <option value="14:00">14시</option>
-            <option value="15:00">15시</option>
-            <option value="16:00">16시</option>
-            <option value="17:00">17시</option>
-            <option value="18:00">18시</option>
-            <option value="19:00">19시</option>
-            <option value="20:00">20시</option>
-            <option value="21:00">21시</option>
-            <option value="22:00">22시</option>
+            <option value="01:00">01시</option><option value="02:00">02시</option>
+            <option value="03:00">03시</option><option value="04:00">04시</option>
+            <option value="05:00">05시</option><option value="06:00">06시</option>
+            <option value="07:00">07시</option><option value="08:00">08시</option>
+            <option value="09:00">09시</option><option value="10:00">10시</option>
+            <option value="11:00">11시</option><option value="12:00">12시</option>
+            <option value="13:00">13시</option><option value="14:00">14시</option>
+            <option value="15:00">15시</option><option value="16:00">16시</option>
+            <option value="17:00">17시</option><option value="18:00">18시</option>
+            <option value="19:00">19시</option><option value="20:00">20시</option>
+            <option value="21:00">21시</option><option value="22:00">22시</option>
             <option value="23:00">23시</option>
           </select>
           <span style="color:var(--text-muted);font-size:12px">~</span>
           <select id="timeTo" style="width:90px">
-            <option value="00:59">00시</option>
-            <option value="01:59">01시</option>
-            <option value="02:59">02시</option>
-            <option value="03:59">03시</option>
-            <option value="04:59">04시</option>
-            <option value="05:59">05시</option>
-            <option value="06:59">06시</option>
-            <option value="07:59">07시</option>
-            <option value="08:59">08시</option>
-            <option value="09:59">09시</option>
-            <option value="10:59">10시</option>
-            <option value="11:59">11시</option>
-            <option value="12:59">12시</option>
-            <option value="13:59">13시</option>
-            <option value="14:59">14시</option>
-            <option value="15:59">15시</option>
-            <option value="16:59">16시</option>
-            <option value="17:59">17시</option>
-            <option value="18:59">18시</option>
-            <option value="19:59">19시</option>
-            <option value="20:59">20시</option>
-            <option value="21:59">21시</option>
-            <option value="22:59">22시</option>
-            <option value="23:59" selected>23시</option>
+            <option value="00:59">00시</option><option value="01:59">01시</option>
+            <option value="02:59">02시</option><option value="03:59">03시</option>
+            <option value="04:59">04시</option><option value="05:59">05시</option>
+            <option value="06:59">06시</option><option value="07:59">07시</option>
+            <option value="08:59">08시</option><option value="09:59">09시</option>
+            <option value="10:59">10시</option><option value="11:59">11시</option>
+            <option value="12:59">12시</option><option value="13:59">13시</option>
+            <option value="14:59">14시</option><option value="15:59">15시</option>
+            <option value="16:59">16시</option><option value="17:59">17시</option>
+            <option value="18:59">18시</option><option value="19:59">19시</option>
+            <option value="20:59">20시</option><option value="21:59">21시</option>
+            <option value="22:59">22시</option><option value="23:59" selected>23시</option>
           </select>
         </div>
       </div>
     </div>
 
-    <!-- 2행: 영화 검색 + 극장 선택 -->
+    <!-- 2행: 영화 검색 (넓게) -->
     <div class="filter-row">
-      <div class="filter-group">
+      <div class="filter-group" style="flex:1;min-width:200px;max-width:500px;">
         <label>영화 검색</label>
-        <input type="text" id="movieSearch" placeholder="제목 입력…" oninput="debounceSearch()">
+        <input type="text" id="movieSearch" placeholder="제목 입력…" oninput="debounceSearch()" style="width:100%;">
       </div>
-      <div class="filter-group">
+    </div>
+
+    <!-- 3행: 극장 선택 -->
+    <div class="filter-row">
+      <div class="filter-group" style="width:100%;">
         <label>극장 선택</label>
         <div class="cinema-checkboxes" id="cinemaChips"></div>
       </div>
     </div>
 
-    <!-- 3행: 버튼 -->
+        <!-- 3행: 버튼 -->
     <div class="filter-row" style="align-items:center;">
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
         <button class="btn btn-primary" onclick="loadScreenings()">🔍 조회</button>
@@ -751,12 +751,24 @@ async function loadCinemas() {
     const cinemas = await r.json();
     const container = document.getElementById("cinemaChips");
     const FREE = ["서울영화센터", "한국영상자료원"];
-    container.innerHTML = cinemas.map(c => `
+
+    // 가나다순 정렬
+    const sorted = [...cinemas].sort((a, b) => a.localeCompare(b, 'ko'));
+
+    // 2줄로 균등 배분 (앞줄이 같거나 1개 많게)
+    const half = Math.ceil(sorted.length / 2);
+    const row1 = sorted.slice(0, half);
+    const row2 = sorted.slice(half);
+
+    const makeChip = c => `
       <label class="cinema-chip ${FREE.includes(c) ? 'free' : ''}" onclick="toggleChip(event,this)">
         <input type="checkbox" value="${c}" checked>
         ${c}${FREE.includes(c) ? ' <span class="free-tag">무료</span>' : ''}
-      </label>
-    `).join("");
+      </label>`;
+
+    container.innerHTML =
+      `<div class="chip-row">${row1.map(makeChip).join("")}</div>` +
+      `<div class="chip-row">${row2.map(makeChip).join("")}</div>`;
   } catch(e) {}
 }
 
@@ -928,7 +940,7 @@ function renderTable() {
     <thead><tr>
       <th onclick="sort('cinema')">극장</th>
       <th onclick="sort('start_dt')">날짜</th>
-      <th onclick="sort('start_dt')">시작시간<br><span style="font-weight:400;color:var(--time-end);font-size:10px">종료시간</span></th>
+      <th onclick="sort('start_dt')">시작시각<br><span style="font-weight:600;font-size:11px">종료시각</span></th>
       <th onclick="sort('movie')">영화명</th>
       <th onclick="sort('runtime')">상영시간(분)</th>
       <th onclick="sort('show_type')">상영유형</th>
@@ -936,7 +948,7 @@ function renderTable() {
     </tr></thead>
     <tbody>
     ${sorted.map(r => {
-      const [date, time] = splitDt(r.start_dt);
+      const [date, time, dow, dowIdx] = splitDt(r.start_dt);
       const [, endTime] = splitDt(r.end_dt);
       const color = cinemaColors[r.cinema];
       return `<tr>
@@ -944,10 +956,10 @@ function renderTable() {
           <span class="cinema-badge ${color === 'free' ? 'badge-free' : 'badge-paid'}">${r.cinema}</span>
           ${r.screen ? `<span class="screen-tag">${esc(r.screen)}</span>` : ""}
         </td>
-        <td class="date-cell">${date}</td>
+        <td class="date-cell">${renderDate(date, dow, dowIdx)}</td>
         <td class="time-cell">
-          <div class="time-start">${time}</div>
-          <div class="time-end">${endTime || ""}</div>
+          ${renderTimeBox(time, "t-start")}
+          ${endTime ? renderTimeBox(endTime, "t-end") : ""}
         </td>
         <td>
           <div class="movie-title" data-movie="${esc(r.movie)}" style="cursor:pointer" title="영화 정보 (준비 중)">${esc(r.movie)}</div>
@@ -967,15 +979,15 @@ function renderCards() {
   const cinemaColors = buildColorMap(allData);
   const html = `<div class="cards-grid">
   ${allData.map(r => {
-    const [date, time] = splitDt(r.start_dt);
+    const [date, time, dow, dowIdx] = splitDt(r.start_dt);
     const [, endTime] = splitDt(r.end_dt);
     const color = cinemaColors[r.cinema];
     return `<div class="card">
       <div class="card-title">${esc(r.movie)}</div>
       <div class="card-time">
-        <span class="card-date">${date}</span>
-        <span class="card-time-start">${time}</span>
-        ${endTime ? `<span class="card-time-sep">—</span><span class="card-time-end">${endTime}</span>` : ""}
+        <span class="card-date">${date}</span> ${renderDate("",dow,dowIdx).replace('<span class="mmdd"></span> ','')}
+        ${renderTimeBox(time,"t-start")}
+        ${endTime ? renderTimeBox(endTime,"t-end") : ""}
       </div>
       <div class="card-cinema">
         <span class="cinema-badge ${color === 'free' ? 'badge-free' : 'badge-paid'}">${r.cinema}</span>
@@ -1064,18 +1076,18 @@ function renderDateGroup() {
         <div class="table-wrap">
         <table>
           <thead><tr>
-            <th>극장</th><th>시작시간<br><span style="font-weight:400;color:var(--time-end);font-size:10px">종료시간</span></th><th>영화명</th>
+            <th>극장</th><th>시작시각<br><span style="font-weight:600;font-size:11px">종료시각</span></th><th>영화명</th>
             <th>상영시간(분)</th><th class="col-screen">상영관</th><th>상영유형</th>
           </tr></thead>
           <tbody>
           ${rows.map(r => {
-            const [,time] = splitDt(r.start_dt);
-            const [,endTime] = splitDt(r.end_dt);
+            const [,time,,] = splitDt(r.start_dt);
+            const [,endTime,,] = splitDt(r.end_dt);
             const color = cinemaColors[r.cinema];
             return `<tr>
               <td><span class="cinema-badge ${color === 'free' ? 'badge-free' : 'badge-paid'}">${r.cinema}</span>
               ${r.screen ? `<span class="screen-tag">${esc(r.screen)}</span>` : ""}</td>
-              <td class="time-cell"><span class="time-start">${time}</span><br><span class="time-end">${endTime||""}</span></td>
+              <td class="time-cell">${renderTimeBox(time,"t-start")}<br>${endTime ? renderTimeBox(endTime,"t-end") : ""}</td>
               <td>
                 <div class="movie-title">${esc(r.movie)}</div>
               </td>
@@ -1114,13 +1126,23 @@ function sort(col) {
 const DOW_SHORT = ["일","월","화","수","목","금","토"];
 const DOW = DOW_SHORT;
 function splitDt(dt) {
-  if (!dt) return ["",""];
+  if (!dt) return ["","","",""];
   const date = dt.slice(0,10);
   const time = dt.slice(11,16);
   const d = new Date(date + "T00:00:00");
   const mmdd = date.slice(5).replace("-","/");
   const dow = DOW_SHORT[d.getDay()];
-  return [mmdd + "(" + dow + ")", time];
+  const dowIdx = d.getDay();
+  // [mmdd, time, dow, dowIdx]
+  return [mmdd, time, dow, dowIdx];
+}
+function renderDate(mmdd, dow, dowIdx) {
+  const dowCls = dowIdx === 0 ? "dow sun" : dowIdx === 6 ? "dow sat" : "dow";
+  return `<span class="mmdd">${mmdd}</span> <span class="${dowCls}">${dow}</span>`;
+}
+function renderTimeBox(time, cls) {
+  if (!time) return "";
+  return `<span class="time-box ${cls}">${time}</span>`;
 }
 function esc(s) {
   return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
