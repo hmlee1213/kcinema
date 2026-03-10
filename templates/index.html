@@ -711,7 +711,7 @@ let debounceTimer = null;
 // 초기화
 async function init() {
   await loadCinemas();
-  initDates();
+  await initDates();
   await loadStats();
   await loadScreenings();
 }
@@ -723,6 +723,13 @@ async function loadStats() {
     document.getElementById("statCinemas").textContent = d.cinemas;
     document.getElementById("statTotal").textContent = d.total.toLocaleString();
     document.getElementById("statMovies").textContent = d.movies;
+    if (d.last_updated) {
+      const dt = new Date(d.last_updated);
+      const pad = n => String(n).padStart(2,"0");
+      const str = `${dt.getFullYear()}.${pad(dt.getMonth()+1)}.${pad(dt.getDate())} ${pad(dt.getHours())}:${pad(dt.getMinutes())} 기준`;
+      const el = document.getElementById("statUpdated");
+      if (el) el.textContent = str;
+    }
   } catch(e) {}
 }
 
