@@ -303,6 +303,9 @@ table {
 }
 thead {
   background: var(--surface2);
+  position: sticky;
+  top: 56px; /* JS가 동적으로 덮어씀 */
+  z-index: 10;
 }
 @media (max-width: 768px) {
 }
@@ -380,7 +383,7 @@ tr:hover td { background: var(--accent-light); }
 }
 .time-box.t-start { background: #FEE2E2; color: #DC2626; }
 .time-box.t-end   { background: #DBEAFE; color: #1D4ED8; }
-.time-tilde { font-size: 13px; font-weight: 700; color: var(--text); margin: 0 4px; vertical-align: middle; }
+.time-tilde { font-size: 11px; color: var(--text-sub); margin: 0 3px; vertical-align: middle; }
 .runtime-badge {
   display: inline-block;
   flex-shrink: 0;
@@ -836,14 +839,13 @@ function deselectAllCinemas() {
 }
 
 async function initDates() {
-  const today = fmt(new Date());
   try {
     const d = await fetch("/api/stats").then(r => r.json());
-    document.getElementById("dateFrom").value = today;
-    document.getElementById("dateTo").value   = d.date_max || today;
+    document.getElementById("dateFrom").value = d.date_min || fmt(new Date());
+    document.getElementById("dateTo").value   = d.date_max || fmt(new Date());
   } catch {
-    document.getElementById("dateFrom").value = today;
-    document.getElementById("dateTo").value   = today;
+    document.getElementById("dateFrom").value = fmt(new Date());
+    document.getElementById("dateTo").value   = fmt(new Date());
   }
 }
 
@@ -935,7 +937,7 @@ async function resetFilters() {
   document.getElementById("movieSearch").value = "";
   document.getElementById("timeFrom").value = "00:00";
   document.getElementById("timeTo").value = "23:59";
-  await initDates();  // 오늘~max로 리셋
+  await initDates();
   document.querySelectorAll(".cinema-chip").forEach(el => {
     el.classList.remove("inactive");
     el.querySelector("input").checked = true;
@@ -961,6 +963,14 @@ function setView(v) {
   renderView();
 }
 
+function updateTheadTop() {
+  const header = document.querySelector("header");
+  const top = header ? header.offsetHeight : 56;
+  document.querySelectorAll("thead").forEach(el => {
+    el.style.top = top + "px";
+  });
+}
+
 function renderView() {
   if (!allData.length) {
     document.getElementById("content").innerHTML = `
@@ -972,6 +982,7 @@ function renderView() {
   else if (currentView === "cards") renderCards();
   else if (currentView === "cinema") renderCinemaGroup();
   else if (currentView === "date") renderDateGroup();
+  setTimeout(updateTheadTop, 0);
 }
 
 // ─── 테이블 뷰 ───
@@ -1000,7 +1011,7 @@ function renderTable() {
     <thead><tr>
       <th data-sort="cinema" onclick="sort('cinema')">극장</th>
       <th data-sort="start_dt" onclick="sort('start_dt')">날짜</th>
-      <th data-sort="start_dt" onclick="sort('start_dt')">시작시각 &nbsp;–&nbsp; 종료시각</th>
+      <th data-sort="start_dt" onclick="sort('start_dt')">시작시각 ~ 종료시각</th>
       <th data-sort="movie" onclick="sort('movie')">영화명</th>
       <th data-sort="runtime" onclick="sort('runtime')">상영시간(분)</th>
       <th data-sort="show_type" onclick="sort('show_type')">상영유형</th>
@@ -1019,7 +1030,7 @@ function renderTable() {
         </td>
         <td class="date-cell">${renderDate(date, dow, dowIdx)}</td>
         <td class="time-cell">
-          ${renderTimeBox(time, "t-start")}${endTime ? `<span class="time-tilde">–</span>${renderTimeBox(endTime, "t-end")}` : ""}
+          ${renderTimeBox(time, "t-start")}${endTime ? `<span class="time-tilde">~</span>${renderTimeBox(endTime, "t-end")}` : ""}
         </td>
         <td>
           ${r.movie_url
@@ -1095,7 +1106,7 @@ function renderCinemaGroup() {
         <div class="table-wrap">
         <table>
           <thead><tr>
-            <th>날짜 / 시작시각</th><th>영화명</th><th>상영시간(분)</th>
+            <th>날짜/시작시간</th><th>영화명</th><th>상영시간(분)</th>
             <th class="col-screen">상영관</th><th>상영유형</th>
           </tr></thead>
           <tbody>
@@ -1143,7 +1154,7 @@ function renderDateGroup() {
         <div class="table-wrap">
         <table>
           <thead><tr>
-            <th>극장</th><th>시작시각 &nbsp;–&nbsp; 종료시각</th><th>영화명</th>
+            <th>극장</th><th>시작시각 ~ 종료시각</th><th>영화명</th>
             <th>상영시간(분)</th><th class="col-screen">상영관</th><th>상영유형</th>
           </tr></thead>
           <tbody>
@@ -1154,7 +1165,7 @@ function renderDateGroup() {
             return `<tr>
               <td><span class="cinema-badge ${color === 'free' ? 'badge-free' : 'badge-paid'}">${r.cinema}</span>
               ${r.screen ? `<span class="screen-tag">${esc(r.screen)}</span>` : ""}</td>
-              <td class="time-cell">${renderTimeBox(time,"t-start")}${endTime ? `<span class="time-tilde">–</span>${renderTimeBox(endTime,"t-end")}` : ""}</td>
+              <td class="time-cell">${renderTimeBox(time,"t-start")}${endTime ? `<span class="time-tilde">~</span>${renderTimeBox(endTime,"t-end")}` : ""}</td>
               <td>${r.movie_url
                 ? `<a class="movie-link" href="${r.movie_url}" target="_blank" rel="noopener">${esc(r.movie)}</a>`
                 : `<span class="movie-title">${esc(r.movie)}</span>`}</td>
