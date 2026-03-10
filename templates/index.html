@@ -291,20 +291,20 @@ select { width: 160px; }
 /* ── 테이블 ── */
 .table-wrap {
   overflow-x: auto;
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow);
   background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
 }
 table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   font-size: 13.5px;
 }
+thead tr th:first-child { border-radius: var(--radius) 0 0 0; }
+thead tr th:last-child  { border-radius: 0 var(--radius) 0 0; }
 thead {
   background: var(--surface2);
-}
-@media (max-width: 768px) {
 }
 th {
   padding: 11px 16px;
@@ -554,6 +554,33 @@ tr:hover td { background: var(--accent-light); }
 .refreshing { animation: pulse 1s ease-in-out infinite; }
 @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
 
+/* ── 맨 위로 버튼 ── */
+.scroll-top-btn {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: #111827;
+  color: #fff;
+  border: none;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s, transform 0.2s;
+  z-index: 200;
+  line-height: 1;
+}
+.scroll-top-btn.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+.scroll-top-btn:hover { background: #374151; transform: translateY(-2px); }
+
 /* ── 날짜 바로가기 ── */
 .date-shortcuts { display: flex; gap: 5px; flex-wrap: wrap; }
 .chip-ctrl-btn {
@@ -750,6 +777,8 @@ tr:hover td { background: var(--accent-light); }
   </div>
 </div>
 
+<button class="scroll-top-btn" id="scrollTopBtn" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="맨 위로">↑</button>
+
 <script>
 const API = "";  // same origin
 let allData = [];
@@ -757,6 +786,12 @@ let currentView = "table";
 let sortCol = "start_dt";
 let sortDir = 1;
 let debounceTimer = null;
+
+// 맨 위로 버튼 — 200px 이상 스크롤시 표시
+window.addEventListener("scroll", () => {
+  const btn = document.getElementById("scrollTopBtn");
+  if (btn) btn.classList.toggle("visible", window.scrollY > 200);
+});
 
 
 // 초기화
