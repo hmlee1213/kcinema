@@ -55,10 +55,12 @@ def _clear_attempts(ip):
     _login_attempts.pop(ip, None)
 
 CINEMA_ORDER = [
-    "KU시네마테크","KT&G상상마당시네마","서울아트시네마","한국영상자료원",
-    "라이카시네마","씨네큐브","더숲아트시네마","아트하우스모모",
-    "서울영화센터","아리랑시네센터","에무시네마","아트나인"
+    "KT&G상상마당시네마","KU시네마테크","더숲아트시네마",
+    "라이카시네마","서울아트시네마","씨네큐브",
+    "아리랑시네센터","아트나인","아트하우스모모","에무시네마",
+    "서울영화센터","한국영상자료원"
 ]
+FREE_CINEMAS = ["서울영화센터","한국영상자료원"]
 
 CINEMAS = [
     {"name":"KU시네마테크","source":"moviee","t_id":"121"},
@@ -936,15 +938,17 @@ async function loadRecommended(){
         </span>`;}).join("") || "—"}</td>
       <td style="font-size:12px;color:#6B7280;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.description||"—"}</td>
       <td style="font-size:12px;color:#9CA3AF;white-space:nowrap">${(r.created_at||"").slice(0,10)}</td>
-      <td><button class="btn btn-secondary" style="font-size:11px;padding:3px 10px;" onclick="editRecommended('${r.title.replace(/'/g,"\\'")}','${(r.awards||"").replace(/'/g,"\\'")}',\`${(r.description||"").replace(/`/g,"\\`")}\`)">수정</button></td>
+      <td><button class="btn btn-secondary" style="font-size:11px;padding:3px 10px;"
+        data-title="${r.title}" data-awards="${r.awards||''}" data-desc="${(r.description||'').replace(/"/g,'&quot;')}"
+        onclick="editRecommended(this)">수정</button></td>
       <td><button class="btn btn-danger" onclick="deleteRecommended(${r.id})">삭제</button></td>
     </tr>`).join("")}
   </tbody></table>`;
 }
-function editRecommended(title, awards, desc){
-  document.getElementById("rec-title").value = title;
-  document.getElementById("rec-awards").value = awards;
-  document.getElementById("rec-desc").value = desc;
+function editRecommended(btn){
+  document.getElementById("rec-title").value = btn.dataset.title;
+  document.getElementById("rec-awards").value = btn.dataset.awards;
+  document.getElementById("rec-desc").value = btn.dataset.desc;
   document.getElementById("rec-title").scrollIntoView({behavior:"smooth", block:"center"});
 }
 async function addRecommended(){
