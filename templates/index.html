@@ -882,13 +882,20 @@ function onMovieSearch(q){ movieSearchQ=q; renderMovieGrid(true); }
 
 function setMovieSort(btn, mode){
   const labels = {count:"상영횟수", title:"제목", runtime:"러닝타임"};
+  const defaultDir = {count:"desc", title:"asc", runtime:"desc"};
   if(movieSortMode === mode){
     movieSortDir = movieSortDir === "asc" ? "desc" : "asc";
   } else {
     movieSortMode = mode;
-    movieSortDir  = (mode === "title") ? "asc" : "desc";
+    movieSortDir = defaultDir[mode];
   }
-  document.querySelectorAll(".movie-sort-btn").forEach(b=>b.classList.remove("active"));
+  // 모든 버튼 원래 텍스트로 초기화
+  document.querySelectorAll(".movie-sort-btn").forEach(b=>{
+    const m = b.dataset.sort;
+    const d = defaultDir[m];
+    b.textContent = labels[m] + (d === "asc" ? " ↑" : " ↓");
+    b.classList.remove("active");
+  });
   btn.classList.add("active");
   btn.textContent = labels[mode] + (movieSortDir === "asc" ? " ↑" : " ↓");
   renderMovieGrid();
