@@ -8,10 +8,9 @@ from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
-if not DATABASE_URL:
-    print("❌ DATABASE_URL 환경변수가 없어요.")
-    print("   실행 방법: DATABASE_URL='postgresql://...' python upload_to_pg.py")
-    exit(1)
+DATABASE_URL = "postgresql://postgres:DlxSOXYfQtaaFLuzIlKJODgYWprljMKS@metro.proxy.rlwy.net:44454/railway"
+# postgres:// → postgresql:// 자동 변환
+DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
 # ── getdb.py 원본 코드 그대로 ──────────────────────────
 
@@ -74,8 +73,7 @@ def fetch_dtryx(cinema, start_date, days=14):
             rows.append({"cinema":cinema["name"],"movie":item.get("MovieNmNat"),
                          "start_dt":start_dt,"end_dt":end_dt,"runtime":runtime,
                          "screen":screen_name,"source":"dtryx",
-                         "show_type":show_type,"program":program,
-                         "movie_url":"","movie_cd":item.get("MovieCd","").strip()})
+                         "show_type":show_type,"program":program})
     return rows
 
 def fetch_moviee(cinema, start_date, days=14):
@@ -201,104 +199,6 @@ def fetch_kofa(cinema):
             })
     return rows
 
-# ── 포스터 수집 (dtryx 상세 페이지) ─────────────────
-def fetch_poster_from_dtryx(movie_cd):
-    """dtryx 영화 상세 페이지에서 포스터 URL, 줄거리, 감독 추출"""
-    if not movie_cd:
-        return {}
-    url = f"https://www.dtryx.com/movie/view.do?cgid={DTRYX_CGID}&MovieCd={movie_cd}"
-    headers = {"User-Agent": "Mozilla/5.0"}
-    try:
-        res = requests.get(url, headers=headers, timeout=10)
-        soup = BeautifulSoup(res.text, "html.parser")
-        # 포스터: img.dtryx.com URL을 가진 첫 번째 img
-        poster_url = ""
-        for img in soup.find_all("img"):
-            src = img.get("src","")
-            if "img.dtryx.com" in src and ".small." in src:
-                poster_url = src
-                break
-        # small 없으면 img.dtryx.com 아무거나
-        if not poster_url:
-            for img in soup.find_all("img"):
-                src = img.get("src","")
-                if "img.dtryx.com" in src:
-                    poster_url = src
-                    break
-        # 최후 fallback: og:image
-        if not poster_url:
-            og = soup.find("meta", property="og:image")
-            poster_url = og["content"] if og else ""
-        # 감독
-        director = ""
-        for dt in soup.select("dl dt, .movie-info dt"):
-            if "감독" in dt.get_text():
-                dd = dt.find_next_sibling("dd")
-                if dd:
-                    director = dd.get_text(strip=True)
-                    break
-        # 줄거리
-        synopsis = ""
-        for sel in [".movie-synopsis", ".synopsis", ".txt-synopsis", ".movie-info-txt"]:
-            el = soup.select_one(sel)
-            if el:
-                synopsis = el.get_text(strip=True)[:500]
-                break
-        return {"poster_url": poster_url, "director": director, "synopsis": synopsis}
-    except Exception as e:
-        print(f"  포스터 수집 실패 ({movie_cd}): {e}")
-        return {}
-
-def collect_posters(all_rows):
-    """all_rows에서 movie_cd 수집 → dtryx 상세 크롤링 → {title: {poster_url, director, synopsis}}"""
-    # movie_cd가 있는 것만, 제목별로 대표 movie_cd 추출
-    cd_map = {}  # movie_title → movie_cd
-    for r in all_rows:
-        cd = r.get("movie_cd","")
-        if cd and r["movie"] and r["movie"] not in cd_map:
-            cd_map[r["movie"]] = cd
-
-    result = {}
-    print(f"\n🎬 포스터 수집 시작: {len(cd_map)}편")
-    for title, cd in cd_map.items():
-        info = fetch_poster_from_dtryx(cd)
-        if info.get("poster_url"):
-            result[title] = info
-            print(f"  ✅ {title}: {info['poster_url'][:60]}…")
-        else:
-            print(f"  ⚠️  {title}: 포스터 없음")
-        time.sleep(0.3)  # 서버 부하 방지
-    return result
-
-def save_movies_to_pg(poster_data, conn):
-    """movies 테이블에 포스터 URL, 감독, 줄거리 upsert"""
-    if not poster_data:
-        return
-    cur = conn.cursor()
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS movies (
-            id SERIAL PRIMARY KEY,
-            title TEXT UNIQUE,
-            director TEXT,
-            synopsis TEXT,
-            poster_url TEXT,
-            updated_at TIMESTAMP DEFAULT NOW()
-        )
-    """)
-    for title, info in poster_data.items():
-        cur.execute("""
-            INSERT INTO movies (title, director, synopsis, poster_url, updated_at)
-            VALUES (%s, %s, %s, %s, NOW())
-            ON CONFLICT (title) DO UPDATE SET
-                director=EXCLUDED.director,
-                synopsis=EXCLUDED.synopsis,
-                poster_url=EXCLUDED.poster_url,
-                updated_at=NOW()
-        """, (title, info.get("director",""), info.get("synopsis",""), info.get("poster_url","")))
-    conn.commit()
-    cur.close()
-    print(f"✅ movies 테이블 저장 완료: {len(poster_data)}편")
-
 # ── PostgreSQL 저장 ───────────────────────────────────
 def save_to_pg(rows):
     if not rows: return
@@ -312,35 +212,32 @@ def save_to_pg(rows):
             PRIMARY KEY(cinema, start_dt, screen))
     """)
     # 기존 테이블에 컬럼 없으면 추가
-    cur.execute("ALTER TABLE screenings ADD COLUMN IF NOT EXISTS movie_url TEXT")
-    cur.execute("ALTER TABLE screenings ADD COLUMN IF NOT EXISTS movie_cd TEXT")
+    cur.execute("""
+        ALTER TABLE screenings ADD COLUMN IF NOT EXISTS movie_url TEXT
+    """)
     cur.execute("CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT)")
     for r in rows:
         cur.execute("""
-            INSERT INTO screenings (cinema,movie,start_dt,end_dt,runtime,screen,source,show_type,program,movie_url,movie_cd)
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            INSERT INTO screenings (cinema,movie,start_dt,end_dt,runtime,screen,source,show_type,program,movie_url)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
             ON CONFLICT (cinema, start_dt, screen) DO UPDATE SET
                 movie=EXCLUDED.movie, end_dt=EXCLUDED.end_dt,
                 runtime=EXCLUDED.runtime, source=EXCLUDED.source,
                 show_type=EXCLUDED.show_type, program=EXCLUDED.program,
-                movie_url=EXCLUDED.movie_url, movie_cd=EXCLUDED.movie_cd
+                movie_url=EXCLUDED.movie_url
         """, (
             r["cinema"], r["movie"],
             str(r["start_dt"]) if r["start_dt"] else None,
             str(r["end_dt"])   if r["end_dt"]   else None,
             r["runtime"], r["screen"], r["source"],
             r.get("show_type",""), r.get("program",""),
-            r.get("movie_url",""), r.get("movie_cd","")
+            r.get("movie_url","")
         ))
     cur.execute("""
         INSERT INTO meta (key,value) VALUES ('last_updated',%s)
         ON CONFLICT (key) DO UPDATE SET value=EXCLUDED.value
     """, (datetime.now().isoformat(),))
-    conn.commit()
-    # 포스터 수집 & 저장
-    poster_data = collect_posters(rows)
-    save_movies_to_pg(poster_data, psycopg2.connect(DATABASE_URL))
-    cur.close(); conn.close()
+    conn.commit(); cur.close(); conn.close()
 
 # ── 실행 ─────────────────────────────────────────────
 if __name__ == "__main__":
@@ -363,16 +260,4 @@ if __name__ == "__main__":
     all_rows = sorted(all_rows, key=lambda x: (x['start_dt'] or datetime.max, x['end_dt'] or datetime.max))
     print(f"\n총 {len(all_rows)}건 수집 → PostgreSQL 저장 중...")
     save_to_pg(all_rows)
-
-    # 영화 제목 글자수 통계
-    titles = list({r['movie'] for r in all_rows if r.get('movie')})
-    if titles:
-        lens = [len(t) for t in titles]
-        max_len = max(lens)
-        avg_len = sum(lens) / len(lens)
-        longest = max(titles, key=len)
-        print(f"\n📊 영화 제목 통계: {len(titles)}편")
-        print(f"   최대 {max_len}자: 『{longest}』")
-        print(f"   평균 {avg_len:.1f}자")
-
     print(f"✅ 완료! 처리시간: {time.time()-start_time:.1f}초")
