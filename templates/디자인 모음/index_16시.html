@@ -136,7 +136,7 @@ header{background:var(--text);color:#fff;padding:0 24px;position:sticky;top:0;z-
 ══════════════════════════════════ */
 .filter-ctrl-row{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:12px;flex-wrap:wrap;}
 /* 극장 칩: 6열 균등 그리드 */
-.cinema-chips-wrap{display:grid;grid-template-columns:repeat(6,1fr);gap:5px;flex:1;}
+.cinema-chips-wrap{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:5px;flex:1;}
 .cinema-chip-btn{font-size:12px;font-weight:600;font-family:inherit;padding:5px 0;border-radius:6px;border:1.5px solid var(--text);background:var(--surface);color:var(--text);cursor:pointer;transition:all .12s;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .cinema-chip-btn.off{border-color:var(--border);color:var(--text-sub);text-decoration:line-through;}
 .cinema-chip-btn:not(.off):hover{background:var(--text);color:#fff;}
@@ -218,7 +218,7 @@ input[type="date"].filter-input{border:none;background:#fff;color:var(--text);pa
 input[type="date"].filter-input:focus{outline:none;}
 .shortcut{font-size:11px;font-weight:600;font-family:inherit;padding:4px 10px;border-radius:5px;border:1.5px solid var(--border);background:var(--surface);color:var(--text-muted);cursor:pointer;transition:all .12s;}
 .shortcut.active,.shortcut:hover{background:var(--text);border-color:var(--text);color:#fff;}
-.detail-chip{font-size:12px;font-weight:600;font-family:inherit;padding:5px 4px;border-radius:6px;border:1.5px solid var(--text);background:var(--surface);color:var(--text);cursor:pointer;user-select:none;transition:all .12s;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.detail-chip{font-size:12px;font-weight:600;font-family:inherit;padding:5px 0;border-radius:6px;border:1.5px solid var(--text);background:var(--surface);color:var(--text);cursor:pointer;user-select:none;transition:all .12s;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .detail-chip.off{border-color:var(--border);color:var(--text-sub);text-decoration:line-through;}
 .btn-search{padding:8px 22px;background:var(--text);color:#fff;border:none;border-radius:7px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;transition:opacity .12s;}
 .btn-search:hover{opacity:.8;}
@@ -321,7 +321,6 @@ tr:hover td{background:#FAFAF8;}
 .movie-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px;}
 
 @media(max-width:700px){
-  .cinema-chips-wrap{grid-template-columns:repeat(3,1fr);}
   .rec-grid{grid-template-columns:repeat(2,1fr);gap:10px;}
   .quick-grid{grid-template-columns:repeat(2,1fr) !important;}
   .cinema-grid{grid-template-columns:1fr;}
@@ -381,6 +380,7 @@ tr:hover td{background:#FAFAF8;}
           <button class="day-tab active" data-mode="evening" onclick="setQuickMode(this,'evening')">오늘 저녁</button>
           <button class="day-tab" data-mode="today" onclick="setQuickMode(this,'today')">오늘</button>
           <button class="day-tab" data-mode="tomorrow" onclick="setQuickMode(this,'tomorrow')">내일</button>
+          <button class="day-tab" data-mode="weekend" onclick="setQuickMode(this,'weekend')">주말</button>
         </div>
         <div class="quick-sort-btns">
           <button class="quick-sort-btn active" data-sort="time" onclick="setQuickSort(this,'time')">상영시작순</button>
@@ -652,12 +652,6 @@ async function switchTab(name){
 function getQuickDateRange(mode){
   const now = new Date();
   const todayStr = today_kst();
-  const day = now.getDay();
-  // 이번 주 토/일 계산
-  const satDate = new Date(now); satDate.setDate(now.getDate() + (day===0 ? -1 : day===6 ? 0 : 6-day));
-  const sunDate = new Date(satDate); sunDate.setDate(satDate.getDate() + (day===0 ? 0 : 1));
-  const sat = fmtKST(satDate), sun = fmtKST(sunDate);
-
   if(mode==="evening"){
     return {dateFrom:todayStr, dateTo:todayStr, timeFrom:"17:00", label:"오늘 저녁", sub:`${todayStr.slice(5).replace("-","/")}(${DOW_KO[now.getDay()]}) · 17시 이후 상영작`};
   } else if(mode==="today"){
@@ -666,11 +660,12 @@ function getQuickDateRange(mode){
     const t=new Date(now); t.setDate(t.getDate()+1);
     const s=fmtKST(t);
     return {dateFrom:s, dateTo:s, timeFrom:"00:00", label:"내일", sub:`${s.slice(5).replace("-","/")}(${DOW_KO[t.getDay()]}) · 전체 상영작`};
-  } else if(mode==="saturday"){
-    return {dateFrom:sat, dateTo:sat, timeFrom:"00:00", label:"토요일", sub:`${sat.slice(5).replace("-","/")}(토) · 토요일 상영작`};
-  } else if(mode==="sunday"){
-    return {dateFrom:sun, dateTo:sun, timeFrom:"00:00", label:"일요일", sub:`${sun.slice(5).replace("-","/")}(일) · 일요일 상영작`};
   } else { // weekend
+    const day=now.getDay();
+    let sat,sun;
+    if(day===0){ sat=sun=fmtKST(now); }
+    else if(day===6){ const s=new Date(now); s.setDate(now.getDate()+1); sat=fmtKST(now); sun=fmtKST(s); }
+    else { const sv=new Date(now); sv.setDate(now.getDate()+(6-day)); const su=new Date(sv); su.setDate(sv.getDate()+1); sat=fmtKST(sv); sun=fmtKST(su); }
     return {dateFrom:sat, dateTo:sun, timeFrom:"00:00", label:"주말", sub:`${sat.slice(5).replace("-","/")}~${sun.slice(5).replace("-","/")} · 주말 상영작`};
   }
 }
@@ -704,17 +699,8 @@ function renderQuickCards(){
   const groups = {};
   quickData.forEach(r=>{
     const key = r.movie+"|"+r.cinema+"|"+(r.screen||"");
-    if(!groups[key]){
-      groups[key]={...r, times:[], start_dt: r.start_dt};
-    } else if((r.start_dt||"") < groups[key].start_dt){
-      groups[key].start_dt = r.start_dt; // 가장 빠른 시작 시간 기준
-    }
-    groups[key].times.push({start:(r.start_dt||"").slice(11,16), end:(r.end_dt||"").slice(11,16), program:r.program, show_type:r.show_type, start_dt:r.start_dt});
-  });
-
-  // times 시간순 정렬
-  Object.values(groups).forEach(g=>{
-    g.times.sort((a,b)=>a.start_dt.localeCompare(b.start_dt));
+    if(!groups[key]) groups[key]={...r, times:[]};
+    groups[key].times.push({start:(r.start_dt||"").slice(11,16), end:(r.end_dt||"").slice(11,16), program:r.program, show_type:r.show_type});
   });
 
   const cards = Object.values(groups);
@@ -745,9 +731,9 @@ function renderQuickCards(){
       const s = stickerHtml(t.program, t.show_type);
       return `<div class="time-chip">${t.start}<span class="time-dash">-</span>${t.end}${s}</div>`;
     }).join("");
-    // 주말/토/일 모드: 날짜+요일 표시
+    // 주말 모드: 날짜+요일 표시
     const {mmdd, dow, dowIdx} = splitDt(g.start_dt);
-    const dateHtml = ["weekend","saturday","sunday"].includes(quickMode)
+    const dateHtml = quickMode==="weekend"
       ? `<div class="qc-date">${mmdd} ${renderDowBadge(dow, dowIdx)}</div>` : "";
     const titleHtml = g.movie_url
       ? `<a href="${esc(g.movie_url)}" target="_blank" onclick="event.stopPropagation()">${esc(g.movie)}</a>`
@@ -976,7 +962,7 @@ function renderMovieGrid(resetCount=true){
         </button>
        </div>`
     : "";
-  document.getElementById("movie-grid-content").innerHTML=`${html}${moreBtn}`;
+  document.getElementById("movie-grid-content").innerHTML=`<div class="movie-grid">${html}${moreBtn}</div>`;
   lazyLoadImages();
 }
 
