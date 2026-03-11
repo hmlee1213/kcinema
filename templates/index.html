@@ -38,11 +38,11 @@ body{font-family:'Pretendard',sans-serif;background:var(--bg);color:var(--text);
 header{background:var(--text);color:#fff;padding:0 24px;position:sticky;top:0;z-index:100;box-shadow:0 1px 4px rgba(0,0,0,.2);}
 .header-inner{max-width:1280px;margin:0 auto;display:flex;align-items:center;gap:16px;height:52px;}
 .logo{font-family:'DM Serif Display',serif;font-size:18px;font-weight:400;letter-spacing:.01em;color:#fff;white-space:nowrap;flex-shrink:0;}
-.header-stats{display:flex;gap:16px;margin-left:auto;font-size:11px;color:rgba(255,255,255,.5);}
+.header-stats{display:flex;gap:16px;margin-left:auto;font-size:11px;color:rgba(255,255,255,.7);}
 .header-stats strong{color:#fff;font-weight:700;}
 .stat-item{display:flex;flex-direction:column;align-items:center;gap:1px;line-height:1.2;}
-.stat-item .stat-label{font-size:9px;color:rgba(255,255,255,.45);}
-.stat-item strong{font-size:13px;font-weight:700;color:#fff;}
+.stat-item .stat-label{font-size:11px;color:rgba(255,255,255,.7);}
+.stat-item strong{font-size:11px;font-weight:700;color:#fff;}
 .header-refresh{font-size:11px;font-weight:600;font-family:inherit;padding:5px 12px;border-radius:6px;border:1px solid rgba(255,255,255,.2);background:transparent;color:rgba(255,255,255,.7);cursor:pointer;transition:all .12s;}
 .header-refresh:hover{background:rgba(255,255,255,.1);color:#fff;}
 
@@ -102,6 +102,7 @@ header{background:var(--text);color:#fff;padding:0 24px;position:sticky;top:0;z-
 .venue-dot.free{background:var(--green);}
 .venue-sep{color:var(--border2);font-size:11px;}
 .qc-times{display:flex;flex-wrap:wrap;gap:4px;align-items:center;}
+.qc-date{font-size:11px;font-weight:600;color:var(--text-muted);display:flex;align-items:center;gap:4px;}
 .time-chip{display:inline-flex;align-items:center;background:var(--chip-bg);color:#fff;border-radius:4px;padding:3px 8px;font-size:11px;font-weight:600;white-space:nowrap;gap:0;}
 .time-dash{color:rgba(255,255,255,.7);font-weight:800;margin:0 3px;font-size:12px;}
 .time-chip .sticker{background:rgba(255,255,255,.2);color:#fff;margin-left:5px;}
@@ -358,10 +359,10 @@ tr:hover td{background:#FAFAF8;}
 <div class="tab-bar">
   <div class="tab-bar-inner">
     <div class="tab active" id="tab-btn-quick" onclick="switchTab('quick')">빠른 조회 <span class="tab-badge" id="quick-badge">오늘 저녁</span></div>
-    <div class="tab" id="tab-btn-rec" onclick="switchTab('rec')">★ 추천</div>
     <div class="tab" id="tab-btn-cinema" onclick="switchTab('cinema')">극장별</div>
     <div class="tab" id="tab-btn-movie" onclick="switchTab('movie')">영화별 <span class="tab-badge" id="movie-count-badge">—</span></div>
     <div class="tab" id="tab-btn-detail" onclick="switchTab('detail')">상세 조회</div>
+    <div class="tab" id="tab-btn-rec" onclick="switchTab('rec')">★ 추천</div>
   </div>
 </div>
 
@@ -730,6 +731,10 @@ function renderQuickCards(){
       const s = stickerHtml(t.program, t.show_type);
       return `<div class="time-chip">${t.start}<span class="time-dash">-</span>${t.end}${s}</div>`;
     }).join("");
+    // 주말 모드: 날짜+요일 표시
+    const {mmdd, dow, dowIdx} = splitDt(g.start_dt);
+    const dateHtml = quickMode==="weekend"
+      ? `<div class="qc-date">${mmdd} ${renderDowBadge(dow, dowIdx)}</div>` : "";
     const titleHtml = g.movie_url
       ? `<a href="${esc(g.movie_url)}" target="_blank" onclick="event.stopPropagation()">${esc(g.movie)}</a>`
       : esc(g.movie);
@@ -738,6 +743,7 @@ function renderQuickCards(){
       <div class="qc-poster">${posterHtml}</div>
       <div class="qc-body">
         <div class="qc-title">${titleHtml}</div>
+        ${dateHtml}
         <div class="qc-venue">${venueHtml}</div>
         <div class="qc-times">${timesHtml}</div>
       </div>
@@ -888,7 +894,7 @@ async function loadMovieTabData(){
   }catch(e){ document.getElementById("movie-grid-content").innerHTML=`<div class="empty">데이터를 불러오지 못했습니다</div>`; }
 }
 
-const MOVIE_PAGE = 20;
+const MOVIE_PAGE = 10;
 let movieShowCount = MOVIE_PAGE;
 
 function renderMovieGrid(resetCount=true){
@@ -918,7 +924,7 @@ function renderMovieGrid(resetCount=true){
     const runtime=rows.find(r=>r.runtime)?.runtime;
     const isRec=recSet.has(title);
     const thumb = rows[0].poster_url
-      ? `<img src="${esc(rows[0].poster_url)}" alt="" loading="lazy" onerror="this.parentNode.textContent='🎬'">`
+      ? `<img data-src="${esc(rows[0].poster_url)}" alt="" class="lazy-img" onerror="this.parentNode.textContent='🎬'">`
       : "🎬";
     const recBadge = isRec ? `<span class="rec-badge">★ 추천</span>` : "";
     return `<div class="movie-group">
@@ -957,11 +963,35 @@ function renderMovieGrid(resetCount=true){
        </div>`
     : "";
   document.getElementById("movie-grid-content").innerHTML=`<div class="movie-grid">${html}${moreBtn}</div>`;
+  lazyLoadImages();
 }
 
 function loadMoreMovies(){
   movieShowCount += MOVIE_PAGE;
   renderMovieGrid(false);
+  lazyLoadImages();
+}
+
+// 뷰포트 진입 시 포스터 로드
+function lazyLoadImages(){
+  const imgs = document.querySelectorAll("img.lazy-img[data-src]");
+  if("IntersectionObserver" in window){
+    const obs = new IntersectionObserver((entries)=>{
+      entries.forEach(e=>{
+        if(e.isIntersecting){
+          const img = e.target;
+          img.src = img.dataset.src;
+          img.removeAttribute("data-src");
+          img.classList.remove("lazy-img");
+          obs.unobserve(img);
+        }
+      });
+    },{rootMargin:"100px"});
+    imgs.forEach(img=>obs.observe(img));
+  } else {
+    // 폴백: 그냥 다 로드
+    imgs.forEach(img=>{ img.src=img.dataset.src; img.removeAttribute("data-src"); });
+  }
 }
 
 /* ══════════════════════════════════════
