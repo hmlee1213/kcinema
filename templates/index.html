@@ -77,7 +77,10 @@ header{background:var(--text);color:#fff;padding:0 24px;position:sticky;top:0;z-
 .quick-filter-btn.active{background:var(--text);border-color:var(--text);color:#fff;}
 .sticker{display:inline-block;font-size:9px;font-weight:700;background:#555;color:#fff;padding:1px 4px;border-radius:3px;white-space:nowrap;vertical-align:middle;margin-left:4px;letter-spacing:.02em;}
 .sticker-4k{background:#1a56db;color:#fff;}
+.sticker-dolby{background:#7c3aed;color:#fff;}
 .sticker-4k-supported{background:#e8f0fe;color:#1a56db;border:1px solid #a4c2f4;}
+.award-tag{display:inline-block;font-size:10px;font-weight:700;background:#fffbea;color:#92400e;border:1px solid #fcd34d;padding:2px 7px;border-radius:4px;margin:2px 3px 2px 0;white-space:nowrap;}
+.award-wrap{display:flex;flex-wrap:wrap;align-items:center;gap:0;}
 
 /* ── 로딩/빈상태 ── */
 .loading{text-align:center;padding:60px 20px;color:var(--text-muted);font-size:13px;}
@@ -206,6 +209,7 @@ header{background:var(--text);color:#fff;padding:0 24px;position:sticky;top:0;z-
 .mv-meta{font-size:13px;color:var(--text-muted);line-height:1.4;margin-top:2px;}
 .mv-count{font-size:10px;font-weight:700;background:var(--surface2);color:var(--text-muted);padding:1px 5px;border-radius:4px;display:inline-block;margin-top:2px;}
 .mv-rec-badge{position:absolute;top:4px;right:4px;font-size:10px;font-weight:800;color:#B45309;background:rgba(255,255,255,.9);border-radius:3px;padding:0 3px;line-height:1.6;}
+.mv-4k-badge{position:absolute;top:4px;left:4px;background:#1a56db;color:#fff;font-size:9px;font-weight:800;padding:1px 5px;border-radius:3px;line-height:1.6;}
 .mv-wish-btn{position:absolute;bottom:6px;right:6px;background:none;border:none;cursor:pointer;font-size:14px;color:#ccc;-webkit-text-stroke:.4px #bbb;line-height:1;padding:1px;transition:color .1s;}
 .mv-wish-btn:hover,.mv-wish-btn.on{color:#e05;-webkit-text-stroke:.4px #c00;}
 /* 페이지네이션 */
@@ -612,6 +616,7 @@ tr:hover td{background:#FAFAF8;}
       <div class="popup-info">
         <div class="popup-title" id="popupTitle"></div>
         <div class="popup-meta" id="popupMeta" style="margin-top:3px;font-size:12px;color:var(--text-muted);"></div>
+        <div id="popupAwards" style="display:none;margin-top:6px;"></div>
         <div id="popupSynopsisWrap" style="margin-top:8px;display:none;">
           <div id="popupSynopsis" style="font-size:12px;color:var(--text-sub);line-height:1.6;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;"></div>
           <button id="popupSynopsisMore" onclick="expandSynopsis()" style="font-size:11px;color:var(--green);background:none;border:none;cursor:pointer;padding:2px 0;font-family:inherit;font-weight:600;display:none;">더보기 ▾</button>
@@ -637,6 +642,7 @@ tr:hover td{background:#FAFAF8;}
           <div id="moviePopupMeta" style="flex-shrink:0;margin-top:1px;"></div>
         </div>
         <div id="moviePopupDetailMeta" style="font-size:11px;color:var(--text-muted);margin-top:5px;line-height:1.6;"></div>
+        <div id="moviePopupAwards" style="display:none;margin-top:5px;"></div>
         <div id="moviePopupSynopsis" style="font-size:11px;color:var(--text-muted);margin-top:6px;line-height:1.6;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;cursor:pointer;" onclick="expandSynopsis(this)"></div>
       </div>
     </div>
@@ -657,7 +663,7 @@ tr:hover td{background:#FAFAF8;}
     <button class="popup-close" onclick="closeCinemaPopup()">✕</button>
     <div style="padding:20px 20px 6px;">
       <div style="font-size:17px;font-weight:800;" id="cpName"></div>
-      <div style="font-size:12px;color:var(--text-muted);margin-top:4px;" id="cpAddress"></div>
+      <div style="font-size:12px;color:var(--text-muted);margin-top:3px;line-height:1.5;" id="cpAddress"></div>
     </div>
     <div style="padding:0 20px 16px;" id="cpBody"></div>
   </div>
@@ -704,18 +710,38 @@ function renderDowBadge(dow, dowIdx){
   return `<span class="${cls}">${dow}</span>`;
 }
 
-function stickerHtml(program, showType, cinema){
+function awardsHtml(awards, is4k, isDolby, cinema){
+  const parts = [];
+  if(is4k    && CINEMA_4K_SUPPORT.has(cinema||""))    parts.push(`<span class="sticker sticker-4k" style="font-size:10px;padding:2px 7px;">4K</span>`);
+  if(isDolby && CINEMA_DOLBY_SUPPORT.has(cinema||"")) parts.push(`<span class="sticker sticker-dolby" style="font-size:10px;padding:2px 7px;">돌비</span>`);
+  if(awards){
+    awards.split(",").map(s=>s.trim()).filter(Boolean).forEach(a=>{
+      parts.push(`<span class="award-tag">🏆 ${esc(a)}</span>`);
+    });
+  }
+  if(!parts.length) return "";
+  return `<div class="award-wrap">${parts.join("")}</div>`;
+}
+function stickerHtml(program, showType, cinema, movie, screen){
   const tags = [];
   const src = ((program||"")+" "+(showType||"")).toLowerCase();
-  const is4k = src.includes("4k") || src.includes("4k") || /4k/i.test((showType||"")+(program||""));
+  // program/show_type에 4K 명시 OR (영화 자체가 4K이고 4K 지원 극장)
+  const is4kByTag   = /4k/i.test((showType||"")+(program||""));
+  const is4kByMovie    = movie && movie4kSet.has(movie)    && cinema && CINEMA_4K_SUPPORT.has(cinema);
+  // 돌비: 라이카시네마 + S관(1관)만 해당, screen이 없으면 극장 조건만 체크
+  const isDolbyScreen   = !screen || screen === "" || /^s관$|^1관$|s-?hall/i.test(screen.trim());
+  const isDolbyByMovie  = movie && movieDolbySet.has(movie) && cinema && CINEMA_DOLBY_SUPPORT.has(cinema) && isDolbyScreen;
+  const is4k   = is4kByTag || is4kByMovie;
   if(src.includes("gv")||src.includes("감독")) tags.push({t:"GV",cls:""});
-  else if(src.includes("토크")||src.includes("talk")) tags.push({t:"토크",cls:""});
+  else if(src.includes("토크")||src.includes("talk")||src.includes("강연")) tags.push({t:"토크",cls:""});
   if(src.includes("굿즈")) tags.push({t:"굿즈",cls:""});
-  if(is4k) tags.push({t:"4K",cls:"sticker-4k"});
+  if(is4k)          tags.push({t:"4K",cls:"sticker-4k"});
+  if(isDolbyByMovie) tags.push({t:"돌비",cls:"sticker-dolby"});
   return tags.map(({t,cls})=>`<span class="sticker ${cls}">${t}</span>`).join("");
 }
 // 극장별 4K 지원 안내 (KU시네마테크)
-const CINEMA_4K_SUPPORT = new Set(["KU시네마테크"]);
+const CINEMA_4K_SUPPORT    = new Set(["KU시네마테크", "서울아트시네마", "한국영상자료원"]);
+const CINEMA_DOLBY_SUPPORT  = new Set(["라이카시네마"]);
 function cinema4kSupportBadge(cinema){
   if(!CINEMA_4K_SUPPORT.has(cinema)) return "";
   return `<span class="sticker sticker-4k-supported" title="이 극장은 4K 상영을 지원합니다">4K지원</span>`;
@@ -741,8 +767,13 @@ async function init(){
   document.getElementById("exploreDateFrom").value = today_kst();
   if(statsCache?.date_max)
     document.getElementById("exploreDateTo").value = statsCache.date_max;
-  // recData를 탐색 탭에서도 쓸 수 있게 init에서 미리 로드
+  // recData + movie4kSet + movieDirectorMap — 모든 탭에서 사용
   try{ recData = await fetch("/api/recommended").then(r=>r.json()); }catch(e){ recData=[]; }
+  try{
+    const mlist = await fetch("/api/movies").then(r=>r.json());
+    movieDirectorMap = {}; movie4kSet = new Set();
+    mlist.forEach(m=>{ if(m.director) movieDirectorMap[m.title]=m.director; if(m.is_4k) movie4kSet.add(m.title); if(m.is_dolby) movieDolbySet.add(m.title); });
+  }catch(e){}
   await loadExploreData();
   updateWishBadge();
 }
@@ -863,7 +894,7 @@ function renderExploreCards(){
       ? `<div class="venue-dot${isFree?" free":""}"></div><span>${esc(g.cinema)}</span><span class="venue-sep">·</span><span>${esc(g.screen)}</span>`
       : `<div class="venue-dot${isFree?" free":""}"></div><span>${esc(g.cinema)}</span>${isFree?`<span class="chip-free" style="font-size:10px;font-weight:700;color:var(--green);margin-left:3px;">무료</span>`:""}`;
     const timesHtml = g.times.map(t=>{
-      const s = stickerHtml(t.program, t.show_type);
+      const s = stickerHtml(t.program, t.show_type, card.cinema, card.movie, card.screen||"");
       const schedKey = `${esc(g.movie)}|${esc(g.cinema)}|${esc(g.screen||"")}|${t.start_dt||""}`;
       const wished = isSchedWished(schedKey);
       return `<div class="time-chip${wished?" wished":""}" style="display:flex;align-items:center;gap:3px;cursor:pointer;"
@@ -1015,7 +1046,7 @@ function hasSpecialScreening(times){
   return times.some(t => {
     const src = ((t.program||"")+" "+(t.show_type||"")).toLowerCase();
     return src.includes("gv") || src.includes("감독") || src.includes("토크") ||
-           src.includes("talk") || src.includes("특별") || src.includes("시사");
+           src.includes("talk") || src.includes("강연") || src.includes("특별") || src.includes("시사");
   });
 }
 
@@ -1049,7 +1080,13 @@ async function switchTab(name){
     document.getElementById("tab-btn-"+t).classList.toggle("active", t===name);
   });
   trackTabSwitch(name);
-  if(name==="cinema" && cinemaData.length===0) await loadCinemaTabData();
+  if(name==="cinema"){
+    if(cinemaData.length===0) await loadCinemaTabData();
+    // 극장 주소 캐시 미리 로드
+    if(!Object.keys(cinemaInfoCache).length){
+      try{ const all=await fetch("/api/cinemas/all").then(r=>r.json()); all.forEach(ci=>{cinemaInfoCache[ci.name]=ci;}); }catch(e){}
+    }
+  }
   if(name==="movie"  && movieData.length===0)  await loadMovieTabData();
   if(name==="wish") renderWishTab();
 }
@@ -1064,6 +1101,7 @@ function openPopup(movie, cinema, screen, movieUrl){
   document.getElementById("popupMeta").textContent = "";
   document.getElementById("popupSynopsisWrap").style.display = "none";
   document.getElementById("popupSynopsis").style["-webkit-line-clamp"] = "3";
+  document.getElementById("popupAwards").style.display = "none";
 
   // 상영 일정 (즉시)
   const sc = screen ? ` · ${screen}` : "";
@@ -1071,7 +1109,7 @@ function openPopup(movie, cinema, screen, movieUrl){
   document.getElementById("popupSchedules").innerHTML = rows.length
     ? rows.map(r=>{
         const {mmdd,time}=splitDt(r.start_dt), end=(r.end_dt||"").slice(11,16);
-        const s=stickerHtml(r.program,r.show_type);
+        const s=stickerHtml(r.program,r.show_type,cinema,movie,screen);
         const schedKey=`${esc(movie)}|${esc(cinema)}|${esc(screen||"")}|${r.start_dt||""}`;
         const wished=isSchedWished(schedKey);
         return `<div class="sched-row" style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);">
@@ -1093,12 +1131,16 @@ function openPopup(movie, cinema, screen, movieUrl){
       const rt = rows[0]?.runtime || d.runtime;
       if(rt) parts.push(rt+"분");
       document.getElementById("popupMeta").textContent = parts.join(" · ");
+      // 수상 + 4K
+      const awHtml = awardsHtml(d.awards||"", d.is_4k, d.is_dolby, cinema);
+      const awEl = document.getElementById("popupAwards");
+      if(awHtml){ awEl.innerHTML=awHtml; awEl.style.display="block"; }
+      else { awEl.style.display="none"; }
       // 시놉시스
       if(d.synopsis){
         const synEl = document.getElementById("popupSynopsis");
         synEl.textContent = d.synopsis;
         document.getElementById("popupSynopsisWrap").style.display = "block";
-        // 더보기 필요한지 확인 (렌더 후)
         requestAnimationFrame(()=>{
           if(synEl.scrollHeight > synEl.clientHeight + 2)
             document.getElementById("popupSynopsisMore").style.display = "inline";
@@ -1196,7 +1238,7 @@ function renderMoviePopupSchedules(){
 function popupSlotHtml(r, title, posterUrl, extraLabel=''){
   const {time:stm, dow:sdow} = splitDt(r.start_dt);
   const end = (r.end_dt||'').slice(11,16);
-  const s = stickerHtml(r.program, r.show_type);
+  const s = stickerHtml(r.program, r.show_type, r.cinema, r.movie, r.screen||"");
   const schedKey = `${esc(title)}|${esc(r.cinema)}|${esc(r.screen||'')}|${r.start_dt||''}`;
   const wished = isSchedWished(schedKey);
   const extra = extraLabel ? `<span style="font-size:11px;color:var(--text-muted);margin-left:4px;">${esc(extraLabel)}</span>` : '';
@@ -1229,6 +1271,7 @@ function openMoviePopup(title, rows, posterUrl){
 
   // 상세 메타 초기화
   document.getElementById("moviePopupDetailMeta").textContent = "";
+  document.getElementById("moviePopupAwards").style.display = "none";
   document.getElementById("moviePopupSynopsis").textContent = "";
   document.getElementById("moviePopupSynopsis").style.webkitLineClamp = "3";
 
@@ -1246,6 +1289,12 @@ function openMoviePopup(title, rows, posterUrl){
       if(d.year) parts.push(d.year+"년");
       if(d.runtime) parts.push(d.runtime+"분");
       document.getElementById("moviePopupDetailMeta").textContent = parts.join(" · ");
+      // 수상 + 4K
+      const awHtml2 = awardsHtml(d.awards||"", d.is_4k, d.is_dolby, null);
+      const awEl2 = document.getElementById("moviePopupAwards");
+      if(awHtml2){ awEl2.innerHTML=awHtml2; awEl2.style.display="block"; }
+      else { awEl2.style.display="none"; }
+      // 시놉시스
       if(d.synopsis){
         const el = document.getElementById("moviePopupSynopsis");
         el.textContent = d.synopsis;
@@ -1274,7 +1323,17 @@ async function openCinemaPopup(name){
   const d = cinemaInfoCache[name] || {};
   document.getElementById("cpAddress").textContent = d.address || "";
   let html = "";
-  if(d.description) html += `<p style="font-size:13px;color:var(--text-sub);margin:12px 0 8px;line-height:1.6;">${esc(d.description)}</p>`;
+
+  // 지원 형식 배지 (4K 극장, 돌비 극장)
+  const formatBadges = [];
+  if(["KU시네마테크","서울아트시네마","한국영상자료원"].includes(name))
+    formatBadges.push(`<span class="sticker sticker-4k" style="font-size:11px;padding:3px 8px;">4K</span>`);
+  if(name === "라이카시네마")
+    formatBadges.push(`<span class="sticker sticker-dolby" style="font-size:11px;padding:3px 8px;">돌비 애트모스</span>`);
+  if(formatBadges.length)
+    html += `<div style="display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 4px;">${formatBadges.join("")}</div>`;
+
+  if(d.description) html += `<p style="font-size:13px;color:#333;margin:10px 0 8px;line-height:1.6;">${esc(d.description)}</p>`;
   // 요금표
   let pt = {};
   try{ pt = typeof d.price_table === "string" ? JSON.parse(d.price_table) : (d.price_table||{}); }catch(e){}
@@ -1282,33 +1341,33 @@ async function openCinemaPopup(name){
   if(hasPriceTable){
     html += `<table style="width:100%;border-collapse:collapse;font-size:12px;margin:10px 0;">
       <thead><tr>
-        <th style="border:1px solid var(--border);padding:5px 8px;background:var(--surface2);font-weight:700;"></th>
-        <th style="border:1px solid var(--border);padding:5px 8px;background:var(--surface2);font-weight:700;text-align:center;">조조</th>
-        <th style="border:1px solid var(--border);padding:5px 8px;background:var(--surface2);font-weight:700;text-align:center;">일반</th>
+        <th style="border:1px solid var(--border);padding:5px 8px;background:var(--surface2);font-weight:700;color:#333;"></th>
+        <th style="border:1px solid var(--border);padding:5px 8px;background:var(--surface2);font-weight:700;text-align:center;color:#333;">조조</th>
+        <th style="border:1px solid var(--border);padding:5px 8px;background:var(--surface2);font-weight:700;text-align:center;color:#333;">일반</th>
       </tr></thead>
       <tbody>
         <tr>
-          <td style="border:1px solid var(--border);padding:5px 8px;font-weight:700;background:var(--surface2);">월~목</td>
-          <td style="border:1px solid var(--border);padding:5px 8px;text-align:center;">${esc(pt.weekday_matinee||"—")}</td>
-          <td style="border:1px solid var(--border);padding:5px 8px;text-align:center;">${esc(pt.weekday_normal||"—")}</td>
+          <td style="border:1px solid var(--border);padding:5px 8px;font-weight:700;background:var(--surface2);color:#333;">월~목</td>
+          <td style="border:1px solid var(--border);padding:5px 8px;text-align:center;color:#333;">${esc(pt.weekday_matinee||"—")}</td>
+          <td style="border:1px solid var(--border);padding:5px 8px;text-align:center;color:#333;">${esc(pt.weekday_normal||"—")}</td>
         </tr>
         <tr>
-          <td style="border:1px solid var(--border);padding:5px 8px;font-weight:700;background:var(--surface2);">금~일·공휴일</td>
-          <td style="border:1px solid var(--border);padding:5px 8px;text-align:center;">${esc(pt.weekend_matinee||"—")}</td>
-          <td style="border:1px solid var(--border);padding:5px 8px;text-align:center;">${esc(pt.weekend_normal||"—")}</td>
+          <td style="border:1px solid var(--border);padding:5px 8px;font-weight:700;background:var(--surface2);color:#333;">금~일·공휴일</td>
+          <td style="border:1px solid var(--border);padding:5px 8px;text-align:center;color:#333;">${esc(pt.weekend_matinee||"—")}</td>
+          <td style="border:1px solid var(--border);padding:5px 8px;text-align:center;color:#333;">${esc(pt.weekend_normal||"—")}</td>
         </tr>
       </tbody>
     </table>`;
-    if(pt.discount) html += `<div style="font-size:11px;color:var(--text-muted);margin-top:4px;">💡 ${esc(pt.discount)}</div>`;
+    if(pt.discount) html += `<div style="font-size:12px;color:#444;margin-top:4px;">💡 ${esc(pt.discount)}</div>`;
   } else if(d.price_info){
-    html += `<div style="font-size:12px;color:var(--text-sub);margin-top:8px;">💰 ${esc(d.price_info)}</div>`;
+    html += `<div style="font-size:12px;color:#444;margin-top:8px;">💰 ${esc(d.price_info)}</div>`;
   }
-  if(d.note) html += `<div style="font-size:11px;color:var(--text-muted);margin-top:8px;padding-top:8px;border-top:1px solid var(--border);">📌 ${esc(d.note)}</div>`;
+  if(d.note) html += `<div style="font-size:12px;color:#444;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);">📌 ${esc(d.note)}</div>`;
   const links = [];
   if(d.url) links.push(`<a href="${esc(d.url)}" target="_blank" style="font-size:12px;color:var(--green);font-weight:600;">홈페이지 →</a>`);
-  if(d.phone) links.push(`<span style="font-size:12px;color:var(--text-muted);">📞 ${esc(d.phone)}</span>`);
+  if(d.phone) links.push(`<span style="font-size:12px;color:#444;">📞 ${esc(d.phone)}</span>`);
   if(links.length) html += `<div style="display:flex;gap:14px;align-items:center;margin-top:12px;padding-top:10px;border-top:1px solid var(--border);">${links.join("")}</div>`;
-  if(!html) html = `<div style="font-size:13px;color:var(--text-muted);padding:10px 0;">등록된 정보가 없습니다.</div>`;
+  if(!html) html = `<div style="font-size:13px;color:#444;padding:10px 0;">등록된 정보가 없습니다.</div>`;
   document.getElementById("cpBody").innerHTML = html;
 }
 function closeCinemaPopup(){
@@ -1556,16 +1615,17 @@ function renderCinemaGrid(){
     const metaParts=[`오늘 이후 ${rows.length}건`];
     if(maxMmdd) metaParts.push(`~${maxMmdd}`);
     const freeBadge=isFree?`<span class="free-tag">무료</span>`:"";
+    const addrText = cinemaInfoCache[cinema]?.address || "";
     return `<div class="cinema-group">
       <div class="cinema-group-header" style="cursor:pointer;" onclick="openCinemaPopup('${esc(cinema)}')">
-        <div class="cinema-group-name">${esc(cinema)}${locBadge}<span style="font-size:10px;font-weight:500;color:var(--text-muted);margin-left:2px;">ℹ︎</span>${freeBadge}${cinema4kSupportBadge(cinema)}</div>
-        <div class="cinema-group-meta">${metaParts.map(p=>`<span>${p}</span>`).join("")}</div>
+        <div class="cinema-group-name">${esc(cinema)}${locBadge}<span style="font-size:10px;font-weight:500;color:var(--text-muted);margin-left:2px;">ℹ︎</span>${freeBadge}</div>
+        <div class="cinema-group-meta">${metaParts.map(p=>`<span>${p}</span>`).join("")}${addrText?`<span style="font-size:11px;color:var(--text-muted);margin-left:4px;">${esc(addrText)}</span>`:""}</div>
       </div>
       <div class="cinema-group-rows cinema-rows-2col">
         ${rows.map(r=>{
           const {mmdd,time,dow,dowIdx}=splitDt(r.start_dt);
           const {time:endTime}=splitDt(r.end_dt);
-          const s=stickerHtml(r.program,r.show_type,cinema);
+          const s=stickerHtml(r.program,r.show_type,cinema,r.movie,r.screen||"");
           const movieHtml=r.movie_url
             ?`<a href="${esc(r.movie_url)}" target="_blank">${esc(r.movie)}</a>`
             :esc(r.movie);
@@ -1632,7 +1692,9 @@ function setMovieSort(btn, mode){
 /* ══════════════════════════════════════
    ③ 영화별 탭
 ══════════════════════════════════════ */
-let movieDirectorMap = {}; // {title: director}
+let movieDirectorMap = {};
+let movie4kSet = new Set();
+let movieDolbySet = new Set(); // {title: director}
 
 async function loadMovieTabData(){
   try{
@@ -1644,10 +1706,10 @@ async function loadMovieTabData(){
     // 감독 정보 로드
     try{
       const mlist = await fetch("/api/movies").then(r=>r.json());
-      movieDirectorMap = {};
-      mlist.forEach(m=>{ if(m.director) movieDirectorMap[m.title]=m.director; });
+      movieDirectorMap = {}; movie4kSet = new Set();
+      mlist.forEach(m=>{ if(m.director) movieDirectorMap[m.title]=m.director; if(m.is_4k) movie4kSet.add(m.title); if(m.is_dolby) movieDolbySet.add(m.title); });
       // movieData에 director 주입
-      movieData.forEach(r=>{ r.director = movieDirectorMap[r.movie]||""; });
+      movieData.forEach(m=>{ m.director = movieDirectorMap[m.movie]||""; });
     }catch(e){}
     // 추천 목록
     try{ recData=await fetch("/api/recommended").then(r=>r.json()); }catch(e){ recData=[]; }
@@ -1711,6 +1773,7 @@ function renderMovieGrid(resetPage=true){
     return `<div class="mv-card${isRec?' has-rec':''}" onclick="onMovieCardClick('${esc(title)}','${_encRows}','${_encPost}')">
       <div class="mv-poster">${thumb}</div>
       ${isRec?'<div class="mv-rec-badge">★</div>':''}
+      ${is4k?'<div class="mv-4k-badge">4K</div>':''}
       <div class="mv-info">
         <div class="mv-title">${esc(title)}</div>
         <div class="mv-meta">${dirText?esc(dirText)+(runtime?' · ':''):''}${runtime?runtime+'분':''}</div>
