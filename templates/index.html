@@ -730,8 +730,9 @@ function stickerHtml(program, showType, cinema, movie, screen){
   // program/show_type에 4K 명시 OR (영화 자체가 4K이고 4K 지원 극장)
   const is4kByTag   = /4k/i.test((showType||"")+(program||""));
   const is4kByMovie    = movie && movie4kSet.has(movie)    && cinema && CINEMA_4K_SUPPORT.has(cinema);
-  // 돌비: 라이카시네마 + S관(1관)만 해당, screen이 없으면 극장 조건만 체크
-  const isDolbyScreen   = !screen || screen === "" || /^s관$|^1관$|s-?hall/i.test(screen.trim());
+  // 돌비: 라이카시네마에서 2관만 제외, 나머지(S관/1관/빈값 등) 모두 허용
+  const _scr = (screen||"").trim();
+  const isDolbyScreen   = !_scr || !_scr.includes("2");
   const isDolbyByMovie  = movie && movieDolbySet.has(movie) && cinema && CINEMA_DOLBY_SUPPORT.has(cinema) && isDolbyScreen;
   const is4k   = is4kByTag || is4kByMovie;
   if(src.includes("gv")||src.includes("감독")) tags.push({t:"GV",cls:""});
@@ -1628,8 +1629,9 @@ function renderCinemaGrid(){
           const {mmdd,time,dow,dowIdx}=splitDt(r.start_dt);
           const {time:endTime}=splitDt(r.end_dt);
           const s=stickerHtml(r.program,r.show_type,cinema,r.movie,r.screen||"");
+          const _scrVal = (r.screen||'').trim();
           const _isDolbyRow = movieDolbySet.has(r.movie) && CINEMA_DOLBY_SUPPORT.has(cinema)
-            && (!r.screen || /^s관$|^1관$/i.test(r.screen.trim()));
+            && (!_scrVal || !_scrVal.includes("2"));
           const _dolbyTag = _isDolbyRow
             ? `<span style="display:inline-block;font-size:9px;font-weight:700;background:#ff6633;color:#fff;padding:1px 4px;border-radius:3px;margin-left:4px;vertical-align:middle;">돌비</span>`
             : '';
