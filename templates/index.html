@@ -72,7 +72,7 @@ header{background:var(--text);color:#fff;padding:0 24px;position:sticky;top:0;z-
 .quick-sort-btn{font-size:11px;font-weight:600;font-family:inherit;padding:4px 11px;border-radius:5px;border:1.5px solid var(--border);background:var(--surface);color:var(--text-muted);cursor:pointer;transition:all .12s;white-space:nowrap;}
 .quick-sort-btn:hover{border-color:var(--text);color:var(--text);}
 .quick-sort-btn.active{background:var(--text);border-color:var(--text);color:#fff;}
-.sticker{display:inline-block;font-size:9px;font-weight:700;background:#E5E7EB;color:#374151;padding:1px 4px;border-radius:3px;white-space:nowrap;vertical-align:middle;margin-left:4px;letter-spacing:.02em;}
+.sticker{display:inline-block;font-size:9px;font-weight:700;background:#FEF08A;color:#713F12;padding:1px 4px;border-radius:3px;white-space:nowrap;vertical-align:middle;margin-left:4px;letter-spacing:.02em;}
 
 /* ── 로딩/빈상태 ── */
 .loading{text-align:center;padding:60px 20px;color:var(--text-muted);font-size:13px;}
@@ -105,7 +105,7 @@ header{background:var(--text);color:#fff;padding:0 24px;position:sticky;top:0;z-
 .qc-date{font-size:11px;font-weight:600;color:var(--text-muted);display:flex;align-items:center;gap:4px;}
 .time-chip{display:inline-flex;align-items:center;background:var(--chip-bg);color:#fff;border-radius:4px;padding:3px 8px;font-size:11px;font-weight:600;white-space:nowrap;gap:0;}
 .time-dash{color:rgba(255,255,255,.7);font-weight:800;margin:0 3px;font-size:12px;}
-.time-chip .sticker{background:rgba(255,255,255,.2);color:#fff;margin-left:5px;}
+.time-chip .sticker{background:#FEF08A;color:#713F12;margin-left:5px;}
 
 /* ══════════════════════════════════
    팝업
@@ -164,12 +164,12 @@ header{background:var(--text);color:#fff;padding:0 24px;position:sticky;top:0;z-
 .free-tag{font-size:10px;font-weight:700;background:#D1FAE5;color:#065F46;padding:1px 6px;border-radius:3px;}
 .chip-loc{font-size:9px;font-weight:600;background:#E5E7EB;color:#6B7280;padding:1px 5px;border-radius:3px;margin-left:4px;vertical-align:middle;}
 .chip-free{font-size:9px;font-weight:700;background:#D1FAE5;color:#065F46;padding:1px 5px;border-radius:3px;margin-left:3px;vertical-align:middle;}
-.c-row{display:grid;grid-template-columns:80px 120px 1fr;align-items:center;gap:6px;padding:7px 14px;border-bottom:1px solid var(--border);font-size:12px;}
+.c-row{display:grid;grid-template-columns:72px 108px minmax(0,1fr);align-items:center;gap:6px;padding:7px 14px;border-bottom:1px solid var(--border);font-size:12px;}
 .c-row:last-child{border-bottom:none;}
 .c-date{font-weight:600;color:var(--text);white-space:nowrap;}
 .c-time{font-weight:600;color:var(--text);white-space:nowrap;}
-.c-movie{font-weight:600;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;display:flex;align-items:center;gap:4px;}
-.c-movie a{color:var(--text);text-decoration:none;border-bottom:1.5px solid var(--green);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.c-movie{font-weight:600;display:flex;align-items:flex-start;gap:4px;flex-wrap:wrap;word-break:keep-all;}
+.c-movie a{color:var(--text);text-decoration:none;border-bottom:1.5px solid var(--green);word-break:keep-all;}
 .c-movie a:hover{color:var(--green);}
 
 /* ══════════════════════════════════
@@ -302,10 +302,10 @@ tr:hover td{background:#FAFAF8;}
 .ex-cinema-chip.active{background:var(--green);border-color:var(--green);color:#fff;}
 .ex-cinema-chip.active .free-badge{color:rgba(255,255,255,.8);}
 .free-badge{font-size:9px;font-weight:700;color:var(--green);margin-left:3px;}
-.result-header-row{display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap;}
-.result-title-text{font-size:15px;font-weight:800;}
-.result-sub-text{font-size:12px;color:var(--text-muted);}
-.result-count-text{font-size:12px;font-weight:700;color:var(--green);}
+.result-header-row{display:flex;align-items:center;gap:14px;margin-bottom:16px;flex-wrap:wrap;}
+
+.result-sub-text{font-size:20px;font-weight:700;color:var(--text);letter-spacing:-.01em;}
+.result-count-text{font-size:28px;font-weight:800;color:var(--text);letter-spacing:-.02em;}
 .explore-grid{display:grid;gap:8px;}
 @media(max-width:700px){
   .cond-label{width:60px;font-size:11px;font-weight:800;color:var(--text);padding:10px 8px;}
@@ -316,13 +316,13 @@ tr:hover td{background:#FAFAF8;}
 /* ══════════════════════════════════
    찜 / 내 일정
 ══════════════════════════════════ */
-.heart-btn{background:none;border:1.5px solid #bbb;border-radius:50%;cursor:pointer;font-size:15px;padding:3px 5px;line-height:1;color:#aaa;transition:all .12s;flex-shrink:0;}
-.heart-btn:hover{color:#e05;border-color:#e05;transform:scale(1.1);}
-.heart-btn.on{color:#e05;border-color:#e05;background:#fff0f3;}
+.heart-btn{background:none;border:none;cursor:pointer;font-size:16px;padding:2px 4px;line-height:1;color:#999;-webkit-text-stroke:.5px #888;transition:all .12s;flex-shrink:0;}
+.heart-btn:hover{color:#e05;-webkit-text-stroke:.5px #c00;transform:scale(1.15);}
+.heart-btn.on{color:#e05;-webkit-text-stroke:.5px #c00;}
 /* 상영찜 북마크 아이콘 */
 .sched-wish-btn{background:none;border:1.5px solid #ccc;border-radius:4px;cursor:pointer;font-size:11px;font-weight:700;padding:1px 4px;line-height:1;color:#bbb;transition:all .12s;flex-shrink:0;font-family:inherit;}
-.sched-wish-btn:hover{border-color:#e05;color:#e05;}
-.sched-wish-btn.on{border-color:#e05;background:#e05;color:#fff;}
+.sched-wish-btn:hover{border-color:#333;color:#333;}
+.sched-wish-btn.on{border-color:#111;background:#111;color:#fff;}
 .wish-subtabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:16px;}
 .wish-subtab{font-size:13px;font-weight:600;font-family:inherit;padding:8px 20px;border:none;background:none;color:var(--text-muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .12s;}
 .wish-subtab.active{color:var(--green);border-bottom-color:var(--green);}
@@ -353,6 +353,9 @@ tr:hover td{background:#FAFAF8;}
 .wish-movie-thumb{width:36px;height:50px;border-radius:4px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:16px;overflow:hidden;flex-shrink:0;}
 .wish-movie-thumb img{width:100%;height:100%;object-fit:cover;}
 .wish-movie-info{flex:1;min-width:0;}
+.wish-movie-scheds{display:flex;flex-wrap:wrap;gap:4px;padding:2px 0 4px;}
+.wish-sched-chip{font-size:11px;font-weight:600;background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:2px 7px;white-space:nowrap;}
+
 .wish-movie-title{font-size:13px;font-weight:700;}
 .wish-movie-meta{font-size:11px;color:var(--text-muted);margin-top:2px;}
 .wish-clear-btn{font-size:11px;font-family:inherit;font-weight:600;padding:4px 10px;border-radius:5px;border:1px solid var(--border);background:var(--surface);color:var(--text-muted);cursor:pointer;margin-left:auto;}
@@ -500,7 +503,6 @@ tr:hover td{background:#FAFAF8;}
 
     <!-- 결과 헤더 -->
     <div class="result-header-row">
-      <span class="result-title-text" id="exploreTitle">오늘 볼 수 있는 영화</span>
       <span class="result-sub-text" id="exploreSub"></span>
       <span class="result-count-text" id="exploreCount"></span>
       <div style="margin-left:auto;display:flex;gap:5px;">
@@ -978,7 +980,8 @@ function openMoviePopup(title, rows, posterUrl){
   });
   const html = Object.entries(byKey).map(([label, rs])=>{
     const times = rs.map(r=>{
-      const start=(r.start_dt||"").slice(0,16).replace("T"," ").slice(5);
+      const {mmdd:smm, time:stm} = splitDt(r.start_dt);
+      const start = smm+" "+stm;
       const end=(r.end_dt||"").slice(11,16);
       const s=stickerHtml(r.program, r.show_type);
       const schedKey=`${esc(title)}|${esc(r.cinema)}|${esc(r.screen||"")}|${r.start_dt||""}`;
@@ -1089,7 +1092,7 @@ function renderWishTab(){
 function renderWishScheds(el){
   const arr = loadWishScheds();
   if(!arr.length){
-    el.innerHTML=`<div class="wish-empty"><div class="wish-empty-icon">🎬</div>상영 찜이 없어요<br><span style="font-size:12px;">시간표 칩의 🔖를 눌러 추가하세요</span></div>`;
+    el.innerHTML=`<div class="wish-empty"><div class="wish-empty-icon">🎬</div>체크 버튼을 눌러 원하는 상영을 추가하세요</div>`;
     return;
   }
   const now = new Date();
@@ -1129,7 +1132,7 @@ function renderWishScheds(el){
 function renderWishMovies(el){
   const arr = loadWishMovies();
   if(!arr.length){
-    el.innerHTML=`<div class="wish-empty"><div class="wish-empty-icon">🎞️</div>영화 찜이 없어요<br><span style="font-size:12px;">카드의 ♡를 눌러 추가하세요</span></div>`;
+    el.innerHTML=`<div class="wish-empty"><div class="wish-empty-icon">🎞️</div>관심 영화를 모아보세요</div>`;
     return;
   }
   const html = arr.map(m=>{
@@ -1138,13 +1141,27 @@ function renderWishMovies(el){
       : "🎬";
     // 현재 상영 횟수
     const cnt = movieData.filter(r=>r.movie===m.title).length;
-    return `<div class="wish-movie-row">
-      <div class="wish-movie-thumb">${thumb}</div>
-      <div class="wish-movie-info">
-        <div class="wish-movie-title">${esc(m.title)}</div>
-        <div class="wish-movie-meta">${cnt?cnt+"회 상영 중":"상영 정보 없음"}</div>
+    const upcomingRows = movieData
+      .filter(r=>r.movie===m.title)
+      .sort((a,b)=>(a.start_dt||"").localeCompare(b.start_dt||""))
+      .slice(0,5);
+    const schedHtml = upcomingRows.length
+      ? `<div class="wish-movie-scheds">${upcomingRows.map(r=>{
+          const {mmdd,time,dow}=splitDt(r.start_dt);
+          const {time:endT}=splitDt(r.end_dt);
+          return `<span class="wish-sched-chip">${mmdd}(${dow}) ${time}–${endT} <span style="font-size:10px;color:var(--text-muted);">${esc(r.cinema)}</span></span>`;
+        }).join("")}</div>`
+      : "";
+    return `<div class="wish-movie-row" style="flex-direction:column;align-items:stretch;gap:6px;cursor:default;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="wish-movie-thumb">${thumb}</div>
+        <div class="wish-movie-info">
+          <div class="wish-movie-title">${esc(m.title)}</div>
+          <div class="wish-movie-meta">${cnt?cnt+"회 상영 중":"상영 정보 없음"}</div>
+        </div>
+        <button class="heart-btn on" onclick="removeMovieWish('${esc(m.title)}')" title="찜 해제">♥</button>
       </div>
-      <button class="heart-btn on" onclick="removeMovieWish('${esc(m.title)}')" title="찜 해제">♥</button>
+      ${schedHtml}
     </div>`;
   }).join("");
   el.innerHTML = html;
