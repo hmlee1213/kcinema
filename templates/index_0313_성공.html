@@ -170,7 +170,7 @@ header{background:var(--text);color:#fff;padding:0 24px;position:sticky;top:0;z-
 .free-tag{font-size:10px;font-weight:700;background:#D1FAE5;color:#065F46;padding:1px 6px;border-radius:3px;}
 .chip-loc{font-size:9px;font-weight:600;background:#E5E7EB;color:#6B7280;padding:1px 5px;border-radius:3px;margin-left:4px;vertical-align:middle;}
 .chip-free{font-size:9px;font-weight:700;background:#D1FAE5;color:#065F46;padding:1px 5px;border-radius:3px;margin-left:3px;vertical-align:middle;}
-.c-row{display:grid;grid-template-columns:80px 118px minmax(0,1fr);align-items:center;gap:6px;padding:8px 14px;border-bottom:1px solid var(--border);font-size:14px;}
+.c-row{display:grid;grid-template-columns:80px 118px minmax(0,1fr) 24px;align-items:center;gap:6px;padding:8px 14px;border-bottom:1px solid var(--border);font-size:14px;}
 .c-row:last-child{border-bottom:none;}
 .c-date{font-weight:600;color:var(--text);white-space:nowrap;}
 .c-time{font-weight:600;color:var(--text);white-space:nowrap;}
@@ -206,6 +206,13 @@ header{background:var(--text);color:#fff;padding:0 24px;position:sticky;top:0;z-
 .mv-rec-badge{position:absolute;top:4px;right:4px;font-size:10px;font-weight:800;color:#B45309;background:rgba(255,255,255,.9);border-radius:3px;padding:0 3px;line-height:1.6;}
 .mv-wish-btn{position:absolute;bottom:6px;right:6px;background:none;border:none;cursor:pointer;font-size:14px;color:#ccc;-webkit-text-stroke:.4px #bbb;line-height:1;padding:1px;transition:color .1s;}
 .mv-wish-btn:hover,.mv-wish-btn.on{color:#e05;-webkit-text-stroke:.4px #c00;}
+/* 페이지네이션 */
+.pg-bar{display:flex;align-items:center;justify-content:center;gap:4px;padding:16px 0 8px;flex-wrap:wrap;}
+.pg-btn{font-family:inherit;font-size:12px;font-weight:600;min-width:32px;height:32px;padding:0 8px;border-radius:6px;border:1.5px solid var(--border);background:var(--surface);color:var(--text-muted);cursor:pointer;transition:all .12s;}
+.pg-btn:hover{border-color:var(--text);color:var(--text);}
+.pg-btn.active{background:var(--text);border-color:var(--text);color:#fff;}
+.pg-ellipsis{font-size:12px;color:var(--text-muted);padding:0 2px;}
+.pg-info{font-size:11px;color:var(--text-muted);margin-left:8px;white-space:nowrap;}
 .movie-group{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
 .movie-group-header{display:flex;align-items:center;gap:10px;padding:11px 14px;cursor:pointer;transition:background .12s;}
 .movie-group-header:hover{background:#FAFAF8;}
@@ -397,7 +404,7 @@ tr:hover td{background:#FAFAF8;}
   .cinema-rows-2col .c-row:nth-child(odd){border-right:none;}
   .cinema-rows-2col .c-row:nth-last-child(-n+2){border-bottom:1px solid var(--surface2);}
   .cinema-rows-2col .c-row:last-child{border-bottom:none;}
-  .c-row{grid-template-columns:64px 94px 1fr;}
+  .c-row{grid-template-columns:64px 94px 1fr 22px;}
   .m-row{grid-template-columns:1fr 60px 96px;}
   .cards-grid{grid-template-columns:1fr;}
   .main{padding:16px 14px 40px;}
@@ -413,7 +420,7 @@ tr:hover td{background:#FAFAF8;}
   .tab{padding:10px 12px;font-size:12px;}
   .day-tabs{gap:4px;}
   .day-tab{padding:4px 10px;font-size:11px;}
-  .c-row{grid-template-columns:58px 86px 1fr;}
+  .c-row{grid-template-columns:58px 86px 1fr 22px;}
 }
 </style>
 </head>
@@ -1553,8 +1560,8 @@ function renderCinemaGrid(){
     const freeBadge=isFree?`<span class="free-tag">무료</span>`:"";
     return `<div class="cinema-group">
       <div class="cinema-group-header" style="cursor:pointer;" onclick="openCinemaPopup('${esc(cinema)}')">
-        <div class="cinema-group-name">${esc(cinema)}${locBadge}${freeBadge}</div>
-        <div class="cinema-group-meta">${metaParts.map(p=>`<span>${p}</span>`).join("")} <span style="font-size:10px;color:var(--text-sub);">ℹ︎ 정보</span></div>
+        <div class="cinema-group-name">${esc(cinema)}${locBadge}<span style="font-size:10px;font-weight:500;color:var(--text-muted);margin-left:2px;">ℹ︎</span>${freeBadge}</div>
+        <div class="cinema-group-meta">${metaParts.map(p=>`<span>${p}</span>`).join("")}</div>
       </div>
       <div class="cinema-group-rows cinema-rows-2col">
         ${rows.map(r=>{
@@ -1564,10 +1571,13 @@ function renderCinemaGrid(){
           const movieHtml=r.movie_url
             ?`<a href="${esc(r.movie_url)}" target="_blank">${esc(r.movie)}</a>`
             :esc(r.movie);
+          const schedKey=`${esc(r.movie)}|${esc(cinema)}|${esc(r.screen||"")}|${r.start_dt||""}`;
+          const wished=isSchedWished(schedKey);
           return `<div class="c-row">
             <span class="c-date">${mmdd} ${DOW_KO[dowIdx]}</span>
             <span class="c-time">${time}–${endTime}</span>
             <span class="c-movie">${movieHtml}${s}</span>
+            <button class="sched-wish-btn swb${wished?" on":""}" data-key="${schedKey}" title="${wished?'등록 취소':'스케줄 등록'}" onclick="event.stopPropagation();toggleSchedWish('${schedKey}','${esc(r.movie)}','${esc(cinema)}','${esc(r.screen||"")}','${r.start_dt||""}','${r.end_dt||""}','${esc(r.poster_url||"")}',this)">${wished?"⏰":"➕"}</button>
           </div>`;
         }).join("")}
       </div>
@@ -1657,12 +1667,11 @@ async function loadMovieTabData(){
   }catch(e){ document.getElementById("movie-grid-content").innerHTML=`<div class="empty">데이터를 불러오지 못했습니다</div>`; }
 }
 
-const MOVIE_PAGE = 10;
-let movieShowCount = MOVIE_PAGE;
+const MOVIE_PAGE = 20;
+let movieCurrentPage = 1;
 
-function renderMovieGrid(resetCount=true){
-  if(!movieData.length){ document.getElementById("movie-grid-content").innerHTML=`<div class="empty">상영 정보가 없습니다</div>`; return; }
-  if(resetCount) movieShowCount = MOVIE_PAGE;
+// 필터·정렬 적용된 titles 배열 반환 (공통)
+function getFilteredTitles(){
   const groups={};
   movieData.forEach(r=>{
     if(!groups[r.movie]) groups[r.movie]=[];
@@ -1672,26 +1681,35 @@ function renderMovieGrid(resetCount=true){
   let titles=Object.keys(groups).filter(t=>{
     if(movieSearchQ && !t.includes(movieSearchQ)) return false;
     if(movieDirectorQ){
-      const dir=(groups[t][0]?.director||"").toLowerCase();
-      if(!dir.includes(movieDirectorQ.toLowerCase())) return false;
+      const d=(groups[t][0]?.director||"").toLowerCase();
+      if(!d.includes(movieDirectorQ.toLowerCase())) return false;
     }
     if(recFilterSet && !recFilterSet.has(t)) return false;
     return true;
   });
-  // 정렬 (방향 포함)
-  const dir = movieSortDir === "asc" ? 1 : -1;
-  if(movieSortMode==="count")   titles.sort((a,b)=>(groups[a].length - groups[b].length) * dir);
-  else if(movieSortMode==="title") titles.sort((a,b)=>a.localeCompare(b,"ko") * dir);
+  const dir = movieSortDir==="asc" ? 1 : -1;
+  if(movieSortMode==="count")   titles.sort((a,b)=>(groups[a].length-groups[b].length)*dir);
+  else if(movieSortMode==="title") titles.sort((a,b)=>a.localeCompare(b,"ko")*dir);
   else if(movieSortMode==="runtime") titles.sort((a,b)=>{
     const ra=groups[a].find(r=>r.runtime)?.runtime||0;
     const rb=groups[b].find(r=>r.runtime)?.runtime||0;
-    return (ra - rb) * dir;
+    return (ra-rb)*dir;
   });
-  if(!titles.length){ document.getElementById("movie-grid-content").innerHTML=`<div class="empty">검색 결과가 없습니다</div>`; return; }
+  return {titles, groups};
+}
+
+function renderMovieGrid(resetPage=true){
+  if(!movieData.length){ document.getElementById("movie-grid-content").className=""; document.getElementById("movie-grid-content").innerHTML=`<div class="empty">상영 정보가 없습니다</div>`; return; }
+  if(resetPage) movieCurrentPage = 1;
+  const {titles, groups} = getFilteredTitles();
+  if(!titles.length){ document.getElementById("movie-grid-content").className=""; document.getElementById("movie-grid-content").innerHTML=`<div class="empty">검색 결과가 없습니다</div>`; return; }
+
+  const totalPages = Math.ceil(titles.length / MOVIE_PAGE);
+  const start = (movieCurrentPage-1)*MOVIE_PAGE;
+  const visible = titles.slice(start, start+MOVIE_PAGE);
   const recSet = new Set((recData||[]).map(r=>r.title));
-  const visible = titles.slice(0, movieShowCount);
-  const remaining = titles.length - visible.length;
-  const html=visible.map(title=>{
+
+  const cards = visible.map(title=>{
     const rows=groups[title];
     const runtime=rows.find(r=>r.runtime)?.runtime;
     const posterUrl=rows[0].poster_url||'';
@@ -1700,7 +1718,7 @@ function renderMovieGrid(resetCount=true){
       :"🎬";
     const _encRows=encodeURIComponent(JSON.stringify(rows.map(r=>({cinema:r.cinema,screen:r.screen||'',start_dt:r.start_dt,end_dt:r.end_dt,program:r.program,show_type:r.show_type,movie_url:r.movie_url||'',poster_url:r.poster_url||''}))));
     const _encPost=encodeURIComponent(posterUrl);
-    const isRec=recSet&&recSet.has(title);
+    const isRec=recSet.has(title);
     const dirText=rows[0]?.director||'';
     return `<div class="mv-card${isRec?' has-rec':''}" onclick="onMovieCardClick('${esc(title)}','${_encRows}','${_encPost}')">
       <div class="mv-poster">${thumb}</div>
@@ -1713,87 +1731,39 @@ function renderMovieGrid(resetCount=true){
       <button class="mv-wish-btn${isMovieWished(title)?' on':''}" onclick="event.stopPropagation();toggleMovieWish(this,'${esc(title)}','${esc(posterUrl)}')" title="관심 목록 추가">${isMovieWished(title)?'♥':'♡'}</button>
     </div>`;
   }).join("");
-  const moreBtn = remaining > 0
-    ? `<div style="grid-column:1/-1;text-align:center;padding:10px 0;">
-        <button onclick="loadMoreMovies()" style="font-family:inherit;font-size:13px;font-weight:600;padding:9px 28px;border-radius:7px;border:1.5px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;">
-          더보기 (${remaining}편 더)
-        </button>
-       </div>`
-    : "";
+
+  // 페이지네이션 바
+  const pagination = totalPages > 1 ? buildMoviePagination(movieCurrentPage, totalPages, titles.length) : "";
+
   const mgc = document.getElementById("movie-grid-content");
   mgc.className = "movie-card-grid";
-  mgc.innerHTML = `${html}${moreBtn}`;
+  mgc.innerHTML = cards + pagination;
   lazyLoadImages();
+  // 페이지 변경 시 상단으로 스크롤
+  if(!resetPage) document.getElementById("tab-movie").scrollIntoView({behavior:"smooth", block:"start"});
 }
 
-function loadMoreMovies(){
-  const grid = document.getElementById("movie-grid-content");
-  // 더보기 버튼 제거
-  const oldBtn = grid.querySelector(".more-btn-wrap");
-  if(oldBtn) oldBtn.remove();
+function buildMoviePagination(cur, total, totalItems){
+  // 표시할 페이지 번호 범위 (최대 5개)
+  let start = Math.max(1, cur-2);
+  let end   = Math.min(total, start+4);
+  if(end-start < 4) start = Math.max(1, end-4);
 
-  const groups={};
-  movieData.forEach(r=>{
-    if(!groups[r.movie]) groups[r.movie]=[];
-    groups[r.movie].push(r);
-  });
-  let titles=Object.keys(groups).filter(t=>{
-    if(movieSearchQ && !t.includes(movieSearchQ)) return false;
-    if(movieDirectorQ){
-      const dir=(groups[t][0]?.director||"").toLowerCase();
-      if(!dir.includes(movieDirectorQ.toLowerCase())) return false;
-    }
-    return true;
-  });
-  const dir = movieSortDir === "asc" ? 1 : -1;
-  if(movieSortMode==="count")   titles.sort((a,b)=>(groups[a].length - groups[b].length) * dir);
-  else if(movieSortMode==="title") titles.sort((a,b)=>a.localeCompare(b,"ko") * dir);
-  else if(movieSortMode==="runtime") titles.sort((a,b)=>{
-    const ra=groups[a].find(r=>r.runtime)?.runtime||0;
-    const rb=groups[b].find(r=>r.runtime)?.runtime||0;
-    return (ra - rb) * dir;
-  });
-
-  const newTitles = titles.slice(movieShowCount, movieShowCount + MOVIE_PAGE);
-  movieShowCount += MOVIE_PAGE;
-  const remaining = titles.length - movieShowCount;
-  const recSet = new Set((recData||[]).map(r=>r.title));
-
-  // 새 카드 추가 (renderMovieGrid와 동일 형태)
-  const recSet2 = new Set((recData||[]).map(r=>r.title));
-  const cardGrid = grid;  // movie-grid-content 자체가 그리드
-  newTitles.forEach(title=>{
-    const rows=groups[title];
-    const runtime=rows.find(r=>r.runtime)?.runtime;
-    const posterUrl=rows[0].poster_url||'';
-    const thumb=posterUrl?`<img data-src="${esc(posterUrl)}" alt="" class="lazy-img" onerror="this.parentNode.textContent='🎬'">`:"🎬";
-    const _encRows=encodeURIComponent(JSON.stringify(rows.map(r=>({cinema:r.cinema,screen:r.screen||'',start_dt:r.start_dt,end_dt:r.end_dt,program:r.program,show_type:r.show_type,movie_url:r.movie_url||'',poster_url:r.poster_url||''}))));
-    const _encPost=encodeURIComponent(posterUrl);
-    const isRec=recSet2.has(title);
-    const dirText=rows[0]?.director||'';
-    const card=document.createElement("div");
-    card.className="mv-card"+(isRec?" has-rec":"");
-    card.onclick=()=>onMovieCardClick(title,_encRows,_encPost);
-    card.innerHTML=`
-      <div class="mv-poster">${thumb}</div>
-      ${isRec?'<div class="mv-rec-badge">★</div>':''}
-      <div class="mv-info">
-        <div class="mv-title">${esc(title)}</div>
-        <div class="mv-meta">${dirText?esc(dirText)+(runtime?' · ':''):''}${runtime?runtime+'분':''}</div>
-        <div class="mv-count">${rows.length}회 상영</div>
-      </div>
-      <button class="mv-wish-btn${isMovieWished(title)?' on':''}" onclick="event.stopPropagation();toggleMovieWish(this,'${esc(title)}','${esc(posterUrl)}')" title="관심 목록 추가">${isMovieWished(title)?'♥':'♡'}</button>`;
-    cardGrid.appendChild(card);
-  });
-
-  // 더보기 버튼 재추가
-  if(remaining > 0){
-    const wrap = document.createElement("div");
-    wrap.style.cssText = "grid-column:1/-1;text-align:center;padding:10px 0;";
-    wrap.innerHTML = `<button onclick="loadMoreMovies()" style="font-family:inherit;font-size:13px;font-weight:600;padding:9px 28px;border-radius:7px;border:1.5px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;">더보기 (${remaining}편 더)</button>`;
-    cardGrid.appendChild(wrap);
+  let btns = '';
+  if(cur > 1) btns += `<button class="pg-btn" onclick="goMoviePage(${cur-1})">‹</button>`;
+  if(start > 1) btns += `<button class="pg-btn" onclick="goMoviePage(1)">1</button>${start>2?'<span class="pg-ellipsis">…</span>':''}`;
+  for(let i=start; i<=end; i++){
+    btns += `<button class="pg-btn${i===cur?' active':''}" onclick="goMoviePage(${i})">${i}</button>`;
   }
-  lazyLoadImages();
+  if(end < total) btns += `${end<total-1?'<span class="pg-ellipsis">…</span>':''}<button class="pg-btn" onclick="goMoviePage(${total})">${total}</button>`;
+  if(cur < total) btns += `<button class="pg-btn" onclick="goMoviePage(${cur+1})">›</button>`;
+
+  return `<div class="pg-bar" style="grid-column:1/-1;">${btns}<span class="pg-info">${totalItems}편 / ${total}페이지</span></div>`;
+}
+
+function goMoviePage(page){
+  movieCurrentPage = page;
+  renderMovieGrid(false);
 }
 
 // 뷰포트 진입 시 포스터 로드

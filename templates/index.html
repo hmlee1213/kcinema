@@ -308,9 +308,10 @@ tr:hover td{background:#FAFAF8;}
 .cond-block{border-bottom:1px solid var(--border);}
 .cond-block:last-child{border-bottom:none;}
 .cond-row{display:flex;align-items:stretch;}
-.cond-label{width:76px;padding:12px 12px;font-size:13px;font-weight:800;color:var(--text);letter-spacing:.02em;flex-shrink:0;border-right:1px solid var(--border);display:flex;align-items:center;}
-.cond-body{flex:1;padding:9px 12px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
-.cond-sub{padding:0 12px 10px 88px;display:none;flex-wrap:wrap;gap:6px;align-items:center;}
+.cond-label{width:52px;padding:10px 8px;font-size:12px;font-weight:800;color:var(--text);letter-spacing:.01em;flex-shrink:0;border-right:1px solid var(--border);display:flex;align-items:center;justify-content:center;text-align:center;}
+.cond-body{flex:1;padding:8px 10px;display:flex;flex-wrap:nowrap;overflow-x:auto;gap:5px;align-items:center;scrollbar-width:none;-ms-overflow-style:none;}
+.cond-body::-webkit-scrollbar{display:none;}
+.cond-sub{padding:0 10px 8px 62px;display:none;flex-wrap:wrap;gap:5px;align-items:center;}
 .cond-sub.open{display:flex;}
 .cond-sub-label{font-size:10px;font-weight:700;color:var(--text-sub);letter-spacing:.04em;white-space:nowrap;}
 .cond-sub-label--section{font-size:13px;font-weight:800;color:var(--text);letter-spacing:0;background:var(--surface2);padding:3px 8px;border-radius:6px;}
@@ -338,8 +339,8 @@ tr:hover td{background:#FAFAF8;}
 .result-count-text{font-size:12px;font-weight:600;color:var(--text-muted);}
 .explore-grid{display:grid;gap:8px;}
 @media(max-width:700px){
-  .cond-label{width:60px;font-size:11px;font-weight:800;color:var(--text);padding:10px 8px;}
-  .cond-sub{padding-left:72px;}
+  .cond-label{width:44px;font-size:11px;font-weight:800;padding:9px 6px;}
+  .cond-sub{padding-left:54px;}
   .explore-grid{grid-template-columns:repeat(2,1fr) !important;}
 }
 
@@ -476,7 +477,6 @@ tr:hover td{background:#FAFAF8;}
           <input class="ex-date" type="date" id="exploreDate" onchange="loadExploreData()">
           <div class="cond-sep"></div>
           <span class="cond-sub-label cond-sub-label--section">시간대</span>
-          <button class="ex-chip" id="timeAllBtn" onclick="setTimeAll(this)">전체</button>
           <select class="ex-select" id="exploreTimeFrom" onchange="onTimeSelectChange()">
             <option value="00">00시~</option><option value="09">09시~</option>
             <option value="10">10시~</option><option value="11">11시~</option>
@@ -495,6 +495,7 @@ tr:hover td{background:#FAFAF8;}
             <option value="15">15시</option><option value="14">14시</option>
             <option value="13">13시</option><option value="12">12시</option>
           </select>
+          <button class="ex-chip" id="timeAllBtn" onclick="setTimeAll(this)" style="flex-shrink:0;">전체</button>
         </div>
         <!-- 기간 선택 패널: 날짜 from~to, 기본 전체 기간 -->
         <div class="cond-sub" id="rangeSub">
@@ -1267,12 +1268,11 @@ async function openCinemaPopup(name){
   document.getElementById("cpBody").innerHTML = '<div style="font-size:12px;color:var(--text-muted);padding:8px 0;">불러오는 중…</div>';
   document.getElementById("cinemaPopupOverlay").classList.add("open");
   document.body.style.overflow = "hidden";
-  if(!cinemaInfoCache[name]){
-    try{
-      const all = await fetch("/api/cinemas/all").then(r=>r.json());
-      all.forEach(c=>{ cinemaInfoCache[c.name]=c; });
-    }catch(e){}
-  }
+  // 항상 최신 데이터 로드 (캐시가 있어도 백그라운드 갱신)
+  try{
+    const all = await fetch("/api/cinemas/all").then(r=>r.json());
+    all.forEach(ci=>{ cinemaInfoCache[ci.name]=ci; });
+  }catch(e){}
   const d = cinemaInfoCache[name] || {};
   document.getElementById("cpAddress").textContent = d.address || "";
   let html = "";
