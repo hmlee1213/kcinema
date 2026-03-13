@@ -76,8 +76,6 @@ header{background:var(--text);color:#fff;padding:0 24px;position:sticky;top:0;z-
 .quick-filter-btn:hover{border-color:var(--text);color:var(--text);}
 .quick-filter-btn.active{background:var(--text);border-color:var(--text);color:#fff;}
 .sticker{display:inline-block;font-size:9px;font-weight:700;background:#555;color:#fff;padding:1px 4px;border-radius:3px;white-space:nowrap;vertical-align:middle;margin-left:4px;letter-spacing:.02em;}
-.sticker-4k{background:#1a56db;color:#fff;}
-.sticker-4k-supported{background:#e8f0fe;color:#1a56db;border:1px solid #a4c2f4;}
 
 /* ── 로딩/빈상태 ── */
 .loading{text-align:center;padding:60px 20px;color:var(--text-muted);font-size:13px;}
@@ -411,9 +409,6 @@ tr:hover td{background:#FAFAF8;}
   .main{padding:16px 14px 40px;}
 }
 @media(max-width:480px){
-  input[type="date"].ex-date{font-size:11px;padding:4px 5px;letter-spacing:-.3px;}
-  input[type="date"].ex-date::-webkit-datetime-edit-year-field{display:none;}
-  input[type="date"].ex-date::-webkit-datetime-edit-text:first-of-type{display:none;}
   .explore-cinema-chips{grid-template-columns:repeat(3,1fr);}
   .movie-card-grid{grid-template-columns:repeat(3,1fr);gap:7px;}
   .mv-poster{aspect-ratio:2/3;}
@@ -463,20 +458,22 @@ tr:hover td{background:#FAFAF8;}
       <div class="cond-block">
         <div class="cond-label">언제</div>
         <div class="cond-body">
-          <button class="ex-chip active" id="directSetBtn" onclick="setDirectMode()">선택</button>
+          <button class="ex-chip active" id="directSetBtn" onclick="setDirectMode()">직접 설정</button>
           <div class="cond-sep"></div>
           <button class="ex-chip" data-mode="today" onclick="setExploreDate(this,'today')">오늘</button>
           <button class="ex-chip" data-mode="tomorrow" onclick="setExploreDate(this,'tomorrow')">내일</button>
           <button class="ex-chip" data-mode="saturday" onclick="setExploreDate(this,'saturday')">토</button>
           <button class="ex-chip" data-mode="sunday" onclick="setExploreDate(this,'sunday')">일</button>
           <div class="cond-sep"></div>
-          <button class="ex-chip" id="rangeToggleBtn" onclick="setRangeMode()">기간</button>
+          <button class="ex-chip" id="rangeToggleBtn" onclick="setRangeMode()">기간 선택</button>
         </div>
         <!-- 직접 설정 패널 -->
-        <div class="cond-sub open" id="directSub" style="flex-wrap:nowrap;align-items:center;overflow-x:auto;scrollbar-width:none;">
-          <input class="ex-date" type="date" id="exploreDate" onchange="loadExploreData()" style="flex-shrink:0;">
-          <div class="cond-sep" style="flex-shrink:0;"></div>
-          <select class="ex-select" id="exploreTimeFrom" onchange="onTimeSelectChange()" style="flex-shrink:0;">
+        <div class="cond-sub open" id="directSub">
+          <span class="cond-sub-label cond-sub-label--section">날짜</span>
+          <input class="ex-date" type="date" id="exploreDate" onchange="loadExploreData()">
+          <div class="cond-sep"></div>
+          <span class="cond-sub-label cond-sub-label--section">시간대</span>
+          <select class="ex-select" id="exploreTimeFrom" onchange="onTimeSelectChange()">
             <option value="00">00시~</option><option value="09">09시~</option>
             <option value="10">10시~</option><option value="11">11시~</option>
             <option value="12">12시~</option><option value="13">13시~</option>
@@ -485,8 +482,8 @@ tr:hover td{background:#FAFAF8;}
             <option value="18">18시~</option><option value="19">19시~</option>
             <option value="20">20시~</option><option value="21">21시~</option>
           </select>
-          <span style="color:var(--text-sub);font-size:12px;flex-shrink:0;padding:0 2px;">~</span>
-          <select class="ex-select" id="exploreTimeTo" onchange="onTimeSelectChange()" style="flex-shrink:0;">
+          <span style="color:var(--text-sub);font-size:12px;">~</span>
+          <select class="ex-select" id="exploreTimeTo" onchange="onTimeSelectChange()">
             <option value="23" selected>23시</option><option value="22">22시</option>
             <option value="21">21시</option><option value="20">20시</option>
             <option value="19">19시</option><option value="18">18시</option>
@@ -497,10 +494,12 @@ tr:hover td{background:#FAFAF8;}
           <button class="ex-chip" id="timeAllBtn" onclick="setTimeAll(this)" style="flex-shrink:0;">전체</button>
         </div>
         <!-- 기간 선택 패널 -->
-        <div class="cond-sub" id="rangeSub" style="flex-wrap:nowrap;align-items:center;overflow-x:auto;scrollbar-width:none;">
-          <input class="ex-date" type="date" id="exploreDateFrom" onchange="loadExploreData()" style="flex-shrink:0;">
-          <span style="color:var(--text-sub);font-size:12px;padding:0 4px;flex-shrink:0;">~</span>
-          <input class="ex-date" type="date" id="exploreDateTo" onchange="loadExploreData()" style="flex-shrink:0;">
+        <div class="cond-sub" id="rangeSub">
+          <span class="cond-sub-label cond-sub-label--section">기간</span>
+          <input class="ex-date" type="date" id="exploreDateFrom" onchange="loadExploreData()">
+          <span style="color:var(--text-sub);font-size:12px;">~</span>
+          <input class="ex-date" type="date" id="exploreDateTo" onchange="loadExploreData()">
+          <span style="font-size:11px;color:var(--text-sub);margin-left:2px;">비워두면 전체 기간</span>
         </div>
       </div>
 
@@ -704,21 +703,13 @@ function renderDowBadge(dow, dowIdx){
   return `<span class="${cls}">${dow}</span>`;
 }
 
-function stickerHtml(program, showType, cinema){
+function stickerHtml(program, showType){
   const tags = [];
   const src = ((program||"")+" "+(showType||"")).toLowerCase();
-  const is4k = src.includes("4k") || src.includes("4k") || /4k/i.test((showType||"")+(program||""));
-  if(src.includes("gv")||src.includes("감독")) tags.push({t:"GV",cls:""});
-  else if(src.includes("토크")||src.includes("talk")) tags.push({t:"토크",cls:""});
-  if(src.includes("굿즈")) tags.push({t:"굿즈",cls:""});
-  if(is4k) tags.push({t:"4K",cls:"sticker-4k"});
-  return tags.map(({t,cls})=>`<span class="sticker ${cls}">${t}</span>`).join("");
-}
-// 극장별 4K 지원 안내 (KU시네마테크)
-const CINEMA_4K_SUPPORT = new Set(["KU시네마테크"]);
-function cinema4kSupportBadge(cinema){
-  if(!CINEMA_4K_SUPPORT.has(cinema)) return "";
-  return `<span class="sticker sticker-4k-supported" title="이 극장은 4K 상영을 지원합니다">4K지원</span>`;
+  if(src.includes("gv")||src.includes("감독")) tags.push("GV");
+  else if(src.includes("토크")||src.includes("talk")) tags.push("토크");
+  if(src.includes("굿즈")) tags.push("굿즈");
+  return tags.map(t=>`<span class="sticker">${t}</span>`).join("");
 }
 
 /* ══════════════════════════════════════
@@ -737,12 +728,12 @@ async function init(){
   await loadStats();
   initCinemaTabChips();
   initExploreCinemaChips();
+  // 직접 설정 날짜 기본값: 오늘
   document.getElementById("exploreDate").value = today_kst();
+  // 기간 선택 기본값: 오늘 ~ DB 마지막 날짜
   document.getElementById("exploreDateFrom").value = today_kst();
   if(statsCache?.date_max)
     document.getElementById("exploreDateTo").value = statsCache.date_max;
-  // recData를 탐색 탭에서도 쓸 수 있게 init에서 미리 로드
-  try{ recData = await fetch("/api/recommended").then(r=>r.json()); }catch(e){ recData=[]; }
   await loadExploreData();
   updateWishBadge();
 }
@@ -1558,14 +1549,14 @@ function renderCinemaGrid(){
     const freeBadge=isFree?`<span class="free-tag">무료</span>`:"";
     return `<div class="cinema-group">
       <div class="cinema-group-header" style="cursor:pointer;" onclick="openCinemaPopup('${esc(cinema)}')">
-        <div class="cinema-group-name">${esc(cinema)}${locBadge}<span style="font-size:10px;font-weight:500;color:var(--text-muted);margin-left:2px;">ℹ︎</span>${freeBadge}${cinema4kSupportBadge(cinema)}</div>
+        <div class="cinema-group-name">${esc(cinema)}${locBadge}<span style="font-size:10px;font-weight:500;color:var(--text-muted);margin-left:2px;">ℹ︎</span>${freeBadge}</div>
         <div class="cinema-group-meta">${metaParts.map(p=>`<span>${p}</span>`).join("")}</div>
       </div>
       <div class="cinema-group-rows cinema-rows-2col">
         ${rows.map(r=>{
           const {mmdd,time,dow,dowIdx}=splitDt(r.start_dt);
           const {time:endTime}=splitDt(r.end_dt);
-          const s=stickerHtml(r.program,r.show_type,cinema);
+          const s=stickerHtml(r.program,r.show_type);
           const movieHtml=r.movie_url
             ?`<a href="${esc(r.movie_url)}" target="_blank">${esc(r.movie)}</a>`
             :esc(r.movie);
