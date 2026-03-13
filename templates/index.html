@@ -138,9 +138,10 @@ header{background:var(--text);color:#fff;padding:0 24px;position:sticky;top:0;z-
 /* 극장 칩: 6열 균등 그리드 */
 .cinema-chips-wrap{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:5px;flex:1;min-width:0;}
 /* 12개 극장 → PC: 6열×2행, 모바일: 2열×6행 */
-.cinema-chip-btn{font-size:12px;font-weight:600;font-family:inherit;padding:5px 0;border-radius:6px;border:1.5px solid var(--text);background:var(--surface);color:var(--text);cursor:pointer;transition:all .12s;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.cinema-chip-btn.off{border-color:var(--border);color:var(--text-sub);text-decoration:line-through;}
-.cinema-chip-btn:not(.off):hover{background:var(--text);color:#fff;}
+.cinema-chip-btn{font-size:12px;font-weight:600;font-family:inherit;padding:5px 12px;border-radius:20px;border:1.5px solid var(--border);background:var(--surface);color:var(--text-muted);cursor:pointer;transition:all .12s;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;user-select:none;}
+.cinema-chip-btn.off{border-color:var(--border);color:var(--text-sub);opacity:.5;}
+.cinema-chip-btn:not(.off){border-color:var(--text);color:var(--text);background:var(--text);color:#fff;}
+.cinema-chip-btn.off:hover{border-color:var(--text);color:var(--text);opacity:1;}
 .ctrl-btns{display:flex;gap:6px;flex-shrink:0;}
 .ctrl-btn{font-size:11px;font-weight:700;font-family:inherit;padding:4px 12px;border-radius:5px;border:1.5px solid var(--border);background:var(--surface);color:var(--text-muted);cursor:pointer;white-space:nowrap;transition:all .12s;}
 .ctrl-btn:hover{background:var(--text);border-color:var(--text);color:#fff;}
@@ -304,8 +305,9 @@ tr:hover td{background:#FAFAF8;}
 .free-badge{font-size:9px;font-weight:700;color:var(--green);margin-left:3px;}
 .result-header-row{display:flex;align-items:center;gap:14px;margin-bottom:16px;flex-wrap:wrap;}
 
-.result-sub-text{font-size:20px;font-weight:700;color:var(--text);letter-spacing:-.01em;}
-.result-count-text{font-size:28px;font-weight:800;color:var(--text);letter-spacing:-.02em;}
+.result-title-text{font-size:15px;font-weight:800;color:var(--text);}
+.result-sub-text{font-size:13px;font-weight:600;color:var(--text-muted);}
+.result-count-text{font-size:12px;font-weight:600;color:var(--text-muted);}
 .explore-grid{display:grid;gap:8px;}
 @media(max-width:700px){
   .cond-label{width:60px;font-size:11px;font-weight:800;color:var(--text);padding:10px 8px;}
@@ -503,6 +505,7 @@ tr:hover td{background:#FAFAF8;}
 
     <!-- 결과 헤더 -->
     <div class="result-header-row">
+      <span class="result-title-text">볼 수 있는 영화</span>
       <span class="result-sub-text" id="exploreSub"></span>
       <span class="result-count-text" id="exploreCount"></span>
       <div style="margin-left:auto;display:flex;gap:5px;">
@@ -1011,13 +1014,27 @@ const LS_MOVIE = "wish_movies";   // [{title, poster_url, added_at}]
 const LS_SCHED = "wish_scheds";   // [{key, movie, cinema, screen, start_dt, end_dt, poster_url, added_at}]
 let wishSubMode = "sched";
 
-function loadWishMovies(){ try{ return JSON.parse(localStorage.getItem(LS_MOVIE)||"[]"); }catch(e){ return []; } }
-function loadWishScheds(){ try{ return JSON.parse(localStorage.getItem(LS_SCHED)||"[]"); }catch(e){ return []; } }
-function saveWishMovies(arr){ localStorage.setItem(LS_MOVIE, JSON.stringify(arr)); updateWishBadge(); }
-function saveWishScheds(arr){ localStorage.setItem(LS_SCHED, JSON.stringify(arr)); updateWishBadge(); }
+// 메모리 캐시 — localStorage 매번 읽지 않도록
+let _wishMovieCache = null;
+let _wishSchedCache = null;
+let _wishSchedSet   = null; // 빠른 key 조회용 Set
+
+function loadWishMovies(){
+  if(!_wishMovieCache) try{ _wishMovieCache=JSON.parse(localStorage.getItem(LS_MOVIE)||"[]"); }catch(e){ _wishMovieCache=[]; }
+  return _wishMovieCache;
+}
+function loadWishScheds(){
+  if(!_wishSchedCache) try{ _wishSchedCache=JSON.parse(localStorage.getItem(LS_SCHED)||"[]"); }catch(e){ _wishSchedCache=[]; }
+  return _wishSchedCache;
+}
+function saveWishMovies(arr){ _wishMovieCache=arr; localStorage.setItem(LS_MOVIE, JSON.stringify(arr)); updateWishBadge(); }
+function saveWishScheds(arr){ _wishSchedCache=arr; _wishSchedSet=new Set(arr.map(s=>s.key)); localStorage.setItem(LS_SCHED, JSON.stringify(arr)); updateWishBadge(); }
 
 function isMovieWished(title){ return loadWishMovies().some(m=>m.title===title); }
-function isSchedWished(key){ return loadWishScheds().some(s=>s.key===key); }
+function isSchedWished(key){
+  if(!_wishSchedSet){ _wishSchedSet=new Set(loadWishScheds().map(s=>s.key)); }
+  return _wishSchedSet.has(key);
+}
 
 function updateWishBadge(){
   const sm = loadWishMovies().length;
@@ -1092,7 +1109,7 @@ function renderWishTab(){
 function renderWishScheds(el){
   const arr = loadWishScheds();
   if(!arr.length){
-    el.innerHTML=`<div class="wish-empty"><div class="wish-empty-icon">🎬</div>체크 버튼을 눌러 원하는 상영을 추가하세요</div>`;
+    el.innerHTML=`<div class="wish-empty"><div class="wish-empty-icon">🎞️</div>체크 버튼을 눌러 원하는 상영을 모아보세요</div>`;
     return;
   }
   const now = new Date();
@@ -1132,7 +1149,7 @@ function renderWishScheds(el){
 function renderWishMovies(el){
   const arr = loadWishMovies();
   if(!arr.length){
-    el.innerHTML=`<div class="wish-empty"><div class="wish-empty-icon">🎞️</div>관심 영화를 모아보세요</div>`;
+    el.innerHTML=`<div class="wish-empty"><div class="wish-empty-icon">🎬</div>하트 버튼을 눌러 관심 영화를 모아보세요</div>`;
     return;
   }
   const html = arr.map(m=>{
@@ -1324,7 +1341,7 @@ function renderMovieGrid(resetCount=true){
           <div class="movie-group-title" style="display:flex;align-items:center;gap:6px;">${esc(title)}</div>
           <div class="movie-group-meta">${runtime?runtime+"분 · ":""}${rows.length}회 상영</div>
         </div>
-        <span class="movie-group-count" style="display:none">${rows.length}회</span>
+        <button class="heart-btn${isMovieWished(title)?" on":""}" onclick="toggleMovieWish(this,'${esc(title)}','${esc(rows[0].poster_url||"")}')" title="영화 찜">${isMovieWished(title)?"♥":"♡"}</button>
       </div>
       <div class="movie-rows">
         ${rows.map(r=>{
@@ -1398,7 +1415,7 @@ function loadMoreMovies(){
           <div class="movie-group-title" style="display:flex;align-items:center;gap:6px;">${esc(title)}</div>
           <div class="movie-group-meta">${runtime?runtime+"분 · ":""}${rows.length}회 상영</div>
         </div>
-        <span class="movie-group-count" style="display:none">${rows.length}회</span>
+        <button class="heart-btn${isMovieWished(title)?" on":""}" onclick="toggleMovieWish(this,'${esc(title)}','${esc(rows[0].poster_url||"")}')" title="영화 찜">${isMovieWished(title)?"♥":"♡"}</button>
       </div>`;
     grid.appendChild(card);
   });
