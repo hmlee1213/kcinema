@@ -1068,7 +1068,10 @@ a{color:#2D5A1B;text-decoration:none}
   <div class="panel">
     <div class="panel-title">
       <span>현재 상영 중인 영화 <span style="font-size:12px;font-weight:400;color:#888">— 카드를 눌러 편집하세요</span></span>
-      <button class="btn btn-light btn-sm" onclick="openNewMovie()">+ 직접 추가</button>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <button class="btn btn-light btn-sm" id="movieSortBtn" onclick="toggleAdminMovieSort()" title="정렬 전환">가 ↑</button>
+        <button class="btn btn-light btn-sm" onclick="openNewMovie()">+ 직접 추가</button>
+      </div>
     </div>
 
     <div class="movie-grid" id="movieGrid">
@@ -1231,7 +1234,10 @@ a{color:#2D5A1B;text-decoration:none}
   <div class="panel">
     <div class="panel-title">
       <span>극장 목록 <span style="font-size:12px;font-weight:400;color:#888">— 극장을 눌러 수정하세요</span></span>
-      <button class="btn btn-light btn-sm" onclick="openNewCinema()">+ 신규 추가</button>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <button class="btn btn-light btn-sm" id="cinemaSortBtn" onclick="toggleAdminCinemaSort()" title="정렬 전환">가 ↑</button>
+        <button class="btn btn-light btn-sm" onclick="openNewCinema()">+ 신규 추가</button>
+      </div>
     </div>
     <div class="cinema-list">
       {% for c in cinemas %}
@@ -1558,6 +1564,35 @@ function openNewCinema(){
 
 // 오늘 날짜 기본값
 document.getElementById("evDate").value=new Date().toISOString().slice(0,10);
+/* ── 어드민 정렬 ── */
+let adminMovieSortAsc = true;
+let adminCinemaSortAsc = true;
+
+function toggleAdminMovieSort(){
+  adminMovieSortAsc = !adminMovieSortAsc;
+  const btn = document.getElementById("movieSortBtn");
+  btn.textContent = adminMovieSortAsc ? "가 ↑" : "가 ↓";
+  const grid = document.getElementById("movieGrid");
+  const cards = [...grid.querySelectorAll(".m-card")];
+  cards.sort((a,b)=>{
+    const ta = (a.dataset.title||"").localeCompare(b.dataset.title||"","ko");
+    return adminMovieSortAsc ? ta : -ta;
+  });
+  cards.forEach(c=>grid.appendChild(c));
+}
+
+function toggleAdminCinemaSort(){
+  adminCinemaSortAsc = !adminCinemaSortAsc;
+  const btn = document.getElementById("cinemaSortBtn");
+  btn.textContent = adminCinemaSortAsc ? "가 ↑" : "가 ↓";
+  const list = document.querySelector(".cinema-list");
+  const rows = [...list.querySelectorAll(".c-row")];
+  rows.sort((a,b)=>{
+    const ta = (a.dataset.name||"").localeCompare(b.dataset.name||"","ko");
+    return adminCinemaSortAsc ? ta : -ta;
+  });
+  rows.forEach(r=>list.appendChild(r));
+}
 </script>
 </body>
 </html>"""
