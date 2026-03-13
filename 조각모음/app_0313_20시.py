@@ -566,94 +566,48 @@ def api_refresh():
 
 @app.route("/api/export/excel")
 def export_excel():
-    if not session.get("admin"): return jsonify({"error":"unauthorized"}), 401
     import openpyxl
     from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
-
+    df = request.args.get("date_from", date.today().isoformat())
+    dt = request.args.get("date_to",   date.today().isoformat())
+    cinemas = request.args.getlist("cinema"); mq = request.args.get("movie", "").strip()
     conn = get_db(); cur = conn.cursor()
+    sql = "SELECT * FROM screenings WHERE start_dt::date BETWEEN %s AND %s"
+    params = [df, dt]
+    if cinemas:
+        sql += " AND cinema = ANY(%s)"; params.append(cinemas)
+    if mq:
+        sql += " AND movie ILIKE %s"; params.append(f"%{mq}%")
+    cur.execute(sql + " ORDER BY start_dt", params)
+    rows = cur.fetchall(); cur.close(); conn.close()
 
-    # ── 헬퍼 ──
-    def hdr_style(cell, fg="1A1A2E"):
-        thin = Side(style="thin", color="DDDDDD")
-        cell.fill = PatternFill("solid", fgColor=fg)
-        cell.font = Font(bold=True, color="FFFFFF", size=10)
-        cell.alignment = Alignment(horizontal="center", vertical="center")
-        cell.border = Border(left=thin, right=thin, top=thin, bottom=thin)
-    def data_style(cell, fg="FFFFFF"):
-        thin = Side(style="thin", color="DDDDDD")
-        cell.fill = PatternFill("solid", fgColor=fg)
-        cell.alignment = Alignment(vertical="center", wrap_text=False)
-        cell.border = Border(left=thin, right=thin, top=thin, bottom=thin)
-
-    wb = openpyxl.Workbook()
-
-    # ══ 시트1: 시간표 (screenings 전체) ══
-    ws1 = wb.active; ws1.title = "시간표"
-    cur.execute("SELECT cinema,movie,start_dt,end_dt,runtime,screen,show_type,program,source FROM screenings ORDER BY start_dt")
-    s_rows = cur.fetchall()
-    hdrs1 = ["극장","영화제목","날짜","시작","종료","런타임","상영관","상영유형","프로그램","소스"]
-    for ci, h in enumerate(hdrs1, 1):
-        hdr_style(ws1.cell(row=1, column=ci, value=h))
-    ws1.row_dimensions[1].height = 22
+    wb = openpyxl.Workbook(); ws = wb.active; ws.title = "시간표"
+    headers = ["극장","영화제목","날짜","시작","종료","런타임(분)","상영관","상영유형","프로그램"]
+    thin = Side(style="thin", color="DDDDDD"); bdr = Border(left=thin,right=thin,top=thin,bottom=thin)
+    for ci, h in enumerate(headers, 1):
+        c = ws.cell(row=1, column=ci, value=h)
+        c.fill = PatternFill("solid", fgColor="1A1A2E")
+        c.font = Font(bold=True, color="FFFFFF", size=11)
+        c.alignment = Alignment(horizontal="center"); c.border = bdr
+    ws.row_dimensions[1].height = 24
     palette = ["EFF6FF","FFF7ED","F0FDF4","FFF1F2","F5F3FF","ECFEFF","FFFBEB","F0F9FF"]
     colors = {}; pidx = 0
-    for ri, r in enumerate(s_rows, 2):
+    for ri, r in enumerate(rows, 2):
         if r["cinema"] not in colors:
             colors[r["cinema"]] = palette[pidx % len(palette)]; pidx += 1
-        fg = colors[r["cinema"]]
-        sdt = r["start_dt"] or ""; edt = r["end_dt"] or ""
-        vals = [r["cinema"], r["movie"], str(sdt)[:10], str(sdt)[11:16],
-                str(edt)[11:16], r["runtime"], r["screen"],
-                r["show_type"] or "", r["program"] or "", r["source"] or ""]
-        for ci, v in enumerate(vals, 1):
-            data_style(ws1.cell(row=ri, column=ci, value=v), fg)
-    for col, w in zip("ABCDEFGHIJ", [16,34,12,8,8,8,14,12,20,10]):
-        ws1.column_dimensions[col].width = w
-    ws1.freeze_panes = "A2"
-
-    # ══ 시트2: 영화 (movies) ══
-    ws2 = wb.create_sheet("영화")
-    cur.execute("SELECT title, title_en, director, director_en, year, runtime, country, is_4k, is_dolby, poster_url, synopsis, updated_at FROM movies ORDER BY title")
-    m_rows = cur.fetchall()
-    hdrs2 = ["제목","영문제목","감독","감독(영문)","연도","런타임","국가","4K","돌비","포스터URL","시놉시스","수정일"]
-    for ci, h in enumerate(hdrs2, 1):
-        hdr_style(ws2.cell(row=1, column=ci, value=h), fg="2D5A1B")
-    ws2.row_dimensions[1].height = 22
-    for ri, r in enumerate(m_rows, 2):
-        vals = [r["title"], r["title_en"] or "", r["director"] or "", r["director_en"] or "",
-                r["year"], r["runtime"], r["country"] or "",
-                "✓" if r["is_4k"] else "", "✓" if r["is_dolby"] else "",
-                r["poster_url"] or "", (r["synopsis"] or "")[:80],
-                str(r["updated_at"] or "")[:10]]
-        for ci, v in enumerate(vals, 1):
-            data_style(ws2.cell(row=ri, column=ci, value=v))
-    for col, w in zip("ABCDEFGHIJKL", [28,24,16,16,8,8,8,6,6,40,50,12]):
-        ws2.column_dimensions[col].width = w
-    ws2.freeze_panes = "A2"
-
-    # ══ 시트3: 추천 (recommended) ══
-    ws3 = wb.create_sheet("추천")
-    cur.execute("SELECT title, is_rec, comment, awards, created_at FROM recommended ORDER BY title")
-    r_rows = cur.fetchall()
-    hdrs3 = ["제목","추천","코멘트","수상내역","등록일"]
-    for ci, h in enumerate(hdrs3, 1):
-        hdr_style(ws3.cell(row=1, column=ci, value=h), fg="B45309")
-    ws3.row_dimensions[1].height = 22
-    for ri, r in enumerate(r_rows, 2):
-        vals = [r["title"], "✓" if r["is_rec"] else "",
-                r["comment"] or "", r["awards"] or "", str(r["created_at"] or "")[:10]]
-        for ci, v in enumerate(vals, 1):
-            data_style(ws3.cell(row=ri, column=ci, value=v))
-    for col, w in zip("ABCDE", [30,6,40,40,12]):
-        ws3.column_dimensions[col].width = w
-    ws3.freeze_panes = "A2"
-
-    cur.close(); conn.close()
-    from datetime import date as _date
-    today = _date.today().isoformat()
+        fill = PatternFill("solid", fgColor=colors[r["cinema"]])
+        sdt = r["start_dt"] or ""
+        for col, v in enumerate([r["cinema"], r["movie"], str(sdt)[:10], str(sdt)[11:16],
+                str(r["end_dt"] or "")[11:16], r["runtime"], r["screen"],
+                r["show_type"], r["program"]], 1):
+            c = ws.cell(row=ri, column=col, value=v)
+            c.fill = fill; c.border = bdr; c.alignment = Alignment(vertical="center")
+    for col, w in zip("ABCDEFGHI", [16,36,12,10,10,10,14,16,24]):
+        ws.column_dimensions[col].width = w
+    ws.freeze_panes = "A2"
     buf = io.BytesIO(); wb.save(buf); buf.seek(0)
     return send_file(buf, as_attachment=True,
-                     download_name=f"kcinema_DB_{today}.xlsx",
+                     download_name=f"시간표_{df}_{dt}.xlsx",
                      mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
 # ── 시작 ─────────────────────────────────────────────
@@ -1146,11 +1100,9 @@ a{color:#2D5A1B;text-decoration:none}
       <div style="display:flex;gap:6px;align-items:center;">
         <button class="btn btn-light btn-sm" id="movieSortBtn" onclick="toggleAdminMovieSort()" title="정렬 전환">가 ↑</button>
         <button class="btn btn-light btn-sm" onclick="openNewMovie()">+ 직접 추가</button>
-        <a href="#movie-bottom" class="btn btn-light btn-sm" title="맨 아래로">↓ 맨아래</a>
       </div>
     </div>
 
-    <span id="movie-top"></span>
     <div class="movie-grid" id="movieGrid">
       {% for m in screening_movies %}
       <div class="m-card {% if m.poster_url %}has-info{% endif %} {% if m.rec_id %}has-rec{% endif %}"
@@ -1271,10 +1223,6 @@ a{color:#2D5A1B;text-decoration:none}
       </div>
     </div>
   </div>
-  <div style="display:flex;justify-content:flex-end;padding:6px 0 2px;">
-    <a href="#movie-top" class="btn btn-light btn-sm" title="맨 위로">↑ 맨위</a>
-  </div>
-  <span id="movie-bottom"></span>
 </div>
 
 <!-- ══════════════════════════════════════
