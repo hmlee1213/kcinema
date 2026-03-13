@@ -153,13 +153,13 @@ def ensure_db():
         CREATE TABLE IF NOT EXISTS recommended (
             id SERIAL PRIMARY KEY,
             title TEXT UNIQUE NOT NULL,
-            is_rec BOOLEAN DEFAULT TRUE,
+            stars INTEGER DEFAULT 1 CHECK (stars BETWEEN 1 AND 3),
             comment TEXT DEFAULT '',
             awards TEXT DEFAULT '',
             created_at TIMESTAMP DEFAULT NOW()
         )
     """)
-    cur.execute("ALTER TABLE recommended ADD COLUMN IF NOT EXISTS is_rec BOOLEAN DEFAULT TRUE")
+    cur.execute("ALTER TABLE recommended ADD COLUMN IF NOT EXISTS stars INTEGER DEFAULT 1")
     cur.execute("ALTER TABLE recommended ADD COLUMN IF NOT EXISTS comment TEXT DEFAULT ''")
     cur.execute("ALTER TABLE recommended ADD COLUMN IF NOT EXISTS awards TEXT DEFAULT ''")
     # awards에 movie_info 테이블 통합 - 수상내역은 recommended에서 관리
@@ -178,7 +178,6 @@ def ensure_db():
         )
     """)
     cur.execute("ALTER TABLE cinemas ADD COLUMN IF NOT EXISTS price_info TEXT DEFAULT ''")
-    cur.execute("ALTER TABLE cinemas ADD COLUMN IF NOT EXISTS price_table JSONB DEFAULT '{}'")
     cur.execute("""
         CREATE TABLE IF NOT EXISTS posters (
             title TEXT PRIMARY KEY,
@@ -458,7 +457,7 @@ def api_movies():
 @app.route("/api/recommended", methods=["GET"])
 def api_recommended_get():
     conn = get_db(); cur = conn.cursor()
-    cur.execute("SELECT id, title, is_rec, comment, awards, created_at FROM recommended WHERE is_rec=TRUE ORDER BY created_at DESC")
+    cur.execute("SELECT id, title, stars, comment, awards, created_at FROM recommended ORDER BY stars DESC, created_at DESC")
     rows = [dict(r) for r in cur.fetchall()]
     cur.close(); conn.close()
     return jsonify(rows)
@@ -469,18 +468,19 @@ def api_recommended_post():
         return jsonify({"error": "unauthorized"}), 401
     data = request.get_json()
     title   = (data.get("title") or "").strip()
-    is_rec  = bool(data.get("is_rec", True))
+    stars   = int(data.get("stars") or 1)
     comment = (data.get("comment") or "").strip()
     awards  = (data.get("awards") or "").strip()
     if not title:
         return jsonify({"error": "title required"}), 400
+    stars = max(1, min(3, stars))
     conn = get_db(); cur = conn.cursor()
     cur.execute("""
-        INSERT INTO recommended (title, is_rec, comment, awards)
+        INSERT INTO recommended (title, stars, comment, awards)
         VALUES (%s, %s, %s, %s)
         ON CONFLICT (title) DO UPDATE SET
-            is_rec=EXCLUDED.is_rec, comment=EXCLUDED.comment, awards=EXCLUDED.awards
-    """, (title, is_rec, comment, awards))
+            stars=EXCLUDED.stars, comment=EXCLUDED.comment, awards=EXCLUDED.awards
+    """, (title, stars, comment, awards))
     conn.commit(); cur.close(); conn.close()
     return jsonify({"ok": True})
 
@@ -775,18 +775,18 @@ def api_movie_info():
     conn = get_db(); cur = conn.cursor()
     cur.execute("""
         SELECT m.title, m.director, m.synopsis, m.poster_url,
-               r.is_rec, r.comment, r.awards
+               r.stars, r.comment, r.awards
         FROM movies m
         LEFT JOIN recommended r ON r.title = m.title
     """)
     rows = {r["title"]: dict(r) for r in cur.fetchall()}
     # recommended에만 있는 경우도 포함
-    cur.execute("SELECT title, is_rec, comment, awards FROM recommended")
+    cur.execute("SELECT title, stars, comment, awards FROM recommended")
     for r in cur.fetchall():
         if r["title"] not in rows:
             rows[r["title"]] = dict(r)
         else:
-            rows[r["title"]].update({k: r[k] for k in ["is_rec","comment","awards"]})
+            rows[r["title"]].update({k: r[k] for k in ["stars","comment","awards"]})
     cur.close(); conn.close()
     return jsonify(rows)
 
@@ -803,7 +803,7 @@ def admin_dashboard():
     cur.execute("""
         SELECT DISTINCT s.movie,
                m.poster_url,
-               r.id AS rec_id, r.is_rec, r.comment, r.awards
+               r.id AS rec_id, r.stars, r.comment, r.awards
         FROM screenings s
         LEFT JOIN movies m ON m.title = s.movie
         LEFT JOIN recommended r ON r.title = s.movie
@@ -829,22 +829,14 @@ def admin_cinema_save():
     d = request.form
     conn = get_db(); cur = conn.cursor()
     cur.execute("""
-        INSERT INTO cinemas (name,address,url,phone,description,price_info,price_table,is_free,note,updated_at)
-        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,NOW())
+        INSERT INTO cinemas (name,address,url,phone,description,price_info,is_free,note,updated_at)
+        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,NOW())
         ON CONFLICT (name) DO UPDATE SET
             address=EXCLUDED.address, url=EXCLUDED.url, phone=EXCLUDED.phone,
             description=EXCLUDED.description, price_info=EXCLUDED.price_info,
-            price_table=EXCLUDED.price_table,
             is_free=EXCLUDED.is_free, note=EXCLUDED.note, updated_at=NOW()
     """, (d["name"], d.get("address",""), d.get("url",""), d.get("phone",""),
           d.get("description",""), d.get("price_info",""),
-          __import__("json").dumps({
-              "weekday_matinee": d.get("pt_wd_mat",""),
-              "weekday_normal":  d.get("pt_wd_nor",""),
-              "weekend_matinee": d.get("pt_we_mat",""),
-              "weekend_normal":  d.get("pt_we_nor",""),
-              "discount":        d.get("pt_discount",""),
-          }),
           d.get("is_free","") == "on", d.get("note","")))
     conn.commit(); cur.close(); conn.close()
     return redirect(url_for("admin_dashboard") + "#cinemas")
@@ -1021,11 +1013,6 @@ tr:hover td{background:#FAFAF8}
 .badge{display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px}
 .badge-free{background:#D1FAE5;color:#065F46}
 a{color:#2D5A1B;text-decoration:none}
-.price-tbl{width:100%;border-collapse:collapse;font-size:13px;margin-top:4px;}
-.price-tbl th,.price-tbl td{border:1.5px solid #E0DDD8;padding:6px 10px;text-align:center;}
-.price-tbl th{background:#F5F4F0;font-weight:700;font-size:11px;color:#555;}
-.price-tbl-label{font-weight:700;font-size:12px;color:#444;background:#FAFAF8;white-space:nowrap;}
-.price-tbl input{border:none;outline:none;text-align:center;font-size:13px;font-family:inherit;width:100%;background:transparent;padding:2px 0;}
 /* 극장 카드 */
 .cinema-list{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
 .c-row{display:flex;align-items:center;gap:10px;padding:10px 14px;border:1.5px solid #E8E6E0;border-radius:8px;cursor:pointer;background:#FAFAF8;transition:all .12s}
@@ -1131,15 +1118,25 @@ a{color:#2D5A1B;text-decoration:none}
       <!-- 추천 -->
       <div class="ep-section">
         <div class="ep-section-title">추천</div>
-        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:10px">
-          <label style="display:inline-flex;align-items:center;gap:7px;cursor:pointer;font-size:14px;font-weight:700">
-            <input type="checkbox" id="epIsRec" style="width:16px;height:16px;accent-color:#111;cursor:pointer"> ★ 추천 영화로 등록
-          </label>
-          <span style="font-size:11px;color:#888">체크하면 카드에 ★ 표시</span>
+        <div class="ep-grid ep-2">
+          <div class="fg">
+            <label class="lbl">별점</label>
+            <div class="stars-row" id="epStarsRow">
+              <input type="radio" name="epStars" id="es3" value="3" class="star-rb">
+              <label for="es3" class="star-lb">★</label>
+              <input type="radio" name="epStars" id="es2" value="2" class="star-rb">
+              <label for="es2" class="star-lb">★</label>
+              <input type="radio" name="epStars" id="es1" value="1" class="star-rb">
+              <label for="es1" class="star-lb">★</label>
+            </div>
+          </div>
+          <div class="fg"><label class="lbl">추천 코멘트</label>
+            <input type="text" id="epComment" placeholder="한 줄 코멘트" maxlength="80"></div>
         </div>
-        <div class="fg">
-          <label class="lbl">추천 코멘트 <span style="font-weight:400;text-transform:none">(한 줄, 80자 이내)</span></label>
-          <input type="text" id="epComment" placeholder="예: 올해 본 것 중 가장 인상적인 영화" maxlength="80">
+        <div style="margin-top:6px">
+          <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;font-weight:600">
+            <input type="checkbox" id="epIsRec" style="width:auto"> 추천 영화로 등록
+          </label>
         </div>
       </div>
 
@@ -1235,7 +1232,6 @@ a{color:#2D5A1B;text-decoration:none}
            data-phone="{{ (c.phone or '')|e }}"
            data-description="{{ (c.description or '')|e }}"
            data-price="{{ (c.price_info or '')|e }}"
-           data-pricetable="{{ (c.price_table|tojson if c.price_table else '{}')|e }}"
            data-note="{{ (c.note or '')|e }}"
            data-free="{{ 'true' if c.is_free else 'false' }}">
         <div>
@@ -1261,29 +1257,8 @@ a{color:#2D5A1B;text-decoration:none}
             <input type="text" name="phone" id="ciPhone" placeholder="02-..."></div>
           <div class="fg span2"><label class="lbl">특징</label>
             <textarea name="description" id="ciDesc" rows="2"></textarea></div>
-          <!-- 요금표 2×2 -->
-          <div class="fg span2">
-            <label class="lbl">요금표</label>
-            <table class="price-tbl">
-              <thead><tr><th></th><th>조조</th><th>일반</th></tr></thead>
-              <tbody>
-                <tr>
-                  <td class="price-tbl-label">월~목</td>
-                  <td><input type="text" name="pt_wd_mat" id="ptWdMat" placeholder="예: 7,000원" style="width:100%"></td>
-                  <td><input type="text" name="pt_wd_nor" id="ptWdNor" placeholder="예: 11,000원" style="width:100%"></td>
-                </tr>
-                <tr>
-                  <td class="price-tbl-label">금~일·공휴일</td>
-                  <td><input type="text" name="pt_we_mat" id="ptWeMat" placeholder="예: 8,000원" style="width:100%"></td>
-                  <td><input type="text" name="pt_we_nor" id="ptWeNor" placeholder="예: 12,000원" style="width:100%"></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <div class="fg span2">
-            <label class="lbl">할인·기타 사항 <span style="font-weight:400;text-transform:none">— 예: 청소년 1,000원 할인 / 회원 2,000원 할인</span></label>
-            <textarea name="pt_discount" id="ptDiscount" rows="2" placeholder="예: 청소년 1,000원 할인 / 멤버십 회원 2,000원 할인 / 조조 기준: 첫 회차"></textarea>
-          </div>
+          <div class="fg span2"><label class="lbl">가격 정보</label>
+            <textarea name="price_info" id="ciPrice" rows="2" placeholder="예: 일반 11,000원 / 청소년 8,000원 / 조조(~10시) 7,000원"></textarea></div>
           <div class="fg"><label class="lbl">메모 (내부용)</label>
             <input type="text" name="note" id="ciNote"></div>
           <div class="fg" style="justify-content:flex-end;padding-top:18px">
@@ -1344,6 +1319,14 @@ function fillMoviePanel(card){
 
   // 포스터 미리보기
   setPosterPreview(d.poster||"");
+
+  // 별점
+  const stars=parseInt(d.stars)||0;
+  document.querySelectorAll("input[name='epStars']").forEach(r=>{r.checked=false});
+  if(stars>0){
+    const rb=document.getElementById("es"+stars);
+    if(rb) rb.checked=true;
+  }
 
   // 추천 체크박스
   document.getElementById("epIsRec").checked = !!d.recId;
@@ -1426,6 +1409,9 @@ async function saveMovie(){
   const comment =document.getElementById("epComment").value.trim();
   const awards  =document.getElementById("epAwards").value.trim();
   const isRec   =document.getElementById("epIsRec").checked;
+  const starsEl =document.querySelector("input[name='epStars']:checked");
+  const stars   =starsEl ? parseInt(starsEl.value) : 1;
+
   // 1) 기본 정보 저장
   const r1=await fetch("/api/movie-detail",{
     method:"POST",headers:{"Content-Type":"application/json"},
@@ -1436,7 +1422,7 @@ async function saveMovie(){
   if(isRec){
     await fetch("/api/recommended",{
       method:"POST",headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({title,is_rec:true,comment,awards})
+      body:JSON.stringify({title,stars,comment,awards})
     });
   } else if(selCard?.dataset.recId){
     await fetch(`/api/recommended/${selCard.dataset.recId}`,{method:"DELETE"});
@@ -1466,7 +1452,7 @@ async function saveMovie(){
         selCard.classList.add("has-rec");
         let badge=selCard.querySelector(".m-badge.rec-badge");
         if(!badge){ badge=document.createElement("span"); badge.className="m-badge rec-badge"; selCard.appendChild(badge); }
-        badge.textContent="★";
+        badge.textContent="★"+stars;
       }
     }
     setTimeout(()=>msg.textContent="",3000);
@@ -1524,14 +1510,6 @@ function selectCinema(row){
   document.getElementById("ciPhone").value  =d.phone;
   document.getElementById("ciDesc").value   =d.description;
   document.getElementById("ciPrice").value  =d.price;
-  // 요금표
-  let pt={};
-  try{ pt=JSON.parse(d.pricetable||"{}"); }catch(e){}
-  document.getElementById("ptWdMat").value  =pt.weekday_matinee||"";
-  document.getElementById("ptWdNor").value  =pt.weekday_normal||"";
-  document.getElementById("ptWeMat").value  =pt.weekend_matinee||"";
-  document.getElementById("ptWeNor").value  =pt.weekend_normal||"";
-  document.getElementById("ptDiscount").value=pt.discount||"";
   document.getElementById("ciNote").value   =d.note;
   document.getElementById("ciFree").checked =(d.free==="true");
   const panel=document.getElementById("cinemaEditPanel");
@@ -1540,7 +1518,7 @@ function selectCinema(row){
 }
 function openNewCinema(){
   document.querySelectorAll(".c-row").forEach(r=>r.classList.remove("selected"));
-  ["ciName","ciUrl","ciAddress","ciPhone","ciDesc","ciPrice","ciNote","ptWdMat","ptWdNor","ptWeMat","ptWeNor","ptDiscount"].forEach(id=>document.getElementById(id).value="");
+  ["ciName","ciUrl","ciAddress","ciPhone","ciDesc","ciPrice","ciNote"].forEach(id=>document.getElementById(id).value="");
   document.getElementById("ciFree").checked=false;
   document.getElementById("epCinemaTitle").textContent="새 극장 추가";
   const panel=document.getElementById("cinemaEditPanel");
