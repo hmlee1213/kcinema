@@ -191,8 +191,8 @@ header{background:var(--text);color:#fff;padding:0 24px;position:sticky;top:0;z-
 .movie-sort-btn.active{background:var(--text);border-color:var(--text);color:#fff;}
 /* 관리자 추천 배지 */
 .rec-badge{display:inline-flex;align-items:center;font-size:11px;font-weight:800;color:#B45309;flex-shrink:0;letter-spacing:-.01em;}
-.movie-card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;margin-bottom:8px;}
-.mv-card{border:1.5px solid var(--border);border-radius:8px;padding:0;cursor:pointer;transition:border-color .12s,box-shadow .12s;background:var(--surface);position:relative;overflow:hidden;display:flex;flex-direction:column;max-width:160px;}
+.movie-card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:8px;}
+.mv-card{border:1.5px solid var(--border);border-radius:8px;padding:0;cursor:pointer;transition:border-color .12s,box-shadow .12s;background:var(--surface);position:relative;overflow:hidden;display:flex;flex-direction:column;}
 .mv-card:hover{border-color:#2D5A1B;box-shadow:0 2px 8px rgba(0,0,0,.08);}
 .mv-card.has-rec{border-color:#F59E0B;}
 .mv-poster{width:100%;aspect-ratio:3/4;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:28px;overflow:hidden;flex-shrink:0;}
@@ -320,6 +320,7 @@ tr:hover td{background:#FAFAF8;}
 .ex-cinema-chip:hover{border-color:var(--text);color:var(--text);}
 .ex-cinema-chip.active{background:var(--green);border-color:var(--green);color:#fff;}
 .ex-cinema-chip.active .free-badge{color:rgba(255,255,255,.8);}
+.explore-cinema-chips{display:grid;grid-template-columns:repeat(6,1fr);gap:5px;}
 .free-badge{font-size:9px;font-weight:700;color:var(--green);margin-left:3px;}
 .result-header-row{display:flex;align-items:center;gap:14px;margin-bottom:16px;flex-wrap:wrap;}
 
@@ -400,6 +401,7 @@ tr:hover td{background:#FAFAF8;}
   .main{padding:16px 14px 40px;}
 }
 @media(max-width:480px){
+  .explore-cinema-chips{grid-template-columns:repeat(3,1fr);}
   .tab{padding:10px 12px;font-size:12px;}
   .day-tabs{gap:4px;}
   .day-tab{padding:4px 10px;font-size:11px;}
@@ -507,7 +509,7 @@ tr:hover td{background:#FAFAF8;}
         </div>
         <div class="cond-sub" id="cinemaDirectSub">
           <div class="cond-sub-label">극장 선택</div>
-          <div id="explorecinemaChips" style="display:flex;flex-wrap:wrap;gap:5px;"></div>
+          <div id="explorecinemaChips" class="explore-cinema-chips"></div>
         </div>
       </div>
 
@@ -1103,7 +1105,7 @@ function openMoviePopup(title, rows, posterUrl){
   else { poster.textContent="🎬"; }
   document.getElementById("moviePopupMeta").innerHTML =
     `<button class="heart-btn${isMovieWished(title)?" on":""}" onclick="toggleMovieWish(this,'${esc(title)}','${esc(posterUrl||"")}')">
-      ${isMovieWished(title)?"♥ 추가됨":"♡ 관심 목록 추가"}
+      ${isMovieWished(title)?"♥":"♡"}
     </button>`;
   // 극장별 그룹핑
   const byKey = {};
@@ -1114,8 +1116,8 @@ function openMoviePopup(title, rows, posterUrl){
   });
   const html = Object.entries(byKey).map(([label, rs])=>{
     const times = rs.map(r=>{
-      const {mmdd:smm, time:stm} = splitDt(r.start_dt);
-      const start = smm+" "+stm;
+      const {mmdd:smm, time:stm, dow:sdow} = splitDt(r.start_dt);
+      const start = smm+(sdow?`(${sdow})`:"")+" "+stm;
       const end=(r.end_dt||"").slice(11,16);
       const s=stickerHtml(r.program, r.show_type);
       const schedKey=`${esc(title)}|${esc(r.cinema)}|${esc(r.screen||"")}|${r.start_dt||""}`;
