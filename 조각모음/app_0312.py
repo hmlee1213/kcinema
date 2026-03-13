@@ -397,8 +397,6 @@ def index():
 def api_screenings():
     df = request.args.get("date_from", date.today().isoformat())
     dt = request.args.get("date_to",   date.today().isoformat())
-    tf = request.args.get("time_from", "00:00")
-    tt = request.args.get("time_to",   "23:59")
     cinemas = request.args.getlist("cinema")
     mq = request.args.get("movie", "").strip()
     conn = get_db(); cur = conn.cursor()
@@ -407,10 +405,8 @@ def api_screenings():
         FROM screenings s
         LEFT JOIN movies m ON m.title = s.movie
         WHERE s.start_dt::date BETWEEN %s AND %s
-          AND s.start_dt::time >= %s::time
-          AND s.start_dt::time <= %s::time
     """
-    params = [df, dt, tf, tt]
+    params = [df, dt]
     if cinemas:
         sql += f" AND s.cinema = ANY(%s)"; params.append(cinemas)
     if mq:

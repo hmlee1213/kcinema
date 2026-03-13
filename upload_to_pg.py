@@ -8,6 +8,7 @@ from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
+DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgres://", 1)
 if not DATABASE_URL:
     print("❌ DATABASE_URL 환경변수가 없어요.")
     print("   실행 방법: DATABASE_URL='postgresql://...' python upload_to_pg.py")
