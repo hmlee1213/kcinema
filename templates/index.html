@@ -136,7 +136,8 @@ header{background:var(--text);color:#fff;padding:0 24px;position:sticky;top:0;z-
 ══════════════════════════════════ */
 .filter-ctrl-row{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:12px;flex-wrap:wrap;}
 /* 극장 칩: 6열 균등 그리드 */
-.cinema-chips-wrap{display:grid;grid-template-columns:repeat(6,1fr);gap:5px;flex:1;}
+.cinema-chips-wrap{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:5px;flex:1;min-width:0;}
+/* 12개 극장 → PC: 6열×2행, 모바일: 2열×6행 */
 .cinema-chip-btn{font-size:12px;font-weight:600;font-family:inherit;padding:5px 0;border-radius:6px;border:1.5px solid var(--text);background:var(--surface);color:var(--text);cursor:pointer;transition:all .12s;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .cinema-chip-btn.off{border-color:var(--border);color:var(--text-sub);text-decoration:line-through;}
 .cinema-chip-btn:not(.off):hover{background:var(--text);color:#fff;}
@@ -145,7 +146,7 @@ header{background:var(--text);color:#fff;padding:0 24px;position:sticky;top:0;z-
 .ctrl-btn:hover{background:var(--text);border-color:var(--text);color:#fff;}
 
 
-.cinema-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.cinema-grid{display:grid;grid-template-columns:1fr;gap:8px;}
 .cinema-group{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
 .cinema-group-header{display:flex;align-items:center;gap:10px;padding:11px 14px;background:var(--surface2);}
 .cinema-group-name{font-size:13px;font-weight:700;flex:1;display:flex;align-items:center;gap:6px;}
@@ -153,17 +154,17 @@ header{background:var(--text);color:#fff;padding:0 24px;position:sticky;top:0;z-
 /* 극장 카드 내부 2열 그리드 — 헤더 배경색과 동일한 구분선 */
 .cinema-rows-2col{
   display:grid;
-  grid-template-columns:1fr 1fr;
+  grid-template-columns:1fr;
   column-gap:0;
 }
 .cinema-rows-2col .c-row{border-bottom:1px solid var(--surface2);}
-.cinema-rows-2col .c-row:nth-child(odd){border-right:2px solid var(--surface2);}
+.cinema-rows-2col .c-row:nth-child(odd){border-right:none;}
 .cinema-rows-2col .c-row:nth-last-child(-n+2){border-bottom:none;}
 /* 무료 태그 */
 .free-tag{font-size:10px;font-weight:700;background:#D1FAE5;color:#065F46;padding:1px 6px;border-radius:3px;}
 .chip-loc{font-size:9px;font-weight:600;background:#E5E7EB;color:#6B7280;padding:1px 5px;border-radius:3px;margin-left:4px;vertical-align:middle;}
 .chip-free{font-size:9px;font-weight:700;background:#D1FAE5;color:#065F46;padding:1px 5px;border-radius:3px;margin-left:3px;vertical-align:middle;}
-.c-row{display:grid;grid-template-columns:70px 108px 2.5fr;align-items:center;gap:6px;padding:7px 14px;border-bottom:1px solid var(--border);font-size:12px;}
+.c-row{display:grid;grid-template-columns:80px 120px 1fr;align-items:center;gap:6px;padding:7px 14px;border-bottom:1px solid var(--border);font-size:12px;}
 .c-row:last-child{border-bottom:none;}
 .c-date{font-weight:600;color:var(--text);white-space:nowrap;}
 .c-time{font-weight:600;color:var(--text);white-space:nowrap;}
@@ -315,13 +316,13 @@ tr:hover td{background:#FAFAF8;}
 /* ══════════════════════════════════
    찜 / 내 일정
 ══════════════════════════════════ */
-.heart-btn{background:none;border:none;cursor:pointer;font-size:16px;padding:2px 4px;line-height:1;color:#ccc;transition:color .12s, transform .1s;flex-shrink:0;}
-.heart-btn:hover{color:#e05;transform:scale(1.2);}
-.heart-btn.on{color:#e05;}
+.heart-btn{background:none;border:1.5px solid #bbb;border-radius:50%;cursor:pointer;font-size:15px;padding:3px 5px;line-height:1;color:#aaa;transition:all .12s;flex-shrink:0;}
+.heart-btn:hover{color:#e05;border-color:#e05;transform:scale(1.1);}
+.heart-btn.on{color:#e05;border-color:#e05;background:#fff0f3;}
 /* 상영찜 북마크 아이콘 */
-.sched-wish-btn{background:none;border:none;cursor:pointer;font-size:12px;padding:1px 3px;line-height:1;color:#bbb;transition:color .12s,transform .1s;flex-shrink:0;}
-.sched-wish-btn:hover{color:#e05;transform:scale(1.15);}
-.sched-wish-btn.on{color:#e05;}
+.sched-wish-btn{background:none;border:1.5px solid #ccc;border-radius:4px;cursor:pointer;font-size:11px;font-weight:700;padding:1px 4px;line-height:1;color:#bbb;transition:all .12s;flex-shrink:0;font-family:inherit;}
+.sched-wish-btn:hover{border-color:#e05;color:#e05;}
+.sched-wish-btn.on{border-color:#e05;background:#e05;color:#fff;}
 .wish-subtabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:16px;}
 .wish-subtab{font-size:13px;font-weight:600;font-family:inherit;padding:8px 20px;border:none;background:none;color:var(--text-muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .12s;}
 .wish-subtab.active{color:var(--green);border-bottom-color:var(--green);}
@@ -470,8 +471,8 @@ tr:hover td{background:#FAFAF8;}
           <div class="cond-label">어디서?</div>
           <div class="cond-body">
             <button class="ex-chip active" data-area="all" onclick="setExploreArea(this,'all')">전체</button>
-            <button class="ex-chip" data-area="hongdae" onclick="setExploreArea(this,'hongdae')">홍대·상암</button>
             <button class="ex-chip" data-area="sinchon" onclick="setExploreArea(this,'sinchon')">신촌·이대</button>
+            <button class="ex-chip" data-area="hongdae" onclick="setExploreArea(this,'hongdae')">홍대·상암</button>
             <button class="ex-chip" data-area="gwanghwa" onclick="setExploreArea(this,'gwanghwa')">광화문·종로</button>
             <button class="ex-chip" data-area="kondae" onclick="setExploreArea(this,'kondae')">건대·성수</button>
             <button class="ex-chip" data-area="north" onclick="setExploreArea(this,'north')">성북·노원</button>
@@ -662,6 +663,8 @@ async function init(){
   await loadStats();
   initCinemaTabChips();
   initExploreCinemaChips();
+  // 직접 설정 날짜 기본값: 오늘
+  document.getElementById("exploreDate").value = today_kst();
   await loadExploreData();
   updateWishBadge();
 }
@@ -781,7 +784,7 @@ function renderExploreCards(){
       const wished = isSchedWished(schedKey);
       return `<div class="time-chip${wished?" wished":""}" style="display:flex;align-items:center;gap:3px;cursor:pointer;"
         onclick="event.stopPropagation();toggleSchedWish('${schedKey}','${esc(g.movie)}','${esc(g.cinema)}','${esc(g.screen||"")}','${t.start_dt||""}','${t.end_dt||""}','${esc(g.poster_url||"")}');this.classList.toggle('wished');this.querySelector('.swb').classList.toggle('on')">
-        ${t.start}<span class="time-dash">-</span>${t.end}${s}<button class="sched-wish-btn swb${wished?" on":""}" style="pointer-events:none;">🔖</button>
+        ${t.start}<span class="time-dash">-</span>${t.end}${s}<button class="sched-wish-btn swb${wished?" on":""}" style="pointer-events:none;">✔</button>
       </div>`;
     }).join("");
     const titleHtml = g.movie_url
@@ -813,6 +816,7 @@ function setDirectMode(){
   document.getElementById("directSub").classList.add("open");
   document.getElementById("rangeSub").classList.remove("open");
   if(!document.getElementById("exploreDate").value){
+    document.getElementById("exploreDate").value = today_kst();
     document.getElementById("exploreTimeFrom").value = "17";
     document.getElementById("exploreTimeTo").value = "23";
   }
@@ -981,7 +985,7 @@ function openMoviePopup(title, rows, posterUrl){
       const wished=isSchedWished(schedKey);
       return `<span class="time-chip${wished?" wished":""}" style="display:inline-flex;align-items:center;gap:3px;cursor:pointer;"
         onclick="toggleSchedWish('${schedKey}','${esc(title)}','${esc(r.cinema)}','${esc(r.screen||"")}','${r.start_dt||""}','${r.end_dt||""}','${esc(posterUrl||"")}');this.classList.toggle('wished');this.querySelector('.swb').classList.toggle('on')">
-        ${start}–${end}${s}<button class="sched-wish-btn swb${wished?" on":""}" style="pointer-events:none;">🔖</button>
+        ${start}–${end}${s}<button class="sched-wish-btn swb${wished?" on":""}" style="pointer-events:none;">✔</button>
       </span>`;
     }).join("");
     return `<div class="sched-row" style="flex-direction:column;align-items:flex-start;gap:6px;padding:10px 0;border-bottom:1px solid var(--border);">
@@ -1300,7 +1304,7 @@ function renderMovieGrid(resetCount=true){
       <div class="movie-group-header" onclick="openMoviePopup('${esc(title)}', ${JSON.stringify(rows.map(r=>({cinema:r.cinema, screen:r.screen||'', start_dt:r.start_dt, end_dt:r.end_dt, program:r.program, show_type:r.show_type, movie_url:r.movie_url||''})))}, '${esc(rows[0].poster_url||"")}')" style="cursor:pointer">
         <div class="movie-thumb">${thumb}</div>
         <div class="movie-group-info">
-          <div class="movie-group-title" style="display:flex;align-items:center;gap:6px;">${esc(title)}${recBadge}</div>
+          <div class="movie-group-title" style="display:flex;align-items:center;gap:6px;">${esc(title)}</div>
           <div class="movie-group-meta">${runtime?runtime+"분 · ":""}${rows.length}회 상영</div>
         </div>
         <span class="movie-group-count" style="display:none">${rows.length}회</span>
@@ -1374,7 +1378,7 @@ function loadMoreMovies(){
       <div class="movie-group-header" onclick="openMoviePopup('${esc(title)}', ${JSON.stringify(rows.map(r=>({cinema:r.cinema,screen:r.screen||'',start_dt:r.start_dt,end_dt:r.end_dt,program:r.program,show_type:r.show_type,movie_url:r.movie_url||''})))}, '${esc(rows[0].poster_url||"")}')" style="cursor:pointer">
         <div class="movie-thumb">${thumb}</div>
         <div class="movie-group-info">
-          <div class="movie-group-title" style="display:flex;align-items:center;gap:6px;">${esc(title)}${recBadge}</div>
+          <div class="movie-group-title" style="display:flex;align-items:center;gap:6px;">${esc(title)}</div>
           <div class="movie-group-meta">${runtime?runtime+"분 · ":""}${rows.length}회 상영</div>
         </div>
         <span class="movie-group-count" style="display:none">${rows.length}회</span>
