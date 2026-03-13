@@ -219,7 +219,7 @@ def fetch_poster_from_dtryx(movie_cd):
     url = f"https://www.dtryx.com/movie/view.do?cgid={DTRYX_CGID}&MovieCd={movie_cd}"
     headers = {"User-Agent": "Mozilla/5.0"}
     try:
-        res = requests.get(url, headers=headers, timeout=5)
+        res = requests.get(url, headers=headers, timeout=10)
         soup = BeautifulSoup(res.text, "html.parser")
         # 포스터: img.dtryx.com URL을 가진 첫 번째 img
         poster_url = ""
@@ -247,45 +247,21 @@ def fetch_poster_from_dtryx(movie_cd):
                 if dd:
                     director = dd.get_text(strip=True)
                     break
-        # 줄거리 — 전체 텍스트에서 "줄거리" ~ "배우/제작진" 사이 추출 (dtryx 구조)
+        # 줄거리
         synopsis = ""
-        full_text = soup.get_text("\n")
-        STORY_MARKERS   = ["줄거리", "STORY", "Story", "시놉시스"]
-        END_MARKERS     = ["배우/제작진", "배우 / 제작진", "감독/배우", "캐스트", "CAST", "출연진", "제작진"]
-        for start_kw in STORY_MARKERS:
-            idx = full_text.find(start_kw)
-            if idx == -1:
-                continue
-            after = full_text[idx + len(start_kw):]
-            # 끝 마커 위치 찾기
-            end_idx = len(after)
-            for end_kw in END_MARKERS:
-                ei = after.find(end_kw)
-                if ei != -1 and ei < end_idx:
-                    end_idx = ei
-            chunk = after[:end_idx].strip()
-            # 빈 줄 제거 후 줄 합치기
-            lines = [l.strip() for l in chunk.splitlines() if l.strip()]
-            synopsis = " ".join(lines)[:600]
-            if len(synopsis) > 20:
+        for sel in [".movie-synopsis", ".synopsis", ".txt-synopsis", ".movie-info-txt"]:
+            el = soup.select_one(sel)
+            if el:
+                synopsis = el.get_text(strip=True)[:500]
                 break
-        # fallback: CSS 셀렉터
-        if not synopsis:
-            for sel in [".movie-synopsis", ".synopsis", ".txt-synopsis", ".movie-story",
-                        ".movie-desc", ".story", ".desc-txt", ".movie-text", "[class*='synopsis']"]:
-                el = soup.select_one(sel)
-                if el:
-                    txt = el.get_text(" ", strip=True)
-                    if len(txt) > 20:
-                        synopsis = txt[:600]
-                        break
         return {"poster_url": poster_url, "director": director, "synopsis": synopsis}
     except Exception as e:
         print(f"  포스터 수집 실패 ({movie_cd}): {e}")
         return {}
 
 def collect_posters(all_rows, conn):
-    """신규 영화 + synopsis 비어있는 영화 포스터/줄거리 재수집 (병렬)"""
+    """DB에 없는 신규 영화만 포스터 수집 (병렬)"""
+    # movie_cd가 있는 것만, 제목별 대표 movie_cd
     cd_map = {}
     for r in all_rows:
         cd = r.get("movie_cd","")
@@ -294,23 +270,19 @@ def collect_posters(all_rows, conn):
     if not cd_map:
         return {}
 
+    # 매월 1일은 전체 재수집, 나머지는 DB에 이미 포스터 있는 영화 스킵
     is_first_of_month = datetime.today().day == 1
-    cur = conn.cursor()
     if is_first_of_month:
         print(f"\n🎬 포스터 수집: 월초 전체 재수집 모드 ({len(cd_map)}편)")
         new_cd_map = cd_map
     else:
-        # 포스터 AND synopsis 둘 다 있는 영화만 스킵 → synopsis 없으면 재수집
-        cur.execute("""
-            SELECT title FROM movies
-            WHERE poster_url IS NOT NULL AND poster_url != ''
-              AND synopsis   IS NOT NULL AND synopsis   != ''
-        """)
+        cur = conn.cursor()
+        cur.execute("SELECT title FROM movies WHERE poster_url != '' AND poster_url IS NOT NULL")
         existing = {row[0] for row in cur.fetchall()}
         cur.close()
         new_cd_map = {t: cd for t, cd in cd_map.items() if t not in existing}
         skip = len(cd_map) - len(new_cd_map)
-        print(f"\n🎬 포스터 수집: 전체 {len(cd_map)}편 중 {skip}편 스킵, 수집대상 {len(new_cd_map)}편")
+        print(f"\n🎬 포스터 수집: 전체 {len(cd_map)}편 중 {skip}편 스킵(기존), 신규 {len(new_cd_map)}편 수집")
     if not new_cd_map:
         return {}
 
@@ -320,20 +292,19 @@ def collect_posters(all_rows, conn):
         info = fetch_poster_from_dtryx(cd)
         return title, info
 
-    with ThreadPoolExecutor(max_workers=10) as ex:
+    with ThreadPoolExecutor(max_workers=5) as ex:
         futures = {ex.submit(_fetch_one, item): item[0] for item in new_cd_map.items()}
         for f in as_completed(futures):
             title, info = f.result()
-            if info.get("poster_url") or info.get("synopsis"):
+            if info.get("poster_url"):
                 result[title] = info
-                tag = "✅" if info.get("poster_url") else "📝"
-                print(f"  {tag} {title}: poster={'있음' if info.get('poster_url') else '없음'} synopsis={'있음' if info.get('synopsis') else '없음'}")
+                print(f"  ✅ {title}: {info['poster_url'][:60]}…")
             else:
-                print(f"  ⚠️  {title}: 수집 실패")
+                print(f"  ⚠️  {title}: 포스터 없음")
     return result
 
 def save_movies_to_pg(poster_data, conn):
-    """movies 테이블에 포스터 URL, 감독, 줄거리 upsert (poster 없어도 synopsis 있으면 저장)"""
+    """movies 테이블에 포스터 URL, 감독, 줄거리 upsert"""
     if not poster_data:
         return
     cur = conn.cursor()
@@ -348,15 +319,14 @@ def save_movies_to_pg(poster_data, conn):
         )
     """)
     for title, info in poster_data.items():
-        # 기존 값 유지하면서 새 값만 덮어쓰기 (poster_url 없으면 기존 유지)
         cur.execute("""
             INSERT INTO movies (title, director, synopsis, poster_url, updated_at)
             VALUES (%s, %s, %s, %s, NOW())
             ON CONFLICT (title) DO UPDATE SET
-                director  = CASE WHEN EXCLUDED.director  != '' THEN EXCLUDED.director  ELSE movies.director  END,
-                synopsis  = CASE WHEN EXCLUDED.synopsis  != '' THEN EXCLUDED.synopsis  ELSE movies.synopsis  END,
-                poster_url= CASE WHEN EXCLUDED.poster_url!= '' THEN EXCLUDED.poster_url ELSE movies.poster_url END,
-                updated_at= NOW()
+                director=EXCLUDED.director,
+                synopsis=EXCLUDED.synopsis,
+                poster_url=EXCLUDED.poster_url,
+                updated_at=NOW()
         """, (title, info.get("director",""), info.get("synopsis",""), info.get("poster_url","")))
     conn.commit()
     cur.close()
