@@ -138,10 +138,10 @@ header{background:var(--text);color:#fff;padding:0 24px;position:sticky;top:0;z-
 /* 극장 칩: 6열 균등 그리드 */
 .cinema-chips-wrap{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:5px;flex:1;min-width:0;}
 /* 12개 극장 → PC: 6열×2행, 모바일: 2열×6행 */
-.cinema-chip-btn{font-size:12px;font-weight:600;font-family:inherit;padding:5px 12px;border-radius:20px;border:1.5px solid var(--border);background:var(--surface);color:var(--text-muted);cursor:pointer;transition:all .12s;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;user-select:none;}
-.cinema-chip-btn.off{border-color:var(--border);color:var(--text-sub);opacity:.5;}
-.cinema-chip-btn:not(.off){border-color:var(--text);color:var(--text);background:var(--text);color:#fff;}
-.cinema-chip-btn.off:hover{border-color:var(--text);color:var(--text);opacity:1;}
+.cinema-chip-btn{font-size:12px;font-weight:600;font-family:inherit;padding:5px 12px;border-radius:20px;border:1.5px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;transition:all .12s;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;user-select:none;}
+.cinema-chip-btn.off{border-color:var(--border);background:var(--surface);color:var(--text);}
+.cinema-chip-btn:not(.off){border-color:#444;background:#444;color:#fff;}
+.cinema-chip-btn.off:hover{border-color:var(--text);}
 .ctrl-btns{display:flex;gap:6px;flex-shrink:0;}
 .ctrl-btn{font-size:11px;font-weight:700;font-family:inherit;padding:4px 12px;border-radius:5px;border:1.5px solid var(--border);background:var(--surface);color:var(--text-muted);cursor:pointer;white-space:nowrap;transition:all .12s;}
 .ctrl-btn:hover{background:var(--text);border-color:var(--text);color:#fff;}
@@ -322,8 +322,8 @@ tr:hover td{background:#FAFAF8;}
 .heart-btn:hover{color:#e05;-webkit-text-stroke:.5px #c00;transform:scale(1.15);}
 .heart-btn.on{color:#e05;-webkit-text-stroke:.5px #c00;}
 /* 상영찜 북마크 아이콘 */
-.sched-wish-btn{background:none;border:1.5px solid #ccc;border-radius:4px;cursor:pointer;font-size:11px;font-weight:700;padding:1px 4px;line-height:1;color:#bbb;transition:all .12s;flex-shrink:0;font-family:inherit;}
-.sched-wish-btn:hover{border-color:#333;color:#333;}
+.sched-wish-btn{background:none;border:1.5px solid #ccc;border-radius:4px;cursor:pointer;font-size:13px;font-weight:700;padding:0 4px;line-height:1.4;color:#bbb;transition:border-color .08s,background .08s,color .08s;flex-shrink:0;font-family:inherit;min-width:18px;text-align:center;}
+.sched-wish-btn:hover{border-color:#555;color:#555;}
 .sched-wish-btn.on{border-color:#111;background:#111;color:#fff;}
 .wish-subtabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:16px;}
 .wish-subtab{font-size:13px;font-weight:600;font-family:inherit;padding:8px 20px;border:none;background:none;color:var(--text-muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .12s;}
@@ -788,8 +788,8 @@ function renderExploreCards(){
       const schedKey = `${esc(g.movie)}|${esc(g.cinema)}|${esc(g.screen||"")}|${t.start_dt||""}`;
       const wished = isSchedWished(schedKey);
       return `<div class="time-chip${wished?" wished":""}" style="display:flex;align-items:center;gap:3px;cursor:pointer;"
-        onclick="event.stopPropagation();toggleSchedWish('${schedKey}','${esc(g.movie)}','${esc(g.cinema)}','${esc(g.screen||"")}','${t.start_dt||""}','${t.end_dt||""}','${esc(g.poster_url||"")}');this.classList.toggle('wished');this.querySelector('.swb').classList.toggle('on')">
-        ${t.start}<span class="time-dash">-</span>${t.end}${s}<button class="sched-wish-btn swb${wished?" on":""}" style="pointer-events:none;">✔</button>
+        onclick="event.stopPropagation();">
+        ${t.start}<span class="time-dash">-</span>${t.end}${s}<button class="sched-wish-btn swb${wished?" on":""}" data-key="${schedKey}" onclick="event.stopPropagation();toggleSchedWish('${schedKey}','${esc(g.movie)}','${esc(g.cinema)}','${esc(g.screen||"")}','${t.start_dt||""}','${t.end_dt||""}','${esc(g.poster_url||"")}',this)">${wished?"✓":"+"}</button>
       </div>`;
     }).join("");
     const titleHtml = g.movie_url
@@ -990,8 +990,8 @@ function openMoviePopup(title, rows, posterUrl){
       const schedKey=`${esc(title)}|${esc(r.cinema)}|${esc(r.screen||"")}|${r.start_dt||""}`;
       const wished=isSchedWished(schedKey);
       return `<span class="time-chip${wished?" wished":""}" style="display:inline-flex;align-items:center;gap:3px;cursor:pointer;"
-        onclick="toggleSchedWish('${schedKey}','${esc(title)}','${esc(r.cinema)}','${esc(r.screen||"")}','${r.start_dt||""}','${r.end_dt||""}','${esc(posterUrl||"")}');this.classList.toggle('wished');this.querySelector('.swb').classList.toggle('on')">
-        ${start}–${end}${s}<button class="sched-wish-btn swb${wished?" on":""}" style="pointer-events:none;">✔</button>
+        onclick="void(0)">
+        ${start}–${end}${s}<button class="sched-wish-btn swb${wished?" on":""}" data-key="${schedKey}" onclick="event.stopPropagation();toggleSchedWish('${schedKey}','${esc(title)}','${esc(r.cinema)}','${esc(r.screen||"")}','${r.start_dt||""}','${r.end_dt||""}','${esc(posterUrl||"")}',this)">${wished?"✓":"+"}</button>
       </span>`;
     }).join("");
     return `<div class="sched-row" style="flex-direction:column;align-items:flex-start;gap:6px;padding:10px 0;border-bottom:1px solid var(--border);">
@@ -1065,18 +1065,28 @@ function toggleMovieWish(btn, title, posterUrl){
   saveWishMovies(arr);
 }
 
-function toggleSchedWish(key, movie, cinema, screen, startDt, endDt, posterUrl){
+function toggleSchedWish(key, movie, cinema, screen, startDt, endDt, posterUrl, btn){
   let arr = loadWishScheds();
   const idx = arr.findIndex(s=>s.key===key);
-  if(idx>=0){
-    arr.splice(idx,1);
-    gtag('event','sched_unwish',{movie_title:movie, cinema_name:cinema, start_dt:startDt});
-  } else {
+  const adding = idx < 0;
+  if(adding){
     arr.push({key, movie, cinema, screen, start_dt:startDt, end_dt:endDt, poster_url:posterUrl, added_at:new Date().toISOString()});
     gtag('event','sched_wish',{movie_title:movie, cinema_name:cinema, start_dt:startDt});
+  } else {
+    arr.splice(idx,1);
+    gtag('event','sched_unwish',{movie_title:movie, cinema_name:cinema, start_dt:startDt});
   }
   saveWishScheds(arr);
-  renderQuickCards(); // 하트 상태 갱신
+  // DOM 즉시 업데이트 — 재렌더 없음
+  if(btn){
+    btn.classList.toggle("on", adding);
+    btn.textContent = adding ? "✓" : "+";
+  }
+  // 페이지 내 동일 key를 가진 다른 버튼도 동기화
+  document.querySelectorAll(`.swb[data-key="${CSS.escape(key)}"]`).forEach(b=>{
+    b.classList.toggle("on", adding);
+    b.textContent = adding ? "✓" : "+";
+  });
 }
 
 function removeMovieWish(title){
