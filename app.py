@@ -177,6 +177,8 @@ def ensure_db():
             created_at TIMESTAMP DEFAULT NOW()
         )
     """)
+    cur.execute("ALTER TABLE events ADD COLUMN IF NOT EXISTS participants TEXT DEFAULT ''")
+    cur.execute("ALTER TABLE events ADD COLUMN IF NOT EXISTS event_type TEXT DEFAULT ''")
     cur.execute("ALTER TABLE cinemas ADD COLUMN IF NOT EXISTS price_info TEXT DEFAULT ''")
     cur.execute("ALTER TABLE cinemas ADD COLUMN IF NOT EXISTS price_table JSONB DEFAULT '{}'")
     cur.execute("ALTER TABLE movies ADD COLUMN IF NOT EXISTS is_4k BOOLEAN DEFAULT FALSE")
@@ -722,10 +724,11 @@ def api_events_post():
     d = request.get_json()
     conn = get_db(); cur = conn.cursor()
     cur.execute("""
-        INSERT INTO events (title, cinema, event_date, start_time, end_time, description, is_free, url)
-        VALUES (%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id
+        INSERT INTO events (title, cinema, event_date, start_time, end_time, description, is_free, url, participants, event_type)
+        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id
     """, (d["title"], d["cinema"], d["event_date"], d.get("start_time",""),
-          d.get("end_time",""), d.get("description",""), bool(d.get("is_free")), d.get("url","")))
+          d.get("end_time",""), d.get("description",""), bool(d.get("is_free")), d.get("url",""),
+          d.get("participants",""), d.get("event_type","")))
     new_id = cur.fetchone()["id"]
     conn.commit(); cur.close(); conn.close()
     return jsonify({"ok": True, "id": new_id})
@@ -1282,15 +1285,24 @@ a{color:#2D5A1B;text-decoration:none}
 ══════════════════════════════════════ -->
 <div id="tab-events" class="section">
   <div class="panel">
-    <div class="panel-title">🎭 특별상영 등록
-      <span style="font-size:12px;font-weight:400;color:#888">시사회·GV·특별상영회 등 예매 없는 이벤트</span>
+    <div class="panel-title">🎭 GV·토크·강연 등록
+      <span style="font-size:12px;font-weight:400;color:#888">예매 시스템에 미등록된 특별회차</span>
     </div>
     <div class="ep-grid ep-3">
       <div class="fg span2"><label class="lbl">영화 제목 *</label>
-        <input type="text" id="evTitle" placeholder="예: 벌새 특별상영"></div>
+        <input type="text" id="evTitle" placeholder="예: 벌새"></div>
       <div class="fg"><label class="lbl">극장 *</label>
         <select id="evCinema">
           {% for c in cinemas %}<option>{{ c.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="fg"><label class="lbl">유형 *</label>
+        <select id="evType">
+          <option value="GV">GV</option>
+          <option value="토크">토크</option>
+          <option value="강연">강연</option>
+          <option value="특별상영">특별상영</option>
+          <option value="시사회">시사회</option>
         </select>
       </div>
       <div class="fg"><label class="lbl">날짜 *</label>
@@ -1299,8 +1311,10 @@ a{color:#2D5A1B;text-decoration:none}
         <input type="time" id="evStart"></div>
       <div class="fg"><label class="lbl">종료</label>
         <input type="time" id="evEnd"></div>
+      <div class="fg span3"><label class="lbl">참가자 <span style="font-weight:400;color:#888">(감독, 배우 등 — 쉼표 구분)</span></label>
+        <input type="text" id="evParticipants" placeholder="예: 홍상수 감독, 김민희"></div>
       <div class="fg span3"><label class="lbl">설명</label>
-        <textarea id="evDesc" rows="2" placeholder="감독 GV 포함. 당일 선착순 입장"></textarea></div>
+        <textarea id="evDesc" rows="2" placeholder="당일 선착순 입장. 관객과의 대화 포함."></textarea></div>
       <div class="fg"><label class="lbl">링크</label>
         <input type="url" id="evUrl" placeholder="https://..."></div>
       <div class="fg" style="justify-content:flex-end;padding-top:18px">
@@ -1315,22 +1329,32 @@ a{color:#2D5A1B;text-decoration:none}
     </div>
   </div>
   <div class="panel">
-    <div class="panel-title">등록된 특별상영 ({{ events|length }}건)</div>
+    <div class="panel-title" style="display:flex;justify-content:space-between;align-items:center;">
+      <span>등록된 특별회차 ({{ events|length }}건)</span>
+      <div style="display:flex;gap:6px;">
+        <button class="btn btn-light btn-sm ev-filter-btn active" data-type="전체" onclick="filterEvents(this)">전체</button>
+        <button class="btn btn-light btn-sm ev-filter-btn" data-type="GV" onclick="filterEvents(this)">GV</button>
+        <button class="btn btn-light btn-sm ev-filter-btn" data-type="토크" onclick="filterEvents(this)">토크</button>
+        <button class="btn btn-light btn-sm ev-filter-btn" data-type="강연" onclick="filterEvents(this)">강연</button>
+      </div>
+    </div>
     {% if events %}
-    <div style="overflow-x:auto"><table>
-      <thead><tr><th>날짜</th><th>극장</th><th>제목</th><th>시간</th><th>설명</th><th>무료</th><th></th></tr></thead>
+    <div style="overflow-x:auto"><table id="evTable">
+      <thead><tr><th>날짜</th><th>유형</th><th>극장</th><th>제목</th><th>시간</th><th>참가자</th><th>설명</th><th>무료</th><th></th></tr></thead>
       <tbody>{% for e in events %}
-      <tr id="ev-{{ e.id }}">
+      <tr id="ev-{{ e.id }}" data-type="{{ e.event_type or '특별상영' }}">
         <td style="white-space:nowrap">{{ e.event_date }}</td>
+        <td><span class="sticker" style="font-size:10px;padding:1px 5px;">{{ e.event_type or "—" }}</span></td>
         <td>{{ e.cinema }}</td>
         <td><strong>{{ e.title }}</strong>{% if e.url %} <a href="{{ e.url }}" target="_blank">↗</a>{% endif %}</td>
         <td style="white-space:nowrap">{{ e.start_time or "—" }}{% if e.end_time %} – {{ e.end_time }}{% endif %}</td>
-        <td style="font-size:12px;color:#555;max-width:180px">{{ e.description or "—" }}</td>
+        <td style="font-size:12px;color:#333;max-width:140px">{{ e.participants or "—" }}</td>
+        <td style="font-size:12px;color:#555;max-width:160px">{{ e.description or "—" }}</td>
         <td>{% if e.is_free %}<span class="badge badge-free">무료</span>{% else %}—{% endif %}</td>
         <td><button class="btn btn-danger btn-sm" onclick="deleteEvent({{ e.id }})">삭제</button></td>
       </tr>{% endfor %}</tbody>
     </table></div>
-    {% else %}<p style="color:#aaa;font-size:13px">등록된 특별상영이 없습니다.</p>{% endif %}
+    {% else %}<p style="color:#aaa;font-size:13px">등록된 특별회차가 없습니다.</p>{% endif %}
   </div>
 </div>
 
@@ -1628,8 +1652,10 @@ async function saveEvent(){
   const res=await fetch("/api/events",{
     method:"POST",headers:{"Content-Type":"application/json"},
     body:JSON.stringify({title,cinema,event_date:date,
+      event_type:document.getElementById("evType").value,
       start_time:document.getElementById("evStart").value,
       end_time:document.getElementById("evEnd").value,
+      participants:document.getElementById("evParticipants").value.trim(),
       description:document.getElementById("evDesc").value.trim(),
       is_free:document.getElementById("evFree").checked,
       url:document.getElementById("evUrl").value.trim()})
@@ -1638,6 +1664,14 @@ async function saveEvent(){
     document.getElementById("evMsg").textContent="✓ 등록됐어요";
     setTimeout(()=>location.reload(),800);
   } else { document.getElementById("evMsg").textContent="❌ 등록 실패"; }
+}
+function filterEvents(btn){
+  document.querySelectorAll(".ev-filter-btn").forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active");
+  const type=btn.dataset.type;
+  document.querySelectorAll("#evTable tbody tr").forEach(tr=>{
+    tr.style.display=(type==="전체"||tr.dataset.type===type)?"":"none";
+  });
 }
 async function deleteEvent(id){
   if(!confirm("삭제할까요?"))return;
