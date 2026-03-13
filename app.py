@@ -1118,17 +1118,24 @@ a{color:#2D5A1B;text-decoration:none}
            data-is4k="{{ 'true' if m.is_4k else '' }}"
            data-isdolby="{{ 'true' if m.is_dolby else '' }}"
            onclick="selectMovieCard(this)">
+        {# 우상단 배지: 추천★ / 특별 / 정보✓ 중 하나만 #}
         {% if m.rec_id %}<span class="m-badge rec-badge">★</span>
+        {% elif m.is_event %}<span class="m-badge" style="background:#DBEAFE;color:#1E40AF;">특별</span>
         {% elif m.poster_url %}<span class="m-badge info-badge">✓</span>{% endif %}
-        {% if m.is_4k and m.in_4k_cinema %}<span class="m-badge" style="background:#1a56db;color:#fff;position:absolute;bottom:4px;left:4px;font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;">4K</span>{% endif %}
-        {% if m.is_dolby and m.in_dolby_cinema %}<span class="m-badge" style="background:#7c3aed;color:#fff;position:absolute;bottom:4px;right:4px;font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;">돌비</span>{% endif %}
+        {# 포스터 #}
         <div class="m-thumb">
           {% if m.poster_url %}<img src="{{ m.poster_url }}" onerror="this.parentNode.innerHTML='🎬'">
           {% else %}🎬{% endif %}
         </div>
-        <div class="m-name">{{ m.movie }}</div>
-        {% if m.director %}<div class="m-director">{{ m.director }}</div>{% endif %}
-        {% if m.is_event and not m.rec_id %}<span class="m-badge" style="background:#DBEAFE;color:#1E40AF;position:absolute;top:4px;right:4px;font-size:9px;font-weight:700;padding:1px 4px;border-radius:3px;">특별</span>{% endif %}
+        {# 포스터 아래: 제목 + 감독 + 4K/돌비 태그 #}
+        <div class="m-text">
+          <div class="m-name">{{ m.movie }}</div>
+          {% if m.director %}<div class="m-director">{{ m.director }}</div>{% endif %}
+          {% if m.is_4k or m.is_dolby %}<div class="m-tag-row">
+            {% if m.is_4k %}<span class="m-tag m-tag-4k">4K</span>{% endif %}
+            {% if m.is_dolby %}<span class="m-tag m-tag-dolby">돌비</span>{% endif %}
+          </div>{% endif %}
+        </div>
       </div>
       {% endfor %}
     </div>
@@ -1629,18 +1636,24 @@ document.getElementById("evDate").value=new Date().toISOString().slice(0,10);
 let adminMovieSortAsc = true;
 let adminCinemaSortAsc = true;
 
-function toggleAdminMovieSort(){
-  adminMovieSortAsc = !adminMovieSortAsc;
+function sortAdminMovies(asc){
+  adminMovieSortAsc = asc;
   const btn = document.getElementById("movieSortBtn");
-  btn.textContent = adminMovieSortAsc ? "가 ↑" : "가 ↓";
+  if(btn) btn.textContent = asc ? "가 ↑" : "가 ↓";
   const grid = document.getElementById("movieGrid");
+  if(!grid) return;
   const cards = [...grid.querySelectorAll(".m-card")];
   cards.sort((a,b)=>{
     const ta = (a.dataset.title||"").localeCompare(b.dataset.title||"","ko");
-    return adminMovieSortAsc ? ta : -ta;
+    return asc ? ta : -ta;
   });
   cards.forEach(c=>grid.appendChild(c));
 }
+function toggleAdminMovieSort(){
+  sortAdminMovies(!adminMovieSortAsc);
+}
+// 페이지 로드 시 가나다 오름차순 초기 정렬
+document.addEventListener("DOMContentLoaded", ()=>{ sortAdminMovies(true); });
 
 function toggleAdminCinemaSort(){
   adminCinemaSortAsc = !adminCinemaSortAsc;
