@@ -72,6 +72,9 @@ header{background:var(--text);color:#fff;padding:0 24px;position:sticky;top:0;z-
 .quick-sort-btn{font-size:11px;font-weight:600;font-family:inherit;padding:4px 11px;border-radius:5px;border:1.5px solid var(--border);background:var(--surface);color:var(--text-muted);cursor:pointer;transition:all .12s;white-space:nowrap;}
 .quick-sort-btn:hover{border-color:var(--text);color:var(--text);}
 .quick-sort-btn.active{background:var(--text);border-color:var(--text);color:#fff;}
+.quick-filter-btn{font-size:11px;font-weight:600;font-family:inherit;padding:4px 10px;border-radius:5px;border:1.5px solid #FEF08A;background:#FFFDE7;color:#713F12;cursor:pointer;transition:all .12s;white-space:nowrap;}
+.quick-filter-btn:hover{background:#FEF08A;}
+.quick-filter-btn.active{background:#FEF08A;border-color:#D97706;color:#713F12;}
 .sticker{display:inline-block;font-size:9px;font-weight:700;background:#FEF08A;color:#713F12;padding:1px 4px;border-radius:3px;white-space:nowrap;vertical-align:middle;margin-left:4px;letter-spacing:.02em;}
 
 /* ── 로딩/빈상태 ── */
@@ -509,7 +512,9 @@ tr:hover td{background:#FAFAF8;}
       <span class="result-title-text">볼 수 있는 영화</span>
       <span class="result-sub-text" id="exploreSub"></span>
       <span class="result-count-text" id="exploreCount"></span>
-      <div style="margin-left:auto;display:flex;gap:5px;">
+      <div style="margin-left:auto;display:flex;gap:5px;align-items:center;flex-wrap:wrap;">
+        <button class="quick-filter-btn" id="specialFilterBtn" onclick="toggleSpecialFilter(this)" title="GV·토크 등 특별회차만 보기">🎙 특별회차</button>
+        <span style="width:1px;height:14px;background:var(--border);flex-shrink:0;"></span>
         <button class="quick-sort-btn active" data-sort="time" onclick="setExploreSort(this,'time')">상영시작순</button>
         <button class="quick-sort-btn" data-sort="title" onclick="setExploreSort(this,'title')">제목순</button>
       </div>
@@ -531,8 +536,13 @@ tr:hover td{background:#FAFAF8;}
   <!-- ③ 영화별 -->
   <div id="tab-movie" style="display:none;">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
-      <div class="movie-search-bar" style="margin-bottom:0;">
-        <input type="text" id="movieSearchInput" placeholder="영화 제목 검색…" oninput="onMovieSearch(this.value)">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <div class="movie-search-bar" style="margin-bottom:0;">
+          <input type="text" id="movieSearchInput" placeholder="영화 제목 검색…" oninput="onMovieSearch(this.value)" style="max-width:200px;">
+        </div>
+        <div class="movie-search-bar" style="margin-bottom:0;">
+          <input type="text" id="movieDirectorInput" placeholder="감독 검색…" oninput="onDirectorSearch(this.value)" style="max-width:160px;">
+        </div>
       </div>
       <div style="display:flex;gap:5px;margin-left:auto;align-items:center;">
         <span style="font-size:11px;color:var(--text-muted);margin-right:2px;">정렬</span>
@@ -693,6 +703,7 @@ const EXPLORE_AREAS = {
 };
 
 let exploreMode = "direct";    // direct | range | today | tomorrow | saturday | sunday
+let exploreSpecialOnly = false; // 특별회차(GV·토크 등) 필터
 let exploreDirectOpen = false; // 극장 직접선택 패널
 let exploreSelectedCinemas = new Set(EXPLORE_AREAS.all.cinemas);
 let exploreData = [];
@@ -766,6 +777,7 @@ function renderExploreCards(){
   });
   let cards = Object.values(groups);
   if(exploreSearchQ) cards = cards.filter(c=>c.movie.includes(exploreSearchQ));
+  if(exploreSpecialOnly) cards = cards.filter(c=>hasSpecialScreening(c.times));
 
   // 정렬
   const dir = exploreSortDir==="asc"?1:-1;
@@ -919,6 +931,21 @@ function onExploreSearch(q){
   exploreSearchQ = q;
   if(q.length>=2) gtag("event","explore_search",{search_term:q});
   renderExploreCards();
+}
+
+
+function toggleSpecialFilter(btn){
+  exploreSpecialOnly = !exploreSpecialOnly;
+  btn.classList.toggle("active", exploreSpecialOnly);
+  renderExploreCards();
+}
+
+function hasSpecialScreening(times){
+  return times.some(t => {
+    const src = ((t.program||"")+" "+(t.show_type||"")).toLowerCase();
+    return src.includes("gv") || src.includes("감독") || src.includes("토크") ||
+           src.includes("talk") || src.includes("특별") || src.includes("시사");
+  });
 }
 
 function setExploreSort(btn, mode){
@@ -1307,6 +1334,7 @@ function renderCinemaGrid(){
 let movieSortMode = "count";
 let movieSortDir  = "desc";
 let movieSearchQ  = "";
+let movieDirectorQ = "";
 
 function onMovieSearch(q){
   movieSearchQ=q;
@@ -1338,12 +1366,24 @@ function setMovieSort(btn, mode){
 /* ══════════════════════════════════════
    ③ 영화별 탭
 ══════════════════════════════════════ */
+let movieDirectorMap = {}; // {title: director}
+
 async function loadMovieTabData(){
   try{
     const today=today_kst();
     const params=new URLSearchParams({date_from:today, date_to:statsCache?.date_max||today});
-    movieData=await fetch(`/api/screenings?${params}`).then(r=>r.json());
-    // 관리자 추천 목록 로드
+    [movieData] = await Promise.all([
+      fetch(`/api/screenings?${params}`).then(r=>r.json()),
+    ]);
+    // 감독 정보 로드
+    try{
+      const mlist = await fetch("/api/movies").then(r=>r.json());
+      movieDirectorMap = {};
+      mlist.forEach(m=>{ if(m.director) movieDirectorMap[m.title]=m.director; });
+      // movieData에 director 주입
+      movieData.forEach(r=>{ r.director = movieDirectorMap[r.movie]||""; });
+    }catch(e){}
+    // 추천 목록
     try{ recData=await fetch("/api/recommended").then(r=>r.json()); }catch(e){ recData=[]; }
     renderMovieGrid();
   }catch(e){ document.getElementById("movie-grid-content").innerHTML=`<div class="empty">데이터를 불러오지 못했습니다</div>`; }
@@ -1360,7 +1400,14 @@ function renderMovieGrid(resetCount=true){
     if(!groups[r.movie]) groups[r.movie]=[];
     groups[r.movie].push(r);
   });
-  let titles=Object.keys(groups).filter(t=>!movieSearchQ||t.includes(movieSearchQ));
+  let titles=Object.keys(groups).filter(t=>{
+    if(movieSearchQ && !t.includes(movieSearchQ)) return false;
+    if(movieDirectorQ){
+      const dir=(groups[t][0]?.director||"").toLowerCase();
+      if(!dir.includes(movieDirectorQ.toLowerCase())) return false;
+    }
+    return true;
+  });
   // 정렬 (방향 포함)
   const dir = movieSortDir === "asc" ? 1 : -1;
   if(movieSortMode==="count")   titles.sort((a,b)=>(groups[a].length - groups[b].length) * dir);
@@ -1386,7 +1433,7 @@ function renderMovieGrid(resetCount=true){
         <div class="movie-thumb">${thumb}</div>
         <div class="movie-group-info">
           <div class="movie-group-title" style="display:flex;align-items:center;gap:5px;">${esc(title)}${recSet&&recSet.has(title)?'<span class="rec-badge">★</span>':''}</div>
-          <div class="movie-group-meta">${runtime?runtime+"분 · ":""}${rows.length}회 상영</div>
+          <div class="movie-group-meta">${rows[0]?.director?rows[0].director+" · ":""}${runtime?runtime+"분 · ":""}${rows.length}회 상영</div>
         </div>
         <button class="heart-btn${isMovieWished(title)?" on":""}" onclick="event.stopPropagation();toggleMovieWish(this,'${esc(title)}','${esc(rows[0].poster_url||"")}')" title="관심 목록 추가">${isMovieWished(title)?"♥":"♡"}</button>
       </div>
@@ -1431,7 +1478,14 @@ function loadMoreMovies(){
     if(!groups[r.movie]) groups[r.movie]=[];
     groups[r.movie].push(r);
   });
-  let titles=Object.keys(groups).filter(t=>!movieSearchQ||t.includes(movieSearchQ));
+  let titles=Object.keys(groups).filter(t=>{
+    if(movieSearchQ && !t.includes(movieSearchQ)) return false;
+    if(movieDirectorQ){
+      const dir=(groups[t][0]?.director||"").toLowerCase();
+      if(!dir.includes(movieDirectorQ.toLowerCase())) return false;
+    }
+    return true;
+  });
   const dir = movieSortDir === "asc" ? 1 : -1;
   if(movieSortMode==="count")   titles.sort((a,b)=>(groups[a].length - groups[b].length) * dir);
   else if(movieSortMode==="title") titles.sort((a,b)=>a.localeCompare(b,"ko") * dir);

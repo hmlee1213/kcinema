@@ -799,16 +799,21 @@ def admin_dashboard():
     cinemas = [dict(r) for r in cur.fetchall()]
     cur.execute("SELECT * FROM movies ORDER BY title")
     movies = [dict(r) for r in cur.fetchall()]
-    # 현재 상영 중인 영화 목록 (추천 등록용)
+    # 현재 상영 중인 영화 + 등록된 특별상영 통합 목록
     cur.execute("""
-        SELECT DISTINCT s.movie,
-               m.poster_url,
+        SELECT DISTINCT sq.movie,
+               BOOL_OR(sq.is_event) AS is_event,
+               m.poster_url, m.director,
                r.id AS rec_id, r.is_rec, r.comment, r.awards
-        FROM screenings s
-        LEFT JOIN movies m ON m.title = s.movie
-        LEFT JOIN recommended r ON r.title = s.movie
-        WHERE s.start_dt::date >= CURRENT_DATE
-        ORDER BY s.movie
+        FROM (
+            SELECT movie, FALSE AS is_event FROM screenings WHERE start_dt::date >= CURRENT_DATE
+            UNION ALL
+            SELECT title AS movie, TRUE AS is_event FROM events WHERE event_date >= CURRENT_DATE
+        ) sq
+        LEFT JOIN movies m ON m.title = sq.movie
+        LEFT JOIN recommended r ON r.title = sq.movie
+        GROUP BY sq.movie, m.poster_url, m.director, r.id, r.is_rec, r.comment, r.awards
+        ORDER BY sq.movie
     """)
     screening_movies = [dict(r) for r in cur.fetchall()]
     cur.execute("SELECT * FROM events ORDER BY event_date DESC, start_time")
@@ -1086,6 +1091,8 @@ a{color:#2D5A1B;text-decoration:none}
           {% else %}🎬{% endif %}
         </div>
         <div class="m-name">{{ m.movie }}</div>
+        {% if m.director %}<div style="font-size:9px;color:#888;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ m.director }}</div>{% endif %}
+        {% if m.is_event and not m.rec_id %}<span class="m-badge" style="background:#DBEAFE;color:#1E40AF;position:absolute;top:4px;right:4px;font-size:9px;font-weight:700;padding:1px 4px;border-radius:3px;">특별</span>{% endif %}
       </div>
       {% endfor %}
     </div>
