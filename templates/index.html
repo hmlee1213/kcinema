@@ -421,8 +421,8 @@ tr:hover td{background:#FAFAF8;}
 }
 @media(max-width:480px){
   input[type="date"].ex-date{font-size:11px;padding:4px 5px;letter-spacing:-.3px;}
-  input[type="date"].ex-date::-webkit-datetime-edit-year-field{display:none;}
-  input[type="date"].ex-date::-webkit-datetime-edit-text:first-of-type{display:none;}
+  input[type="date"].ex-date::-webkit-datetime-edit-year-field{display:none !important;width:0;padding:0;margin:0;}
+  input[type="date"].ex-date::-webkit-datetime-edit-text:last-of-type{display:none !important;width:0;padding:0;margin:0;}
   .explore-cinema-chips{grid-template-columns:repeat(3,1fr);}
   .movie-card-grid{grid-template-columns:repeat(3,1fr);gap:7px;}
   .mv-poster{aspect-ratio:2/3;}
@@ -897,7 +897,7 @@ function renderExploreCards(){
       ? `<div class="venue-dot${isFree?" free":""}"></div><span>${esc(g.cinema)}</span><span class="venue-sep">·</span><span>${esc(g.screen)}</span>`
       : `<div class="venue-dot${isFree?" free":""}"></div><span>${esc(g.cinema)}</span>${isFree?`<span class="chip-free" style="font-size:10px;font-weight:700;color:var(--green);margin-left:3px;">무료</span>`:""}`;
     const timesHtml = g.times.map(t=>{
-      const s = stickerHtml(t.program, t.show_type, card.cinema, card.movie, card.screen||"");
+      const s = stickerHtml(t.program, t.show_type, g.cinema, g.movie, g.screen||"");
       const schedKey = `${esc(g.movie)}|${esc(g.cinema)}|${esc(g.screen||"")}|${t.start_dt||""}`;
       const wished = isSchedWished(schedKey);
       return `<div class="time-chip${wished?" wished":""}" style="display:flex;align-items:center;gap:3px;cursor:pointer;"
