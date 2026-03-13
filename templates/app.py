@@ -1007,7 +1007,7 @@ header{background:#111;padding:0 24px;position:sticky;top:0;z-index:100}
 .m-tag-row{display:flex;gap:3px;flex-wrap:wrap;margin-top:4px;}
 .m-tag{font-size:10px;font-weight:700;padding:2px 5px;border-radius:3px;line-height:1.2;}
 .m-tag-4k{background:#1a56db;color:#fff;}
-.m-tag-dolby{background:#7c3aed;color:#fff;}
+.m-tag-dolby{background:#ff6633;color:#fff;}
 /* 편집 패널 */
 .edit-panel{background:#F8F7F4;border:1.5px solid #E0DDD8;border-radius:10px;padding:20px;margin-top:12px;display:none}
 .edit-panel.open{display:block}
@@ -1185,8 +1185,8 @@ a{color:#2D5A1B;text-decoration:none}
               <span style="color:#1a56db;">4K 지원</span>
             </label>
             <label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:700;">
-              <input type="checkbox" id="epIsDolby" style="width:15px;height:15px;accent-color:#7c3aed;cursor:pointer;">
-              <span style="color:#7c3aed;">돌비 애트모스 지원</span>
+              <input type="checkbox" id="epIsDolby" style="width:15px;height:15px;accent-color:#ff6633;cursor:pointer;">
+              <span style="color:#ff6633;">돌비 애트모스 지원</span>
             </label>
             <span style="font-size:11px;color:#888;align-self:center;">극장 조건 맞을 때만 배지 표시</span>
           </div>
