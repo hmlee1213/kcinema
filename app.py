@@ -1272,6 +1272,7 @@ a{color:#2D5A1B;text-decoration:none}
             <input type="text" name="address" id="ciAddress"></div>
           <div class="fg"><label class="lbl">전화</label>
             <input type="text" name="phone" id="ciPhone" placeholder="02-..."></div>
+          <input type="hidden" name="price_info" id="ciPrice">
           <div class="fg span2"><label class="lbl">특징</label>
             <textarea name="description" id="ciDesc" rows="2"></textarea></div>
           <!-- 요금표 2×2 -->

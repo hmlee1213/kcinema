@@ -191,15 +191,15 @@ header{background:var(--text);color:#fff;padding:0 24px;position:sticky;top:0;z-
 .movie-sort-btn.active{background:var(--text);border-color:var(--text);color:#fff;}
 /* 관리자 추천 배지 */
 .rec-badge{display:inline-flex;align-items:center;font-size:11px;font-weight:800;color:#B45309;flex-shrink:0;letter-spacing:-.01em;}
-.movie-card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:8px;}
-.mv-card{border:1.5px solid var(--border);border-radius:8px;padding:0;cursor:pointer;transition:border-color .12s,box-shadow .12s;background:var(--surface);position:relative;overflow:hidden;display:flex;flex-direction:column;}
+.movie-card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;margin-bottom:8px;}
+.mv-card{border:1.5px solid var(--border);border-radius:8px;padding:0;cursor:pointer;transition:border-color .12s,box-shadow .12s;background:var(--surface);position:relative;overflow:hidden;display:flex;flex-direction:column;max-width:160px;}
 .mv-card:hover{border-color:#2D5A1B;box-shadow:0 2px 8px rgba(0,0,0,.08);}
 .mv-card.has-rec{border-color:#F59E0B;}
-.mv-poster{width:100%;aspect-ratio:2/3;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:28px;overflow:hidden;flex-shrink:0;}
+.mv-poster{width:100%;aspect-ratio:3/4;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:28px;overflow:hidden;flex-shrink:0;}
 .mv-poster img{width:100%;height:100%;object-fit:cover;}
 .mv-info{padding:7px 8px 9px;flex:1;display:flex;flex-direction:column;gap:3px;}
-.mv-title{font-size:12px;font-weight:700;line-height:1.3;color:var(--text);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
-.mv-meta{font-size:10px;color:var(--text-muted);line-height:1.4;}
+.mv-title{font-size:14px;font-weight:800;line-height:1.3;color:var(--text);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
+.mv-meta{font-size:12px;color:var(--text-muted);line-height:1.4;margin-top:2px;}
 .mv-count{font-size:10px;font-weight:700;background:var(--surface2);color:var(--text-muted);padding:1px 5px;border-radius:4px;display:inline-block;margin-top:2px;}
 .mv-rec-badge{position:absolute;top:4px;right:4px;font-size:10px;font-weight:800;color:#B45309;background:rgba(255,255,255,.9);border-radius:3px;padding:0 3px;line-height:1.6;}
 .mv-wish-btn{position:absolute;bottom:6px;right:6px;background:none;border:none;cursor:pointer;font-size:14px;color:#ccc;-webkit-text-stroke:.4px #bbb;line-height:1;padding:1px;transition:color .1s;}
@@ -340,7 +340,7 @@ tr:hover td{background:#FAFAF8;}
 .heart-btn:hover{color:#e05;-webkit-text-stroke:.5px #c00;transform:scale(1.15);}
 .heart-btn.on{color:#e05;-webkit-text-stroke:.5px #c00;}
 /* 상영찜 북마크 아이콘 */
-.sched-wish-btn{background:none;border:none;cursor:pointer;font-size:14px;padding:0 2px;line-height:1;color:#ccc;transition:color .08s,transform .08s;flex-shrink:0;font-family:inherit;}
+.sched-wish-btn{background:none;border:none;cursor:pointer;font-size:11px;padding:0 2px;line-height:1;color:#ccc;transition:color .08s,transform .08s;flex-shrink:0;font-family:inherit;}
 .sched-wish-btn:hover{color:#555;transform:scale(1.2);}
 .sched-wish-btn.on{color:#111;}
 .wish-subtabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:16px;}
@@ -1120,14 +1120,17 @@ function openMoviePopup(title, rows, posterUrl){
       const s=stickerHtml(r.program, r.show_type);
       const schedKey=`${esc(title)}|${esc(r.cinema)}|${esc(r.screen||"")}|${r.start_dt||""}`;
       const wished=isSchedWished(schedKey);
-      return `<span class="time-chip${wished?" wished":""}" style="display:inline-flex;align-items:center;gap:3px;cursor:pointer;"
-        onclick="void(0)">
-        ${start}–${end}${s}<button class="sched-wish-btn swb${wished?" on":""}" data-key="${schedKey}" onclick="event.stopPropagation();toggleSchedWish('${schedKey}','${esc(title)}','${esc(r.cinema)}','${esc(r.screen||"")}','${r.start_dt||""}','${r.end_dt||""}','${esc(posterUrl||"")}',this)">${wished?"⏰":"➕"}</button>
-      </span>`;
+      return `<div class="popup-sched-slot${wished?" wished":""}" style="display:flex;align-items:center;justify-content:space-between;gap:8px;border:1.5px solid ${wished?'var(--green)':'var(--border)'};border-radius:7px;padding:7px 10px;background:${wished?'#EEF5E8':'var(--surface)'};">
+        <span style="font-size:13px;font-weight:700;color:var(--text);">${start}</span>
+        <span style="font-size:11px;color:var(--text-muted);">–</span>
+        <span style="font-size:12px;font-weight:600;color:var(--text-muted);">${end}</span>
+        ${s}
+        <button class="sched-wish-btn swb${wished?" on":""}" data-key="${schedKey}" title="${wished?'등록 취소':'스케줄 등록'}" onclick="event.stopPropagation();toggleSchedWish('${schedKey}','${esc(title)}','${esc(r.cinema)}','${esc(r.screen||"")}','${r.start_dt||""}','${r.end_dt||""}','${esc(posterUrl||"")}',this)" style="font-size:13px;margin-left:auto;">${wished?"⏰":"➕"}</button>
+      </div>`;
     }).join("");
-    return `<div class="sched-row" style="flex-direction:column;align-items:flex-start;gap:6px;padding:10px 0;border-bottom:1px solid var(--border);">
-      <span class="sched-cinema" style="font-weight:700;">${esc(label)}</span>
-      <div style="display:flex;flex-wrap:wrap;gap:4px;">${times}</div>
+    return `<div style="padding:10px 0;border-bottom:1px solid var(--border);">
+      <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:7px;">${esc(label)}</div>
+      <div style="display:flex;flex-direction:column;gap:6px;">${times}</div>
     </div>`;
   }).join("");
   document.getElementById("moviePopupSchedules").innerHTML = html || `<div style="color:var(--text-muted);font-size:12px;padding:12px 0;">상영 정보 없음</div>`;
@@ -1570,48 +1573,36 @@ function renderMovieGrid(resetCount=true){
   const html=visible.map(title=>{
     const rows=groups[title];
     const runtime=rows.find(r=>r.runtime)?.runtime;
-    const thumb = rows[0].poster_url
-      ? `<img data-src="${esc(rows[0].poster_url)}" alt="" class="lazy-img" onerror="this.parentNode.textContent='🎬'">`
-      : "🎬";
-    const _encRows = encodeURIComponent(JSON.stringify(rows.map(r=>({cinema:r.cinema,screen:r.screen||'',start_dt:r.start_dt,end_dt:r.end_dt,program:r.program,show_type:r.show_type,movie_url:r.movie_url||''}))));
-    const _encPost = encodeURIComponent(rows[0].poster_url||'');
-    return `<div class="movie-group">
-      <div class="movie-group-header" data-title="${esc(title)}" data-rows="${_encRows}" data-poster="${_encPost}" onclick="onMovieGroupClick(this)" style="cursor:pointer">
-        <div class="movie-thumb">${thumb}</div>
-        <div class="movie-group-info">
-          <div class="movie-group-title" style="display:flex;align-items:center;gap:5px;">${esc(title)}${recSet&&recSet.has(title)?'<span class="rec-badge">★</span>':''}</div>
-          <div class="movie-group-meta">${rows[0]?.director?rows[0].director+" · ":""}${runtime?runtime+"분 · ":""}${rows.length}회 상영</div>
-        </div>
-        <button class="heart-btn${isMovieWished(title)?" on":""}" onclick="event.stopPropagation();toggleMovieWish(this,'${esc(title)}','${esc(rows[0].poster_url||"")}')" title="관심 목록 추가">${isMovieWished(title)?"♥":"♡"}</button>
+    const posterUrl=rows[0].poster_url||'';
+    const thumb=posterUrl
+      ?`<img data-src="${esc(posterUrl)}" alt="" class="lazy-img" onerror="this.parentNode.textContent='🎬'">`
+      :"🎬";
+    const _encRows=encodeURIComponent(JSON.stringify(rows.map(r=>({cinema:r.cinema,screen:r.screen||'',start_dt:r.start_dt,end_dt:r.end_dt,program:r.program,show_type:r.show_type,movie_url:r.movie_url||'',poster_url:r.poster_url||''}))));
+    const _encPost=encodeURIComponent(posterUrl);
+    const isRec=recSet&&recSet.has(title);
+    const dirText=rows[0]?.director||'';
+    return `<div class="mv-card${isRec?' has-rec':''}" onclick="onMovieCardClick('${esc(title)}','${_encRows}','${_encPost}')">
+      <div class="mv-poster">${thumb}</div>
+      ${isRec?'<div class="mv-rec-badge">★</div>':''}
+      <div class="mv-info">
+        <div class="mv-title">${esc(title)}</div>
+        <div class="mv-meta">${dirText?esc(dirText)+(runtime?' · ':''):''}${runtime?runtime+'분':''}</div>
+        <div class="mv-count">${rows.length}회 상영</div>
       </div>
-      <div class="movie-rows">
-        ${[...rows].sort((a,b)=>(b.start_dt||"").localeCompare(a.start_dt||"")).map(r=>{
-          const {mmdd,time,dow,dowIdx}=splitDt(r.start_dt);
-          const {time:endTime}=splitDt(r.end_dt);
-          const isFree=FREE_CINEMAS.includes(r.cinema);
-          const s=stickerHtml(r.program,r.show_type);
-          return `<div class="m-row">
-            <div class="m-cinema-cell">
-              <span class="m-cinema">${esc(r.cinema)}</span>
-              ${r.screen?`<span class="m-screen">${esc(r.screen)}</span>`:""}
-              ${isFree?`<span class="m-free">무료</span>`:""}
-            </div>
-            <span class="m-date">${mmdd} ${dow}</span>
-            <span class="m-time">${time}–${endTime}${s}</span>
-          </div>`;
-        }).join("")}
-      </div>
+      <button class="mv-wish-btn${isMovieWished(title)?' on':''}" onclick="event.stopPropagation();toggleMovieWish(this,'${esc(title)}','${esc(posterUrl)}')" title="관심 목록 추가">${isMovieWished(title)?'♥':'♡'}</button>
     </div>`;
   }).join("");
   const moreBtn = remaining > 0
-    ? `<div class="more-btn-wrap" style="grid-column:1/-1;text-align:center;padding:10px 0;">
+    ? `<div style="grid-column:1/-1;text-align:center;padding:10px 0;">
         <button onclick="loadMoreMovies()" style="font-family:inherit;font-size:13px;font-weight:600;padding:9px 28px;border-radius:7px;border:1.5px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;">
           더보기 (${remaining}편 더)
         </button>
        </div>`
     : "";
-  document.getElementById("movie-grid-content").innerHTML=`${html}${moreBtn}`;
+  document.getElementById("movie-grid-content").innerHTML=`<div class="movie-card-grid">${html}${moreBtn}</div>`;
   lazyLoadImages();
+}
+
 }
 
 function loadMoreMovies(){
@@ -1647,44 +1638,40 @@ function loadMoreMovies(){
   const remaining = titles.length - movieShowCount;
   const recSet = new Set((recData||[]).map(r=>r.title));
 
-  // 새 카드 추가
+  // 새 카드 추가 (renderMovieGrid와 동일 형태)
   const recSet2 = new Set((recData||[]).map(r=>r.title));
+  let cardGrid = grid.querySelector(".movie-card-grid");
+  if(!cardGrid){ cardGrid=document.createElement("div"); cardGrid.className="movie-card-grid"; grid.appendChild(cardGrid); }
   newTitles.forEach(title=>{
     const rows=groups[title];
+    const runtime=rows.find(r=>r.runtime)?.runtime;
     const posterUrl=rows[0].poster_url||'';
-    const thumbHtml = posterUrl
-      ? `<img data-src="${esc(posterUrl)}" alt="" class="lazy-img" style="width:100%;height:100%;object-fit:cover;" onerror="this.parentNode.innerHTML='🎬'">`
-      : "🎬";
-    const _encRows = encodeURIComponent(JSON.stringify(rows.map(r=>({cinema:r.cinema,screen:r.screen||'',start_dt:r.start_dt,end_dt:r.end_dt,program:r.program,show_type:r.show_type,movie_url:r.movie_url||'',poster_url:r.poster_url||''}))));
-    const card = document.createElement("div");
-    card.className = "movie-group";
-    card.dataset.title = title;
-    card.dataset.rows = _encRows;
-    card.dataset.poster = encodeURIComponent(posterUrl);
-    card.onclick = function(){ onMovieGroupClick(this); };
-    const isWished = isMovieWished(title);
-    const isRec = recSet2.has(title);
-    const cntBadge = `<span style="position:absolute;bottom:4px;right:4px;font-size:9px;font-weight:700;background:rgba(0,0,0,.55);color:#fff;padding:1px 5px;border-radius:3px;">${rows.length}회</span>`;
-    const recMark = isRec ? `<span style="position:absolute;top:4px;left:4px;font-size:10px;font-weight:800;color:#B45309;">★</span>` : '';
-    const wishMark = isWished ? `<span style="position:absolute;top:4px;right:4px;font-size:12px;color:#e05;">♥</span>` : '';
-    card.innerHTML = `
-      <div style="position:relative;width:100%;aspect-ratio:2/3;background:#E8E6E0;border-radius:6px 6px 0 0;display:flex;align-items:center;justify-content:center;font-size:20px;overflow:hidden;">
-        ${thumbHtml}${cntBadge}${recMark}${wishMark}
+    const thumb=posterUrl?`<img data-src="${esc(posterUrl)}" alt="" class="lazy-img" onerror="this.parentNode.textContent='🎬'">`:"🎬";
+    const _encRows=encodeURIComponent(JSON.stringify(rows.map(r=>({cinema:r.cinema,screen:r.screen||'',start_dt:r.start_dt,end_dt:r.end_dt,program:r.program,show_type:r.show_type,movie_url:r.movie_url||'',poster_url:r.poster_url||''}))));
+    const _encPost=encodeURIComponent(posterUrl);
+    const isRec=recSet2.has(title);
+    const dirText=rows[0]?.director||'';
+    const card=document.createElement("div");
+    card.className="mv-card"+(isRec?" has-rec":"");
+    card.onclick=()=>onMovieCardClick(title,_encRows,_encPost);
+    card.innerHTML=`
+      <div class="mv-poster">${thumb}</div>
+      ${isRec?'<div class="mv-rec-badge">★</div>':''}
+      <div class="mv-info">
+        <div class="mv-title">${esc(title)}</div>
+        <div class="mv-meta">${dirText?esc(dirText)+(runtime?' · ':''):''}${runtime?runtime+'분':''}</div>
+        <div class="mv-count">${rows.length}회 상영</div>
       </div>
-      <div style="padding:5px 4px 6px;text-align:center;">
-        <div style="font-size:10px;font-weight:700;line-height:1.3;word-break:keep-all;color:var(--text);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">${esc(title)}</div>
-        <div style="font-size:9px;color:var(--text-muted);margin-top:2px;">${rows[0]?.director||""}</div>
-      </div>`;
-    grid.appendChild(card);
+      <button class="mv-wish-btn${isMovieWished(title)?' on':''}" onclick="event.stopPropagation();toggleMovieWish(this,'${esc(title)}','${esc(posterUrl)}')" title="관심 목록 추가">${isMovieWished(title)?'♥':'♡'}</button>`;
+    cardGrid.appendChild(card);
   });
 
   // 더보기 버튼 재추가
   if(remaining > 0){
     const wrap = document.createElement("div");
-    wrap.className = "more-btn-wrap";
     wrap.style.cssText = "grid-column:1/-1;text-align:center;padding:10px 0;";
     wrap.innerHTML = `<button onclick="loadMoreMovies()" style="font-family:inherit;font-size:13px;font-weight:600;padding:9px 28px;border-radius:7px;border:1.5px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;">더보기 (${remaining}편 더)</button>`;
-    grid.appendChild(wrap);
+    cardGrid.appendChild(wrap);
   }
   lazyLoadImages();
 }
