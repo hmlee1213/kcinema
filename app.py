@@ -153,14 +153,39 @@ def ensure_db():
         CREATE TABLE IF NOT EXISTS recommended (
             id SERIAL PRIMARY KEY,
             title TEXT UNIQUE NOT NULL,
-            description TEXT DEFAULT '',
+            stars INTEGER DEFAULT 1 CHECK (stars BETWEEN 1 AND 3),
+            comment TEXT DEFAULT '',
             awards TEXT DEFAULT '',
             created_at TIMESTAMP DEFAULT NOW()
         )
     """)
-    # 기존 테이블 마이그레이션 (reason 컬럼이 있을 경우 대비)
-    cur.execute("ALTER TABLE recommended ADD COLUMN IF NOT EXISTS description TEXT DEFAULT ''")
+    cur.execute("ALTER TABLE recommended ADD COLUMN IF NOT EXISTS stars INTEGER DEFAULT 1")
+    cur.execute("ALTER TABLE recommended ADD COLUMN IF NOT EXISTS comment TEXT DEFAULT ''")
     cur.execute("ALTER TABLE recommended ADD COLUMN IF NOT EXISTS awards TEXT DEFAULT ''")
+    # awards에 movie_info 테이블 통합 - 수상내역은 recommended에서 관리
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS events (
+            id SERIAL PRIMARY KEY,
+            title TEXT NOT NULL,
+            cinema TEXT NOT NULL,
+            event_date DATE NOT NULL,
+            start_time TEXT DEFAULT '',
+            end_time TEXT DEFAULT '',
+            description TEXT DEFAULT '',
+            is_free BOOLEAN DEFAULT FALSE,
+            url TEXT DEFAULT '',
+            created_at TIMESTAMP DEFAULT NOW()
+        )
+    """)
+    cur.execute("ALTER TABLE cinemas ADD COLUMN IF NOT EXISTS price_info TEXT DEFAULT ''")
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS posters (
+            title TEXT PRIMARY KEY,
+            data  BYTEA NOT NULL,
+            mime  TEXT DEFAULT 'image/jpeg',
+            updated_at TIMESTAMP DEFAULT NOW()
+        )
+    """)
     conn.commit(); cur.close(); conn.close()
 
 def save_to_db(rows):
@@ -432,7 +457,7 @@ def api_movies():
 @app.route("/api/recommended", methods=["GET"])
 def api_recommended_get():
     conn = get_db(); cur = conn.cursor()
-    cur.execute("SELECT id, title, description, awards, created_at FROM recommended ORDER BY created_at DESC")
+    cur.execute("SELECT id, title, stars, comment, awards, created_at FROM recommended ORDER BY stars DESC, created_at DESC")
     rows = [dict(r) for r in cur.fetchall()]
     cur.close(); conn.close()
     return jsonify(rows)
@@ -442,16 +467,20 @@ def api_recommended_post():
     if not session.get("admin"):
         return jsonify({"error": "unauthorized"}), 401
     data = request.get_json()
-    title = (data.get("title") or "").strip()
-    description = (data.get("description") or "").strip()
-    awards = (data.get("awards") or "").strip()
+    title   = (data.get("title") or "").strip()
+    stars   = int(data.get("stars") or 1)
+    comment = (data.get("comment") or "").strip()
+    awards  = (data.get("awards") or "").strip()
     if not title:
         return jsonify({"error": "title required"}), 400
+    stars = max(1, min(3, stars))
     conn = get_db(); cur = conn.cursor()
     cur.execute("""
-        INSERT INTO recommended (title, description, awards) VALUES (%s, %s, %s)
-        ON CONFLICT (title) DO UPDATE SET description=EXCLUDED.description, awards=EXCLUDED.awards
-    """, (title, description, awards))
+        INSERT INTO recommended (title, stars, comment, awards)
+        VALUES (%s, %s, %s, %s)
+        ON CONFLICT (title) DO UPDATE SET
+            stars=EXCLUDED.stars, comment=EXCLUDED.comment, awards=EXCLUDED.awards
+    """, (title, stars, comment, awards))
     conn.commit(); cur.close(); conn.close()
     return jsonify({"ok": True})
 
@@ -628,6 +657,139 @@ def admin():
         return redirect(url_for("admin_dashboard"))
     return render_template_string(ADMIN_LOGIN_TEMPLATE, error=None)
 
+
+@app.route("/api/events")
+def api_events():
+    conn = get_db(); cur = conn.cursor()
+    cur.execute("SELECT * FROM events WHERE event_date >= CURRENT_DATE ORDER BY event_date, start_time")
+    rows = [dict(r) for r in cur.fetchall()]
+    cur.close(); conn.close()
+    return jsonify(rows)
+
+@app.route("/api/events", methods=["POST"])
+def api_events_post():
+    if not session.get("admin"):
+        return jsonify({"error": "unauthorized"}), 401
+    d = request.get_json()
+    conn = get_db(); cur = conn.cursor()
+    cur.execute("""
+        INSERT INTO events (title, cinema, event_date, start_time, end_time, description, is_free, url)
+        VALUES (%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id
+    """, (d["title"], d["cinema"], d["event_date"], d.get("start_time",""),
+          d.get("end_time",""), d.get("description",""), bool(d.get("is_free")), d.get("url","")))
+    new_id = cur.fetchone()["id"]
+    conn.commit(); cur.close(); conn.close()
+    return jsonify({"ok": True, "id": new_id})
+
+@app.route("/api/events/<int:eid>", methods=["DELETE"])
+def api_events_delete(eid):
+    if not session.get("admin"):
+        return jsonify({"error": "unauthorized"}), 401
+    conn = get_db(); cur = conn.cursor()
+    cur.execute("DELETE FROM events WHERE id=%s", (eid,))
+    conn.commit(); cur.close(); conn.close()
+    return jsonify({"ok": True})
+
+
+@app.route("/api/upload-poster", methods=["POST"])
+def api_upload_poster():
+    if not session.get("admin"):
+        return jsonify({"error": "unauthorized"}), 401
+    title = request.form.get("title","").strip()
+    f = request.files.get("file")
+    if not title or not f:
+        return jsonify({"error": "title and file required"}), 400
+    mime = f.mimetype or "image/jpeg"
+    data = f.read()
+    if len(data) > 5 * 1024 * 1024:  # 5MB 제한
+        return jsonify({"error": "파일이 너무 큽니다 (최대 5MB)"}), 400
+    conn = get_db(); cur = conn.cursor()
+    cur.execute("""
+        INSERT INTO posters (title, data, mime, updated_at)
+        VALUES (%s, %s, %s, NOW())
+        ON CONFLICT (title) DO UPDATE SET
+            data=EXCLUDED.data, mime=EXCLUDED.mime, updated_at=NOW()
+    """, (title, psycopg2.Binary(data), mime))
+    # movies 테이블 poster_url도 업데이트
+    poster_url = f"/api/poster/{title}"
+    cur.execute("""
+        INSERT INTO movies (title, poster_url, updated_at)
+        VALUES (%s, %s, NOW())
+        ON CONFLICT (title) DO UPDATE SET poster_url=EXCLUDED.poster_url, updated_at=NOW()
+    """, (title, poster_url))
+    conn.commit(); cur.close(); conn.close()
+    return jsonify({"ok": True, "poster_url": poster_url})
+
+@app.route("/api/poster/<path:title>")
+def api_poster_serve(title):
+    conn = get_db(); cur = conn.cursor()
+    cur.execute("SELECT data, mime FROM posters WHERE title=%s", (title,))
+    row = cur.fetchone()
+    cur.close(); conn.close()
+    if not row:
+        return "", 404
+    from flask import Response
+    return Response(bytes(row["data"]), mimetype=row["mime"],
+                    headers={"Cache-Control": "public, max-age=86400"})
+
+@app.route("/api/movie-detail")
+def api_movie_detail_get():
+    title = request.args.get("title","").strip()
+    if not title:
+        return jsonify({}), 400
+    conn = get_db(); cur = conn.cursor()
+    cur.execute("SELECT * FROM movies WHERE title=%s", (title,))
+    row = cur.fetchone()
+    cur.close(); conn.close()
+    return jsonify(dict(row) if row else {})
+
+@app.route("/api/movie-detail", methods=["POST"])
+def api_movie_detail_post():
+    if not session.get("admin"):
+        return jsonify({"error": "unauthorized"}), 401
+    d = request.get_json()
+    title    = (d.get("title") or "").strip()
+    if not title:
+        return jsonify({"error": "title required"}), 400
+    poster   = (d.get("poster_url") or "").strip()
+    director = (d.get("director") or "").strip()
+    synopsis = (d.get("synopsis") or "").strip()
+    year     = int(d["year"]) if d.get("year") else None
+    conn = get_db(); cur = conn.cursor()
+    cur.execute("""
+        INSERT INTO movies (title, poster_url, director, synopsis, year, updated_at)
+        VALUES (%s,%s,%s,%s,%s,NOW())
+        ON CONFLICT (title) DO UPDATE SET
+            poster_url=EXCLUDED.poster_url,
+            director=EXCLUDED.director,
+            synopsis=EXCLUDED.synopsis,
+            year=EXCLUDED.year,
+            updated_at=NOW()
+    """, (title, poster, director, synopsis, year))
+    conn.commit(); cur.close(); conn.close()
+    return jsonify({"ok": True})
+
+@app.route("/api/movie-info")
+def api_movie_info():
+    """영화별 추천·수상·시놉시스 통합 반환"""
+    conn = get_db(); cur = conn.cursor()
+    cur.execute("""
+        SELECT m.title, m.director, m.synopsis, m.poster_url,
+               r.stars, r.comment, r.awards
+        FROM movies m
+        LEFT JOIN recommended r ON r.title = m.title
+    """)
+    rows = {r["title"]: dict(r) for r in cur.fetchall()}
+    # recommended에만 있는 경우도 포함
+    cur.execute("SELECT title, stars, comment, awards FROM recommended")
+    for r in cur.fetchall():
+        if r["title"] not in rows:
+            rows[r["title"]] = dict(r)
+        else:
+            rows[r["title"]].update({k: r[k] for k in ["stars","comment","awards"]})
+    cur.close(); conn.close()
+    return jsonify(rows)
+
 @app.route("/admin/dashboard")
 def admin_dashboard():
     if not session.get("admin"):
@@ -637,8 +799,24 @@ def admin_dashboard():
     cinemas = [dict(r) for r in cur.fetchall()]
     cur.execute("SELECT * FROM movies ORDER BY title")
     movies = [dict(r) for r in cur.fetchall()]
+    # 현재 상영 중인 영화 목록 (추천 등록용)
+    cur.execute("""
+        SELECT DISTINCT s.movie,
+               m.poster_url,
+               r.id AS rec_id, r.stars, r.comment, r.awards
+        FROM screenings s
+        LEFT JOIN movies m ON m.title = s.movie
+        LEFT JOIN recommended r ON r.title = s.movie
+        WHERE s.start_dt::date >= CURRENT_DATE
+        ORDER BY s.movie
+    """)
+    screening_movies = [dict(r) for r in cur.fetchall()]
+    cur.execute("SELECT * FROM events ORDER BY event_date DESC, start_time")
+    events = [dict(r) for r in cur.fetchall()]
     cur.close(); conn.close()
-    return render_template_string(ADMIN_DASHBOARD_TEMPLATE, cinemas=cinemas, movies=movies)
+    return render_template_string(ADMIN_DASHBOARD_TEMPLATE,
+        cinemas=cinemas, movies=movies,
+        screening_movies=screening_movies, events=events)
 
 @app.route("/admin/logout")
 def admin_logout():
@@ -651,14 +829,15 @@ def admin_cinema_save():
     d = request.form
     conn = get_db(); cur = conn.cursor()
     cur.execute("""
-        INSERT INTO cinemas (name,address,url,phone,description,is_free,note,updated_at)
-        VALUES (%s,%s,%s,%s,%s,%s,%s,NOW())
+        INSERT INTO cinemas (name,address,url,phone,description,price_info,is_free,note,updated_at)
+        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,NOW())
         ON CONFLICT (name) DO UPDATE SET
             address=EXCLUDED.address, url=EXCLUDED.url, phone=EXCLUDED.phone,
-            description=EXCLUDED.description, is_free=EXCLUDED.is_free,
-            note=EXCLUDED.note, updated_at=NOW()
+            description=EXCLUDED.description, price_info=EXCLUDED.price_info,
+            is_free=EXCLUDED.is_free, note=EXCLUDED.note, updated_at=NOW()
     """, (d["name"], d.get("address",""), d.get("url",""), d.get("phone",""),
-          d.get("description",""), d.get("is_free","") == "on", d.get("note","")))
+          d.get("description",""), d.get("price_info",""),
+          d.get("is_free","") == "on", d.get("note","")))
     conn.commit(); cur.close(); conn.close()
     return redirect(url_for("admin_dashboard") + "#cinemas")
 
@@ -751,231 +930,605 @@ ADMIN_DASHBOARD_TEMPLATE = """<!DOCTYPE html>
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>관리자 — SEOUL INDIE CINEMA</title>
-<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>어드민 — 오늘 뭐 볼까</title>
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Pretendard',sans-serif;background:#F7F8FA;color:#111827}
-header{background:#fff;border-bottom:1px solid #E2E5EB;padding:0 24px;position:sticky;top:0;z-index:100}
-.header-inner{max-width:1200px;margin:0 auto;height:56px;display:flex;align-items:center;justify-content:space-between}
-.logo{font-size:13px;font-weight:500;color:#336600;letter-spacing:.04em}
+body{font-family:'Pretendard',sans-serif;background:#F5F4F0;color:#111}
+header{background:#111;padding:0 24px;position:sticky;top:0;z-index:100}
+.hd{max-width:1100px;margin:0 auto;height:52px;display:flex;align-items:center;justify-content:space-between}
+.logo{color:#fff;font-size:13px;font-weight:700;letter-spacing:.05em;text-decoration:none}
 .hbtns{display:flex;gap:8px}
-.btn{padding:7px 16px;border-radius:7px;border:none;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;transition:all .15s;text-decoration:none;display:inline-flex;align-items:center}
-.btn-primary{background:#336600;color:#fff}.btn-primary:hover{background:#2a5200}
-.btn-secondary{background:#fff;color:#374151;border:1.5px solid #D1D5DB}.btn-secondary:hover{border-color:#111827;color:#111827}
-.btn-danger{background:#fff;color:#DC2626;border:1.5px solid #FECACA;padding:4px 10px;font-size:11px}.btn-danger:hover{background:#FEF2F2}
-.main{max-width:1200px;margin:0 auto;padding:28px 24px 60px}
-.tabs{display:flex;border-bottom:2px solid #E2E5EB;margin-bottom:24px}
-.tab{padding:10px 20px;font-size:14px;font-weight:600;cursor:pointer;color:#6B7280;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .12s}
-.tab.active{color:#111827;border-bottom-color:#111827}
+.btn{padding:6px 14px;border-radius:6px;border:none;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit;text-decoration:none;display:inline-flex;align-items:center;gap:4px;transition:all .12s}
+.btn-light{background:#fff;color:#111}.btn-light:hover{background:#eee}
+.btn-primary{background:#2D5A1B;color:#fff}.btn-primary:hover{background:#1e3d12}
+.btn-danger{background:#fff;color:#DC2626;border:1.5px solid #FECACA}.btn-danger:hover{background:#FEF2F2}
+.btn-sm{padding:3px 9px;font-size:11px}
+.tabs{max-width:1100px;margin:24px auto 0;padding:0 24px;display:flex;gap:4px}
+.tab{padding:9px 18px;font-size:13px;font-weight:600;cursor:pointer;border-radius:8px 8px 0 0;color:#666;background:#E8E6E0;border:none;font-family:inherit;transition:all .12s}
+.tab.active{background:#fff;color:#111}
+.main{max-width:1100px;margin:0 auto;padding:0 24px 60px}
 .section{display:none}.section.active{display:block}
-.card{background:#fff;border:1px solid #E2E5EB;border-radius:12px;padding:24px 28px;margin-bottom:20px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
-.card-title{font-size:15px;font-weight:700;margin-bottom:20px;padding-bottom:10px;border-bottom:1.5px solid #F0F2F5}
-.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-.fg{display:flex;flex-direction:column;gap:5px}
-.fg.full{grid-column:1/-1}
-label{font-size:11px;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:.04em}
-input,select,textarea{padding:9px 12px;border:1.5px solid #D1D5DB;border-radius:7px;font-size:14px;font-family:inherit;outline:none;background:#fff;width:100%}
-input:focus,select:focus,textarea:focus{border-color:#336600;box-shadow:0 0 0 3px rgba(51,102,0,.08)}
-textarea{resize:vertical;min-height:80px}
-.cb-row{display:flex;align-items:center;gap:8px;margin-top:4px}
-.cb-row input{width:auto;padding:0}
-.cb-row label{text-transform:none;font-size:14px;font-weight:500;color:#111827;letter-spacing:0}
+.panel{background:#fff;border-radius:0 12px 12px 12px;padding:24px 28px;margin-bottom:16px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.panel+.panel{border-radius:12px}
+.panel-title{font-size:14px;font-weight:700;margin-bottom:18px;padding-bottom:10px;border-bottom:1.5px solid #F0F0EE;display:flex;align-items:center;justify-content:space-between}
+/* 영화 카드 그리드 */
+.movie-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;margin-bottom:4px}
+.m-card{border:2px solid #E8E6E0;border-radius:8px;padding:8px;cursor:pointer;transition:all .12s;background:#FAFAF8;position:relative;text-align:center}
+.m-card:hover{border-color:#2D5A1B}
+.m-card.selected{border-color:#2D5A1B;background:#EEF5E8;box-shadow:0 0 0 3px rgba(45,90,27,.12)}
+.m-card.has-info{border-color:#A3C48A}
+.m-card.has-rec{border-style:solid;border-color:#F59E0B}
+.m-thumb{width:100%;aspect-ratio:2/3;border-radius:5px;object-fit:cover;background:#E8E6E0;display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:5px;overflow:hidden}
+.m-thumb img{width:100%;height:100%;object-fit:cover}
+.m-name{font-size:10px;font-weight:600;line-height:1.3;word-break:keep-all;color:#111}
+.m-badge{position:absolute;top:4px;right:4px;font-size:9px;font-weight:700;padding:1px 4px;border-radius:3px}
+.rec-badge{background:#F59E0B;color:#fff}
+.info-badge{background:#2D5A1B;color:#fff}
+/* 편집 패널 */
+.edit-panel{background:#F8F7F4;border:1.5px solid #E0DDD8;border-radius:10px;padding:20px;margin-top:12px;display:none}
+.edit-panel.open{display:block}
+.ep-title{font-size:15px;font-weight:800;margin-bottom:16px;color:#111;display:flex;align-items:center;gap:10px}
+.ep-grid{display:grid;gap:12px}
+.ep-2{grid-template-columns:1fr 1fr}
+.ep-3{grid-template-columns:1fr 1fr 1fr}
+.fg{display:flex;flex-direction:column;gap:4px}
+.fg.span2{grid-column:span 2}
+.fg.span3{grid-column:1/-1}
+label.lbl{font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.04em}
+input,select,textarea{padding:8px 11px;border:1.5px solid #E0DDD8;border-radius:7px;font-size:13px;font-family:inherit;outline:none;background:#fff;width:100%;color:#111}
+input:focus,select:focus,textarea:focus{border-color:#2D5A1B;box-shadow:0 0 0 3px rgba(45,90,27,.08)}
+textarea{resize:vertical}
+/* 포스터 업로드 */
+.poster-area{display:grid;grid-template-columns:80px 1fr;gap:12px;align-items:start}
+.poster-preview{width:80px;height:120px;border-radius:6px;background:#E8E6E0;display:flex;align-items:center;justify-content:center;font-size:24px;overflow:hidden;flex-shrink:0;border:1.5px solid #E0DDD8}
+.poster-preview img{width:100%;height:100%;object-fit:cover}
+.poster-inputs{display:flex;flex-direction:column;gap:8px}
+.upload-btn-wrap{position:relative;display:inline-flex}
+.upload-btn{background:#F0F0EE;border:1.5px dashed #C0BDB8;border-radius:6px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;color:#555;font-family:inherit;transition:all .12s;width:100%;text-align:center}
+.upload-btn:hover{border-color:#2D5A1B;color:#2D5A1B}
+input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%}
+/* 별점 */
+.stars-row{display:flex;gap:6px;flex-direction:row-reverse;justify-content:flex-end}
+.star-rb{display:none}
+.star-lb{font-size:24px;cursor:pointer;color:#DDD;transition:color .08s;line-height:1}
+.stars-row:has(.star-rb:checked) .star-rb:checked ~ .star-lb,
+.stars-row .star-rb:checked ~ .star-lb,
+.star-lb:hover,.star-lb:hover ~ .star-lb{color:#F59E0B}
+/* 구분선 */
+.ep-section{border-top:1px solid #E8E6E0;margin:16px 0 14px;padding-top:14px}
+.ep-section-title{font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px}
+/* 저장바 */
+.save-bar{margin-top:16px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.msg{font-size:12px;font-weight:600;color:#2D5A1B}
+.msg.err{color:#DC2626}
+/* 테이블 */
 table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px}
-thead{background:#F8FAFC}
-th{padding:10px 14px;text-align:left;font-weight:700;font-size:11px;color:#6B7280;border-bottom:1.5px solid #E2E5EB;white-space:nowrap}
-td{padding:10px 14px;border-bottom:1px solid #F0F2F5;vertical-align:middle}
+thead{background:#F8F7F4}
+th{padding:9px 12px;text-align:left;font-weight:700;font-size:11px;color:#888;border-bottom:1.5px solid #E8E6E0;white-space:nowrap}
+td{padding:9px 12px;border-bottom:1px solid #F0F0EE;vertical-align:middle}
 tr:last-child td{border-bottom:none}
-tr:hover td{background:#FAFAFA}
-.badge{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+tr:hover td{background:#FAFAF8}
+.badge{display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px}
 .badge-free{background:#D1FAE5;color:#065F46}
-.badge-paid{background:#F1F5F9;color:#374151}
-a{color:#336600}
-.save-btn{margin-top:16px}
+a{color:#2D5A1B;text-decoration:none}
+/* 극장 카드 */
+.cinema-list{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+.c-row{display:flex;align-items:center;gap:10px;padding:10px 14px;border:1.5px solid #E8E6E0;border-radius:8px;cursor:pointer;background:#FAFAF8;transition:all .12s}
+.c-row:hover{border-color:#2D5A1B}
+.c-row.selected{border-color:#2D5A1B;background:#EEF5E8}
+.c-name{font-size:13px;font-weight:700;flex:1}
+.c-desc{font-size:11px;color:#888}
+.add-new-btn{background:none;border:1.5px dashed #C0BDB8;border-radius:8px;padding:9px;font-size:12px;font-weight:600;color:#888;cursor:pointer;font-family:inherit;width:100%;transition:all .12s}
+.add-new-btn:hover{border-color:#2D5A1B;color:#2D5A1B}
 </style>
 </head>
 <body>
 <header>
-  <div class="header-inner">
-    <a href="/" class="logo">SEOUL // INDIE CINEMA</a>
+  <div class="hd">
+    <a href="/" class="logo">오늘 뭐 볼까 — 어드민</a>
     <div class="hbtns">
-      <a href="/" class="btn btn-secondary">← 사이트</a>
-      <a href="/admin/logout" class="btn btn-secondary">로그아웃</a>
+      <a href="/" class="btn btn-light">← 사이트</a>
+      <a href="/admin/logout" class="btn btn-light">로그아웃</a>
     </div>
   </div>
 </header>
 
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('movies')">🎞 영화 관리</button>
+  <button class="tab" onclick="switchTab('events')">🎭 특별상영</button>
+  <button class="tab" onclick="switchTab('cinemas')">🎬 극장 관리</button>
+</div>
+
 <div class="main">
-  <div class="tabs">
-    <div class="tab active" onclick="switchTab('cinemas')">🎬 극장 관리</div>
-    <div class="tab" onclick="switchTab('movies')">🎞 영화 관리</div>
-    <div class="tab" onclick="switchTab('recommended')">★ 추천 관리</div>
-  </div>
 
-  <div id="tab-cinemas" class="section active">
-    <div class="card" id="cinemas">
-      <div class="card-title">극장 정보 입력 / 수정</div>
-      <form method="POST" action="/admin/cinema/save">
-        <div class="form-grid">
-          <div class="fg"><label>극장명 *</label><input type="text" name="name" required placeholder="예: KU시네마테크"></div>
-          <div class="fg"><label>홈페이지 URL</label><input type="url" name="url" placeholder="https://..."></div>
-          <div class="fg"><label>주소</label><input type="text" name="address" placeholder="서울시 ..."></div>
-          <div class="fg"><label>전화번호</label><input type="text" name="phone" placeholder="02-..."></div>
-          <div class="fg full"><label>소개</label><textarea name="description" placeholder="극장 소개 및 특징..."></textarea></div>
-          <div class="fg full"><label>메모 (내부용)</label><input type="text" name="note"></div>
-          <div class="fg full"><div class="cb-row"><input type="checkbox" name="is_free" id="is_free"><label for="is_free">무료 상영관</label></div></div>
+<!-- ══════════════════════════════════════
+     🎞 영화 관리
+══════════════════════════════════════ -->
+<div id="tab-movies" class="section active">
+  <div class="panel">
+    <div class="panel-title">
+      <span>현재 상영 중인 영화 <span style="font-size:12px;font-weight:400;color:#888">— 카드를 눌러 편집하세요</span></span>
+      <button class="btn btn-light btn-sm" onclick="openNewMovie()">+ 직접 추가</button>
+    </div>
+
+    <div class="movie-grid" id="movieGrid">
+      {% for m in screening_movies %}
+      <div class="m-card {% if m.poster_url %}has-info{% endif %} {% if m.rec_id %}has-rec{% endif %}"
+           id="mc-{{ loop.index }}"
+           data-title="{{ m.movie }}"
+           data-poster="{{ (m.poster_url or '')|e }}"
+           data-director="{{ (m.director or '')|e }}"
+           data-synopsis="{{ (m.synopsis or '')|e }}"
+           data-stars="{{ m.stars or 0 }}"
+           data-comment="{{ (m.comment or '')|e }}"
+           data-awards="{{ (m.awards or '')|e }}"
+           data-rec-id="{{ m.rec_id or '' }}"
+           onclick="selectMovieCard(this)">
+        {% if m.rec_id %}<span class="m-badge rec-badge">★{{ m.stars }}</span>
+        {% elif m.poster_url %}<span class="m-badge info-badge">✓</span>{% endif %}
+        <div class="m-thumb">
+          {% if m.poster_url %}<img src="{{ m.poster_url }}" onerror="this.parentNode.innerHTML='🎬'">
+          {% else %}🎬{% endif %}
         </div>
-        <div class="save-btn"><button type="submit" class="btn btn-primary">저장</button></div>
-      </form>
-    </div>
-    <div class="card">
-      <div class="card-title">등록된 극장 목록 ({{ cinemas|length }}개)</div>
-      {% if cinemas %}
-      <div style="overflow-x:auto"><table>
-        <thead><tr><th>극장명</th><th>주소</th><th>전화</th><th>홈페이지</th><th>무료</th><th>소개</th></tr></thead>
-        <tbody>
-        {% for c in cinemas %}<tr>
-          <td><strong>{{ c.name }}</strong></td>
-          <td style="color:#6B7280">{{ c.address or "—" }}</td>
-          <td style="color:#6B7280">{{ c.phone or "—" }}</td>
-          <td>{% if c.url %}<a href="{{ c.url }}" target="_blank">링크</a>{% else %}—{% endif %}</td>
-          <td>{% if c.is_free %}<span class="badge badge-free">무료</span>{% else %}<span class="badge badge-paid">유료</span>{% endif %}</td>
-          <td style="font-size:12px;color:#6B7280;max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ c.description or "—" }}</td>
-        </tr>{% endfor %}
-        </tbody>
-      </table></div>
-      {% else %}<p style="color:#9CA3AF;font-size:14px">등록된 극장이 없습니다.</p>{% endif %}
-    </div>
-  </div>
-
-  <div id="tab-movies" class="section">
-    <div class="card" id="movies">
-      <div class="card-title">영화 정보 입력 / 수정</div>
-      <form method="POST" action="/admin/movie/save">
-        <div class="form-grid">
-          <div class="fg"><label>영화 제목 (한글) *</label><input type="text" name="title" required placeholder="예: 기억의 땅"></div>
-          <div class="fg"><label>영어 제목</label><input type="text" name="title_en" placeholder="예: Land of Memory"></div>
-          <div class="fg"><label>감독</label><input type="text" name="director"></div>
-          <div class="fg"><label>국가</label><input type="text" name="country" placeholder="예: 한국, 프랑스"></div>
-          <div class="fg"><label>제작연도</label><input type="number" name="year" placeholder="2024" min="1900" max="2099"></div>
-          <div class="fg"><label>러닝타임 (분)</label><input type="number" name="runtime" placeholder="90"></div>
-          <div class="fg full"><label>시놉시스</label><textarea name="synopsis" style="min-height:100px"></textarea></div>
-          <div class="fg"><label>포스터 URL</label><input type="url" name="poster_url" placeholder="https://..."></div>
-          <div class="fg"><label>KOBIS URL</label><input type="url" name="kobis_url" placeholder="https://kobis.or.kr/..."></div>
-          <div class="fg"><label>KOFA URL</label><input type="url" name="kofa_url" placeholder="https://www.koreafilm.or.kr/..."></div>
-          <div class="fg full"><label>메모</label><input type="text" name="note"></div>
-        </div>
-        <div class="save-btn"><button type="submit" class="btn btn-primary">저장</button></div>
-      </form>
-    </div>
-    <div class="card">
-      <div class="card-title">등록된 영화 목록 ({{ movies|length }}편)</div>
-      {% if movies %}
-      <div style="overflow-x:auto"><table>
-        <thead><tr><th>제목</th><th>감독</th><th>국가/연도</th><th>런타임</th><th>KOFA</th><th>삭제</th></tr></thead>
-        <tbody>
-        {% for m in movies %}<tr>
-          <td><strong>{{ m.title }}</strong>{% if m.title_en %}<br><span style="font-size:12px;color:#6B7280">{{ m.title_en }}</span>{% endif %}</td>
-          <td>{{ m.director or "—" }}</td>
-          <td style="white-space:nowrap">{{ m.country or "" }}{% if m.year %} {{ m.year }}{% endif %}</td>
-          <td>{{ (m.runtime|string ~ "분") if m.runtime else "—" }}</td>
-          <td>{% if m.kofa_url %}<a href="{{ m.kofa_url }}" target="_blank">링크</a>{% else %}—{% endif %}</td>
-          <td><form method="POST" action="/admin/movie/delete/{{ m.id }}" onsubmit="return confirm('삭제할까요?')"><button type="submit" class="btn btn-danger">삭제</button></form></td>
-        </tr>{% endfor %}
-        </tbody>
-      </table></div>
-      {% else %}<p style="color:#9CA3AF;font-size:14px">등록된 영화가 없습니다.</p>{% endif %}
-    </div>
-  </div>
-
-  <div id="tab-recommended" class="section">
-    <div class="card">
-      <div class="card-title">★ 관리자 추천 영화 등록 / 수정</div>
-      <p style="font-size:13px;color:#6B7280;margin-bottom:16px;">
-        영화 제목은 상영 DB에 등록된 제목과 <strong>정확히 일치</strong>해야 합니다.<br>
-        수상 내역은 쉼표(,)로 구분해 입력하면 자동으로 칩 형태로 표시됩니다.
-      </p>
-      <div class="form-grid">
-        <div class="fg"><label>영화 제목 *</label>
-          <input type="text" id="rec-title" placeholder="예: 사랑의 기억"></div>
-        <div class="fg"><label>수상 내역 (쉼표 구분)</label>
-          <input type="text" id="rec-awards" placeholder="예: 2025 칸:황금종려상 수상, 2024 아카데미:각본상 후보"></div>
-        <div class="fg full"><label>소개글</label>
-          <textarea id="rec-desc" style="min-height:80px" placeholder="관람 포인트나 추천 이유를 자유롭게 적어주세요"></textarea></div>
+        <div class="m-name">{{ m.movie }}</div>
       </div>
-      <div class="save-btn"><button class="btn btn-primary" onclick="addRecommended()">저장</button></div>
+      {% endfor %}
     </div>
-    <div class="card">
-      <div class="card-title">현재 추천 목록</div>
-      <div id="rec-list"><p style="color:#9CA3AF;font-size:14px">로딩 중…</p></div>
+
+    <!-- 편집 패널 -->
+    <div class="edit-panel" id="movieEditPanel">
+      <div class="ep-title">
+        <span id="epMovieTitle">영화 제목</span>
+        <button class="btn btn-danger btn-sm" id="epRecDelBtn" onclick="deleteRec()" style="display:none">추천 해제</button>
+      </div>
+      <input type="hidden" id="epTitle">
+
+      <!-- 포스터 -->
+      <div class="ep-section-title">포스터</div>
+      <div class="poster-area">
+        <div class="poster-preview" id="epPosterPreview">🎬</div>
+        <div class="poster-inputs">
+          <div class="fg">
+            <label class="lbl">URL 직접 입력</label>
+            <input type="url" id="epPosterUrl" placeholder="https://..." oninput="onPosterUrlInput(this.value)">
+          </div>
+          <div class="upload-btn-wrap">
+            <button class="upload-btn">📁 파일 업로드</button>
+            <input type="file" accept="image/*" onchange="onPosterFileSelect(this)">
+          </div>
+          <div id="epUploadStatus" style="font-size:11px;color:#888"></div>
+        </div>
+      </div>
+
+      <!-- 기본 정보 -->
+      <div class="ep-section">
+        <div class="ep-section-title">기본 정보</div>
+        <div class="ep-grid ep-2">
+          <div class="fg"><label class="lbl">감독</label>
+            <input type="text" id="epDirector" placeholder="예: 봉준호"></div>
+          <div class="fg"><label class="lbl">제작연도</label>
+            <input type="number" id="epYear" placeholder="2024" min="1900" max="2099"></div>
+          <div class="fg span2"><label class="lbl">시놉시스</label>
+            <textarea id="epSynopsis" rows="3" placeholder="줄거리를 입력하세요"></textarea></div>
+        </div>
+      </div>
+
+      <!-- 추천 -->
+      <div class="ep-section">
+        <div class="ep-section-title">추천</div>
+        <div class="ep-grid ep-2">
+          <div class="fg">
+            <label class="lbl">별점</label>
+            <div class="stars-row" id="epStarsRow">
+              <input type="radio" name="epStars" id="es3" value="3" class="star-rb">
+              <label for="es3" class="star-lb">★</label>
+              <input type="radio" name="epStars" id="es2" value="2" class="star-rb">
+              <label for="es2" class="star-lb">★</label>
+              <input type="radio" name="epStars" id="es1" value="1" class="star-rb">
+              <label for="es1" class="star-lb">★</label>
+            </div>
+          </div>
+          <div class="fg"><label class="lbl">추천 코멘트</label>
+            <input type="text" id="epComment" placeholder="한 줄 코멘트" maxlength="80"></div>
+        </div>
+        <div style="margin-top:6px">
+          <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;font-weight:600">
+            <input type="checkbox" id="epIsRec" style="width:auto"> 추천 영화로 등록
+          </label>
+        </div>
+      </div>
+
+      <!-- 수상 -->
+      <div class="ep-section">
+        <div class="ep-section-title">수상 내역</div>
+        <div class="fg">
+          <label class="lbl">쉼표(,)로 구분 &nbsp;예: 2025 칸:황금종려상, 2024 아카데미:각본상 후보</label>
+          <textarea id="epAwards" rows="2" placeholder="2025 칸:황금종려상 수상"></textarea>
+        </div>
+      </div>
+
+      <div class="save-bar">
+        <button class="btn btn-primary" onclick="saveMovie()">저장</button>
+        <span class="msg" id="epMsg"></span>
+      </div>
     </div>
   </div>
 </div>
 
+<!-- ══════════════════════════════════════
+     🎭 특별상영
+══════════════════════════════════════ -->
+<div id="tab-events" class="section">
+  <div class="panel">
+    <div class="panel-title">🎭 특별상영 등록
+      <span style="font-size:12px;font-weight:400;color:#888">시사회·GV·특별상영회 등 예매 없는 이벤트</span>
+    </div>
+    <div class="ep-grid ep-3">
+      <div class="fg span2"><label class="lbl">영화 제목 *</label>
+        <input type="text" id="evTitle" placeholder="예: 벌새 특별상영"></div>
+      <div class="fg"><label class="lbl">극장 *</label>
+        <select id="evCinema">
+          {% for c in cinemas %}<option>{{ c.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="fg"><label class="lbl">날짜 *</label>
+        <input type="date" id="evDate"></div>
+      <div class="fg"><label class="lbl">시작</label>
+        <input type="time" id="evStart"></div>
+      <div class="fg"><label class="lbl">종료</label>
+        <input type="time" id="evEnd"></div>
+      <div class="fg span3"><label class="lbl">설명</label>
+        <textarea id="evDesc" rows="2" placeholder="감독 GV 포함. 당일 선착순 입장"></textarea></div>
+      <div class="fg"><label class="lbl">링크</label>
+        <input type="url" id="evUrl" placeholder="https://..."></div>
+      <div class="fg" style="justify-content:flex-end;padding-top:18px">
+        <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;font-weight:600">
+          <input type="checkbox" id="evFree" style="width:auto"> 무료
+        </label>
+      </div>
+    </div>
+    <div class="save-bar">
+      <button class="btn btn-primary" onclick="saveEvent()">등록</button>
+      <span class="msg" id="evMsg"></span>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel-title">등록된 특별상영 ({{ events|length }}건)</div>
+    {% if events %}
+    <div style="overflow-x:auto"><table>
+      <thead><tr><th>날짜</th><th>극장</th><th>제목</th><th>시간</th><th>설명</th><th>무료</th><th></th></tr></thead>
+      <tbody>{% for e in events %}
+      <tr id="ev-{{ e.id }}">
+        <td style="white-space:nowrap">{{ e.event_date }}</td>
+        <td>{{ e.cinema }}</td>
+        <td><strong>{{ e.title }}</strong>{% if e.url %} <a href="{{ e.url }}" target="_blank">↗</a>{% endif %}</td>
+        <td style="white-space:nowrap">{{ e.start_time or "—" }}{% if e.end_time %} – {{ e.end_time }}{% endif %}</td>
+        <td style="font-size:12px;color:#555;max-width:180px">{{ e.description or "—" }}</td>
+        <td>{% if e.is_free %}<span class="badge badge-free">무료</span>{% else %}—{% endif %}</td>
+        <td><button class="btn btn-danger btn-sm" onclick="deleteEvent({{ e.id }})">삭제</button></td>
+      </tr>{% endfor %}</tbody>
+    </table></div>
+    {% else %}<p style="color:#aaa;font-size:13px">등록된 특별상영이 없습니다.</p>{% endif %}
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     🎬 극장 관리
+══════════════════════════════════════ -->
+<div id="tab-cinemas" class="section">
+  <div class="panel">
+    <div class="panel-title">
+      <span>극장 목록 <span style="font-size:12px;font-weight:400;color:#888">— 극장을 눌러 수정하세요</span></span>
+      <button class="btn btn-light btn-sm" onclick="openNewCinema()">+ 신규 추가</button>
+    </div>
+    <div class="cinema-list">
+      {% for c in cinemas %}
+      <div class="c-row" onclick="selectCinema(this)"
+           data-name="{{ c.name }}"
+           data-address="{{ (c.address or '')|e }}"
+           data-url="{{ (c.url or '')|e }}"
+           data-phone="{{ (c.phone or '')|e }}"
+           data-description="{{ (c.description or '')|e }}"
+           data-price="{{ (c.price_info or '')|e }}"
+           data-note="{{ (c.note or '')|e }}"
+           data-free="{{ 'true' if c.is_free else 'false' }}">
+        <div>
+          <div class="c-name">{{ c.name }}</div>
+          <div class="c-desc">{{ c.address or "" }}{% if c.price_info %} · {{ c.price_info[:30] }}{% if c.price_info|length > 30 %}…{% endif %}{% endif %}</div>
+        </div>
+        {% if c.is_free %}<span class="badge badge-free">무료</span>{% endif %}
+      </div>
+      {% endfor %}
+    </div>
+
+    <div class="edit-panel" id="cinemaEditPanel">
+      <div class="ep-title" id="epCinemaTitle">극장명</div>
+      <form method="POST" action="/admin/cinema/save" id="cinemaForm">
+        <div class="ep-grid ep-2">
+          <div class="fg"><label class="lbl">극장명 *</label>
+            <input type="text" name="name" id="ciName" required></div>
+          <div class="fg"><label class="lbl">홈페이지</label>
+            <input type="url" name="url" id="ciUrl" placeholder="https://..."></div>
+          <div class="fg"><label class="lbl">주소</label>
+            <input type="text" name="address" id="ciAddress"></div>
+          <div class="fg"><label class="lbl">전화</label>
+            <input type="text" name="phone" id="ciPhone" placeholder="02-..."></div>
+          <div class="fg span2"><label class="lbl">특징</label>
+            <textarea name="description" id="ciDesc" rows="2"></textarea></div>
+          <div class="fg span2"><label class="lbl">가격 정보</label>
+            <textarea name="price_info" id="ciPrice" rows="2" placeholder="예: 일반 11,000원 / 청소년 8,000원 / 조조(~10시) 7,000원"></textarea></div>
+          <div class="fg"><label class="lbl">메모 (내부용)</label>
+            <input type="text" name="note" id="ciNote"></div>
+          <div class="fg" style="justify-content:flex-end;padding-top:18px">
+            <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;font-weight:600">
+              <input type="checkbox" name="is_free" id="ciFree" style="width:auto"> 무료 상영관
+            </label>
+          </div>
+        </div>
+        <div class="save-bar">
+          <button type="submit" class="btn btn-primary">저장</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+</div><!-- /main -->
+
 <script>
-const TABS = ["cinemas","movies","recommended"];
-function switchTab(name) {
+const TABS = ["movies","events","cinemas"];
+function switchTab(name){
   document.querySelectorAll(".tab").forEach((t,i)=>t.classList.toggle("active",TABS[i]===name));
   document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
   document.getElementById("tab-"+name).classList.add("active");
-  if(name==="recommended") loadRecommended();
 }
-if(location.hash==="#movies") switchTab("movies");
-if(location.hash==="#recommended") switchTab("recommended");
 
-async function loadRecommended(){
-  const res = await fetch("/api/recommended");
-  const rows = await res.json();
-  const el = document.getElementById("rec-list");
-  if(!rows.length){ el.innerHTML='<p style="color:#9CA3AF;font-size:14px">등록된 추천이 없습니다.</p>'; return; }
-  el.innerHTML = `<table><thead><tr>
-    <th>영화 제목</th><th>수상 내역</th><th>소개글</th><th>등록일</th><th>수정</th><th>삭제</th>
-  </tr></thead><tbody>
-    ${rows.map(r=>`<tr>
-      <td><strong>${r.title}</strong></td>
-      <td style="font-size:12px;color:#6B7280">${(r.awards||"").split(",").filter(Boolean).map(a=>{
-        const [fest,...rest]=a.trim().split(":");
-        return `<span style="display:inline-flex;align-items:center;margin:1px 4px 1px 0;">
-          <span style="background:#555;color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:3px 0 0 3px;">${fest.trim()}</span
-          ><span style="font-size:10px;color:#111;padding:1px 5px;border:1px solid #ddd;border-left:none;border-radius:0 3px 3px 0;">${(rest.join("|")||"").trim()}</span>
-        </span>`;}).join("") || "—"}</td>
-      <td style="font-size:12px;color:#6B7280;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.description||"—"}</td>
-      <td style="font-size:12px;color:#9CA3AF;white-space:nowrap">${(r.created_at||"").slice(0,10)}</td>
-      <td><button class="btn btn-secondary" style="font-size:11px;padding:3px 10px;"
-        data-title="${r.title}" data-awards="${r.awards||''}" data-desc="${(r.description||'').replace(/"/g,'&quot;')}"
-        onclick="editRecommended(this)">수정</button></td>
-      <td><button class="btn btn-danger" onclick="deleteRecommended(${r.id})">삭제</button></td>
-    </tr>`).join("")}
-  </tbody></table>`;
+// ── 영화 카드 선택 ────────────────────
+let selCard = null;
+
+function selectMovieCard(card){
+  if(selCard===card){
+    card.classList.remove("selected");
+    selCard=null;
+    document.getElementById("movieEditPanel").classList.remove("open");
+    return;
+  }
+  document.querySelectorAll(".m-card").forEach(c=>c.classList.remove("selected"));
+  card.classList.add("selected");
+  selCard=card;
+  fillMoviePanel(card);
+  const panel=document.getElementById("movieEditPanel");
+  panel.classList.add("open");
+  setTimeout(()=>panel.scrollIntoView({behavior:"smooth",block:"nearest"}),50);
 }
-function editRecommended(btn){
-  document.getElementById("rec-title").value = btn.dataset.title;
-  document.getElementById("rec-awards").value = btn.dataset.awards;
-  document.getElementById("rec-desc").value = btn.dataset.desc;
-  document.getElementById("rec-title").scrollIntoView({behavior:"smooth", block:"center"});
+
+function fillMoviePanel(card){
+  const d=card.dataset;
+  document.getElementById("epTitle").value    = d.title;
+  document.getElementById("epMovieTitle").textContent = d.title;
+  document.getElementById("epPosterUrl").value= d.poster||"";
+  document.getElementById("epDirector").value = d.director||"";
+  document.getElementById("epYear").value     = d.year||"";
+  document.getElementById("epSynopsis").value = d.synopsis||"";
+  document.getElementById("epComment").value  = d.comment||"";
+  document.getElementById("epAwards").value   = d.awards||"";
+  document.getElementById("epMsg").textContent= "";
+  document.getElementById("epUploadStatus").textContent="";
+
+  // 포스터 미리보기
+  setPosterPreview(d.poster||"");
+
+  // 별점
+  const stars=parseInt(d.stars)||0;
+  document.querySelectorAll("input[name='epStars']").forEach(r=>{r.checked=false});
+  if(stars>0){
+    const rb=document.getElementById("es"+stars);
+    if(rb) rb.checked=true;
+  }
+
+  // 추천 체크박스
+  document.getElementById("epIsRec").checked = !!d.recId;
+  const delBtn=document.getElementById("epRecDelBtn");
+  delBtn.style.display = d.recId ? "inline-flex":"none";
+  delBtn.dataset.recId = d.recId||"";
 }
-async function addRecommended(){
-  const title = document.getElementById("rec-title").value.trim();
-  const awards = document.getElementById("rec-awards").value.trim();
-  const description = document.getElementById("rec-desc").value.trim();
+
+function openNewMovie(){
+  document.querySelectorAll(".m-card").forEach(c=>c.classList.remove("selected"));
+  selCard=null;
+  // 빈 패널 열기
+  document.getElementById("epTitle").value="";
+  document.getElementById("epMovieTitle").textContent="새 영화 추가";
+  ["epPosterUrl","epDirector","epYear","epSynopsis","epComment","epAwards"].forEach(id=>document.getElementById(id).value="");
+  document.getElementById("epIsRec").checked=false;
+  document.getElementById("epRecDelBtn").style.display="none";
+  document.querySelectorAll("input[name='epStars']").forEach(r=>r.checked=false);
+  setPosterPreview("");
+  document.getElementById("epMsg").textContent="";
+  const panel=document.getElementById("movieEditPanel");
+  panel.classList.add("open");
+  panel.scrollIntoView({behavior:"smooth",block:"start"});
+  document.getElementById("epTitle").focus();
+  // 제목 입력 가능하게 교체
+  const titleEl=document.getElementById("epMovieTitle");
+  const input=document.createElement("input");
+  input.type="text"; input.placeholder="영화 제목 입력";
+  input.style.cssText="font-size:15px;font-weight:800;border:none;border-bottom:2px solid #2D5A1B;background:transparent;outline:none;width:200px;padding:0";
+  input.id="epTitleInput";
+  titleEl.replaceWith(input);
+  input.focus();
+}
+
+// ── 포스터 ───────────────────────────
+function setPosterPreview(url){
+  const el=document.getElementById("epPosterPreview");
+  el.innerHTML = url ? `<img src="${url}" style="width:100%;height:100%;object-fit:cover" onerror="this.parentNode.innerHTML='🎬'">` : "🎬";
+}
+function onPosterUrlInput(url){
+  setPosterPreview(url);
+}
+
+async function onPosterFileSelect(input){
+  const file=input.files[0]; if(!file) return;
+  const title=document.getElementById("epTitle").value || (document.getElementById("epTitleInput")?.value||"");
+  if(!title){ alert("영화 제목을 먼저 입력하세요."); return; }
+
+  document.getElementById("epUploadStatus").textContent="업로드 중…";
+  const fd=new FormData();
+  fd.append("title",title); fd.append("file",file);
+
+  // 미리보기 즉시
+  const reader=new FileReader();
+  reader.onload=e=>setPosterPreview(e.target.result);
+  reader.readAsDataURL(file);
+
+  const res=await fetch("/api/upload-poster",{method:"POST",body:fd});
+  if(res.ok){
+    const d=await res.json();
+    document.getElementById("epPosterUrl").value=d.poster_url;
+    document.getElementById("epUploadStatus").textContent="✓ 업로드 완료";
+    if(selCard) selCard.dataset.poster=d.poster_url;
+  } else {
+    document.getElementById("epUploadStatus").textContent="❌ 업로드 실패";
+  }
+}
+
+// ── 영화 저장 ─────────────────────────
+async function saveMovie(){
+  // 새 영화 추가 모드면 title 인풋에서 가져오기
+  const titleInput=document.getElementById("epTitleInput");
+  const title = titleInput ? titleInput.value.trim() : document.getElementById("epTitle").value.trim();
   if(!title){ alert("영화 제목을 입력하세요."); return; }
-  const res = await fetch("/api/recommended",{
-    method:"POST", headers:{"Content-Type":"application/json"},
-    body: JSON.stringify({title, description, awards})
+
+  const poster  =document.getElementById("epPosterUrl").value.trim();
+  const director=document.getElementById("epDirector").value.trim();
+  const year    =document.getElementById("epYear").value;
+  const synopsis=document.getElementById("epSynopsis").value.trim();
+  const comment =document.getElementById("epComment").value.trim();
+  const awards  =document.getElementById("epAwards").value.trim();
+  const isRec   =document.getElementById("epIsRec").checked;
+  const starsEl =document.querySelector("input[name='epStars']:checked");
+  const stars   =starsEl ? parseInt(starsEl.value) : 1;
+
+  // 1) 기본 정보 저장
+  const r1=await fetch("/api/movie-detail",{
+    method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({title,poster_url:poster,director,year:year||null,synopsis})
+  });
+
+  // 2) 추천 저장 or 해제
+  if(isRec){
+    await fetch("/api/recommended",{
+      method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({title,stars,comment,awards})
+    });
+  } else if(selCard?.dataset.recId){
+    await fetch(`/api/recommended/${selCard.dataset.recId}`,{method:"DELETE"});
+  } else if(awards){
+    // 추천 없이 수상만
+    await fetch("/api/recommended",{
+      method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({title,stars:0,comment:"",awards})
+    });
+  }
+
+  if(r1.ok){
+    const msg=document.getElementById("epMsg");
+    msg.textContent="✓ 저장됐어요"; msg.className="msg";
+    // 카드 업데이트
+    if(selCard){
+      selCard.dataset.director=director;
+      selCard.dataset.synopsis=synopsis;
+      selCard.dataset.poster=poster;
+      selCard.dataset.comment=comment;
+      selCard.dataset.awards=awards;
+      if(poster){
+        selCard.classList.add("has-info");
+        selCard.querySelector(".m-thumb").innerHTML=`<img src="${poster}" style="width:100%;height:100%;object-fit:cover" onerror="this.parentNode.innerHTML='🎬'">`;
+      }
+      if(isRec){
+        selCard.classList.add("has-rec");
+        let badge=selCard.querySelector(".m-badge.rec-badge");
+        if(!badge){ badge=document.createElement("span"); badge.className="m-badge rec-badge"; selCard.appendChild(badge); }
+        badge.textContent="★"+stars;
+      }
+    }
+    setTimeout(()=>msg.textContent="",3000);
+  } else {
+    const msg=document.getElementById("epMsg");
+    msg.textContent="❌ 저장 실패"; msg.className="msg err";
+  }
+}
+
+async function deleteRec(){
+  if(!confirm("추천을 해제할까요?")) return;
+  const id=document.getElementById("epRecDelBtn").dataset.recId;
+  if(!id) return;
+  await fetch(`/api/recommended/${id}`,{method:"DELETE"});
+  document.getElementById("epIsRec").checked=false;
+  document.getElementById("epRecDelBtn").style.display="none";
+  if(selCard){ selCard.classList.remove("has-rec"); selCard.dataset.recId=""; }
+}
+
+// ── 특별상영 ──────────────────────────
+async function saveEvent(){
+  const title=document.getElementById("evTitle").value.trim();
+  const cinema=document.getElementById("evCinema").value;
+  const date=document.getElementById("evDate").value;
+  if(!title||!cinema||!date){alert("제목, 극장, 날짜는 필수예요.");return;}
+  const res=await fetch("/api/events",{
+    method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({title,cinema,event_date:date,
+      start_time:document.getElementById("evStart").value,
+      end_time:document.getElementById("evEnd").value,
+      description:document.getElementById("evDesc").value.trim(),
+      is_free:document.getElementById("evFree").checked,
+      url:document.getElementById("evUrl").value.trim()})
   });
   if(res.ok){
-    document.getElementById("rec-title").value="";
-    document.getElementById("rec-awards").value="";
-    document.getElementById("rec-desc").value="";
-    loadRecommended();
-  } else { const d=await res.json(); alert(d.error||"오류 발생"); }
+    document.getElementById("evMsg").textContent="✓ 등록됐어요";
+    setTimeout(()=>location.reload(),800);
+  } else { document.getElementById("evMsg").textContent="❌ 등록 실패"; }
 }
-async function deleteRecommended(id){
-  if(!confirm("삭제할까요?")) return;
-  await fetch(`/api/recommended/${id}`,{method:"DELETE"});
-  loadRecommended();
+async function deleteEvent(id){
+  if(!confirm("삭제할까요?"))return;
+  await fetch(`/api/events/${id}`,{method:"DELETE"});
+  document.getElementById("ev-"+id)?.remove();
 }
+
+// ── 극장 ──────────────────────────────
+function selectCinema(row){
+  document.querySelectorAll(".c-row").forEach(r=>r.classList.remove("selected"));
+  row.classList.add("selected");
+  const d=row.dataset;
+  document.getElementById("epCinemaTitle").textContent=d.name;
+  document.getElementById("ciName").value   =d.name;
+  document.getElementById("ciUrl").value    =d.url;
+  document.getElementById("ciAddress").value=d.address;
+  document.getElementById("ciPhone").value  =d.phone;
+  document.getElementById("ciDesc").value   =d.description;
+  document.getElementById("ciPrice").value  =d.price;
+  document.getElementById("ciNote").value   =d.note;
+  document.getElementById("ciFree").checked =(d.free==="true");
+  const panel=document.getElementById("cinemaEditPanel");
+  panel.classList.add("open");
+  panel.scrollIntoView({behavior:"smooth",block:"nearest"});
+}
+function openNewCinema(){
+  document.querySelectorAll(".c-row").forEach(r=>r.classList.remove("selected"));
+  ["ciName","ciUrl","ciAddress","ciPhone","ciDesc","ciPrice","ciNote"].forEach(id=>document.getElementById(id).value="");
+  document.getElementById("ciFree").checked=false;
+  document.getElementById("epCinemaTitle").textContent="새 극장 추가";
+  const panel=document.getElementById("cinemaEditPanel");
+  panel.classList.add("open");
+  panel.scrollIntoView({behavior:"smooth",block:"nearest"});
+  document.getElementById("ciName").focus();
+}
+
+// 오늘 날짜 기본값
+document.getElementById("evDate").value=new Date().toISOString().slice(0,10);
 </script>
 </body>
 </html>"""

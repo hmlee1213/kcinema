@@ -6,9 +6,9 @@ import requests
 import psycopg2
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
-from concurrent.futures import ThreadPoolExecutor, as_completed
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
+DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgres://", 1)
 if not DATABASE_URL:
     print("❌ DATABASE_URL 환경변수가 없어요.")
     print("   실행 방법: DATABASE_URL='postgresql://...' python upload_to_pg.py")
@@ -51,41 +51,32 @@ def compute_runtime(start_time, end_time):
     except:
         return None
 
-def _fetch_dtryx_day(cinema, day):
-    """단일 날짜 dtryx 요청 (병렬 호출용)"""
-    day_str = day.strftime("%Y-%m-%d")
-    params = {"cgid":DTRYX_CGID,"BrandCd":cinema["brand"],"CinemaCd":cinema["cinema_cd"],
-              "PlaySDT":day_str,"_":int(time.time()*1000)}
-    headers = {"User-Agent":"Mozilla/5.0","X-Requested-With":"XMLHttpRequest"}
-    try:
-        data = requests.get("https://www.dtryx.com/cinema/showseq_list.do",
-                            params=params, headers=headers, timeout=10).json()
-    except:
-        return []
-    rows = []
-    for item in data.get("Showseqlist",[]):
-        start=item.get("StartTime"); end=item.get("EndTime")
-        runtime=compute_runtime(start,end)
-        start_dt=make_datetime(day,start)
-        end_dt=make_datetime(day,end) if end else compute_end_dt(start_dt,runtime)
-        special_fields=[item.get(f,"").strip() for f in ["ScreenTypeNmNat","PlayTimeTypeNm","DisplayTypeDetailNm","ScreeningInfoNat"]]
-        show_type="일반" if all(f in ["","일반"] for f in special_fields) else " / ".join(f for f in special_fields if f not in ["","일반"])
-        screen_name=item.get("ScreenNmNat") or item.get("ScreenNm") or ""
-        program=item.get("ProgramName","").strip() if item.get("ProgramName") else ""
-        rows.append({"cinema":cinema["name"],"movie":item.get("MovieNmNat"),
-                     "start_dt":start_dt,"end_dt":end_dt,"runtime":runtime,
-                     "screen":screen_name,"source":"dtryx",
-                     "show_type":show_type,"program":program,
-                     "movie_url":"","movie_cd":item.get("MovieCd","").strip()})
-    return rows
-
 def fetch_dtryx(cinema, start_date, days=14):
-    dates = [start_date + timedelta(days=i) for i in range(days)]
-    rows = []
-    with ThreadPoolExecutor(max_workers=7) as ex:
-        futures = {ex.submit(_fetch_dtryx_day, cinema, d): d for d in dates}
-        for f in as_completed(futures):
-            rows.extend(f.result())
+    rows=[]
+    for i in range(days):
+        day=start_date+timedelta(days=i)
+        day_str=day.strftime("%Y-%m-%d")
+        params={"cgid":DTRYX_CGID,"BrandCd":cinema["brand"],"CinemaCd":cinema["cinema_cd"],
+                "PlaySDT":day_str,"_":int(time.time()*1000)}
+        headers={"User-Agent":"Mozilla/5.0","X-Requested-With":"XMLHttpRequest"}
+        try:
+            data=requests.get("https://www.dtryx.com/cinema/showseq_list.do", params=params, headers=headers, timeout=10).json()
+        except:
+            continue
+        for item in data.get("Showseqlist",[]):
+            start=item.get("StartTime"); end=item.get("EndTime")
+            runtime=compute_runtime(start,end)
+            start_dt=make_datetime(day,start)
+            end_dt=make_datetime(day,end) if end else compute_end_dt(start_dt,runtime)
+            special_fields=[item.get(f,"").strip() for f in ["ScreenTypeNmNat","PlayTimeTypeNm","DisplayTypeDetailNm","ScreeningInfoNat"]]
+            show_type="일반" if all(f in ["","일반"] for f in special_fields) else " / ".join(f for f in special_fields if f not in ["","일반"])
+            screen_name=item.get("ScreenNmNat") or item.get("ScreenNm") or ""
+            program=item.get("ProgramName","").strip() if item.get("ProgramName") else ""
+            rows.append({"cinema":cinema["name"],"movie":item.get("MovieNmNat"),
+                         "start_dt":start_dt,"end_dt":end_dt,"runtime":runtime,
+                         "screen":screen_name,"source":"dtryx",
+                         "show_type":show_type,"program":program,
+                         "movie_url":"","movie_cd":item.get("MovieCd","").strip()})
     return rows
 
 def fetch_moviee(cinema, start_date, days=14):
@@ -259,48 +250,25 @@ def fetch_poster_from_dtryx(movie_cd):
         print(f"  포스터 수집 실패 ({movie_cd}): {e}")
         return {}
 
-def collect_posters(all_rows, conn):
-    """DB에 없는 신규 영화만 포스터 수집 (병렬)"""
-    # movie_cd가 있는 것만, 제목별 대표 movie_cd
-    cd_map = {}
+def collect_posters(all_rows):
+    """all_rows에서 movie_cd 수집 → dtryx 상세 크롤링 → {title: {poster_url, director, synopsis}}"""
+    # movie_cd가 있는 것만, 제목별로 대표 movie_cd 추출
+    cd_map = {}  # movie_title → movie_cd
     for r in all_rows:
         cd = r.get("movie_cd","")
         if cd and r["movie"] and r["movie"] not in cd_map:
             cd_map[r["movie"]] = cd
-    if not cd_map:
-        return {}
-
-    # 매월 1일은 전체 재수집, 나머지는 DB에 이미 포스터 있는 영화 스킵
-    is_first_of_month = datetime.today().day == 1
-    if is_first_of_month:
-        print(f"\n🎬 포스터 수집: 월초 전체 재수집 모드 ({len(cd_map)}편)")
-        new_cd_map = cd_map
-    else:
-        cur = conn.cursor()
-        cur.execute("SELECT title FROM movies WHERE poster_url != '' AND poster_url IS NOT NULL")
-        existing = {row[0] for row in cur.fetchall()}
-        cur.close()
-        new_cd_map = {t: cd for t, cd in cd_map.items() if t not in existing}
-        skip = len(cd_map) - len(new_cd_map)
-        print(f"\n🎬 포스터 수집: 전체 {len(cd_map)}편 중 {skip}편 스킵(기존), 신규 {len(new_cd_map)}편 수집")
-    if not new_cd_map:
-        return {}
 
     result = {}
-    def _fetch_one(item):
-        title, cd = item
+    print(f"\n🎬 포스터 수집 시작: {len(cd_map)}편")
+    for title, cd in cd_map.items():
         info = fetch_poster_from_dtryx(cd)
-        return title, info
-
-    with ThreadPoolExecutor(max_workers=5) as ex:
-        futures = {ex.submit(_fetch_one, item): item[0] for item in new_cd_map.items()}
-        for f in as_completed(futures):
-            title, info = f.result()
-            if info.get("poster_url"):
-                result[title] = info
-                print(f"  ✅ {title}: {info['poster_url'][:60]}…")
-            else:
-                print(f"  ⚠️  {title}: 포스터 없음")
+        if info.get("poster_url"):
+            result[title] = info
+            print(f"  ✅ {title}: {info['poster_url'][:60]}…")
+        else:
+            print(f"  ⚠️  {title}: 포스터 없음")
+        time.sleep(0.3)  # 서버 부하 방지
     return result
 
 def save_movies_to_pg(poster_data, conn):
@@ -371,8 +339,8 @@ def save_to_pg(rows):
     """, (datetime.now().isoformat(),))
     conn.commit()
     # 포스터 수집 & 저장
-    poster_data = collect_posters(rows, conn)
-    save_movies_to_pg(poster_data, conn)
+    poster_data = collect_posters(rows)
+    save_movies_to_pg(poster_data, psycopg2.connect(DATABASE_URL))
     cur.close(); conn.close()
 
 # ── 실행 ─────────────────────────────────────────────
@@ -380,24 +348,18 @@ if __name__ == "__main__":
     start_time = time.time()
     all_rows = []
     today = datetime.today()
-
-    def fetch_cinema(cinema):
+    for cinema in CINEMAS:
         src = cinema["source"]
-        if src=="dtryx":      return cinema["name"], fetch_dtryx(cinema, today, days=14)
-        elif src=="moviee":   return cinema["name"], fetch_moviee(cinema, today, days=14)
-        elif src=="seoulart": return cinema["name"], fetch_seoulart(cinema)
-        elif src=="kofa":     return cinema["name"], fetch_kofa(cinema)
-        return cinema["name"], []
-
-    with ThreadPoolExecutor(max_workers=4) as ex:
-        futures = {ex.submit(fetch_cinema, c): c["name"] for c in CINEMAS}
-        for f in as_completed(futures):
-            try:
-                name, rows = f.result()
-                all_rows += rows
-                print(f"✅ {name}: {len(rows)}건")
-            except Exception as e:
-                print(f"❌ {futures[f]} 오류: {e}")
+        try:
+            if src=="dtryx":      rows=fetch_dtryx(cinema,today,days=14)
+            elif src=="moviee":   rows=fetch_moviee(cinema,today,days=14)
+            elif src=="seoulart": rows=fetch_seoulart(cinema)
+            elif src=="kofa":     rows=fetch_kofa(cinema)
+            else: rows=[]
+            all_rows += rows
+            print(f"✅ {cinema['name']}: {len(rows)}건")
+        except Exception as e:
+            print(f"❌ {cinema['name']} 오류: {e}")
 
     all_rows = sorted(all_rows, key=lambda x: (x['start_dt'] or datetime.max, x['end_dt'] or datetime.max))
     print(f"\n총 {len(all_rows)}건 수집 → PostgreSQL 저장 중...")

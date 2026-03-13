@@ -965,6 +965,19 @@ function closePopup(){ document.getElementById("popupOverlay").classList.remove(
 function closePopupOutside(e){ if(e.target===document.getElementById("popupOverlay")) closePopup(); }
 
 /* 영화별 팝업 */
+function onMovieGroupClick(el){
+  const title  = el.dataset.title;
+  const rows   = JSON.parse(decodeURIComponent(el.dataset.rows||'[]'));
+  const poster = decodeURIComponent(el.dataset.poster||'');
+  openMoviePopup(title, rows, poster);
+}
+function onMovieGroupClick(el){
+  const title = el.dataset.title;
+  const rows = JSON.parse(decodeURIComponent(el.dataset.rows));
+  const posterUrl = decodeURIComponent(el.dataset.poster||"");
+  openMoviePopup(title, rows, posterUrl);
+}
+
 function openMoviePopup(title, rows, posterUrl){
   document.getElementById("moviePopupTitle").textContent = title;
   const poster = document.getElementById("moviePopupPoster");
@@ -1344,14 +1357,16 @@ function renderMovieGrid(resetCount=true){
     const thumb = rows[0].poster_url
       ? `<img data-src="${esc(rows[0].poster_url)}" alt="" class="lazy-img" onerror="this.parentNode.textContent='🎬'">`
       : "🎬";
+    const _encRows = encodeURIComponent(JSON.stringify(rows.map(r=>({cinema:r.cinema,screen:r.screen||'',start_dt:r.start_dt,end_dt:r.end_dt,program:r.program,show_type:r.show_type,movie_url:r.movie_url||''}))));
+    const _encPost = encodeURIComponent(rows[0].poster_url||'');
     return `<div class="movie-group">
-      <div class="movie-group-header" onclick="openMoviePopup('${esc(title)}', ${JSON.stringify(rows.map(r=>({cinema:r.cinema, screen:r.screen||'', start_dt:r.start_dt, end_dt:r.end_dt, program:r.program, show_type:r.show_type, movie_url:r.movie_url||''})))}, '${esc(rows[0].poster_url||"")}')" style="cursor:pointer">
+      <div class="movie-group-header" data-title="${esc(title)}" data-rows="${_encRows}" data-poster="${_encPost}" onclick="onMovieGroupClick(this)" style="cursor:pointer">
         <div class="movie-thumb">${thumb}</div>
         <div class="movie-group-info">
           <div class="movie-group-title" style="display:flex;align-items:center;gap:6px;">${esc(title)}</div>
           <div class="movie-group-meta">${runtime?runtime+"분 · ":""}${rows.length}회 상영</div>
         </div>
-        <button class="heart-btn${isMovieWished(title)?" on":""}" onclick="toggleMovieWish(this,'${esc(title)}','${esc(rows[0].poster_url||"")}')" title="영화 찜">${isMovieWished(title)?"♥":"♡"}</button>
+        <button class="heart-btn${isMovieWished(title)?" on":""}" onclick="event.stopPropagation();toggleMovieWish(this,'${esc(title)}','${esc(rows[0].poster_url||"")}')" title="영화 찜">${isMovieWished(title)?"♥":"♡"}</button>
       </div>
       <div class="movie-rows">
         ${rows.map(r=>{
@@ -1418,15 +1433,22 @@ function loadMoreMovies(){
       : "🎬";
     const card = document.createElement("div");
     card.className = "movie-group";
-    card.innerHTML = `
-      <div class="movie-group-header" onclick="openMoviePopup('${esc(title)}', ${JSON.stringify(rows.map(r=>({cinema:r.cinema,screen:r.screen||'',start_dt:r.start_dt,end_dt:r.end_dt,program:r.program,show_type:r.show_type,movie_url:r.movie_url||''})))}, '${esc(rows[0].poster_url||"")}')" style="cursor:pointer">
-        <div class="movie-thumb">${thumb}</div>
-        <div class="movie-group-info">
-          <div class="movie-group-title" style="display:flex;align-items:center;gap:6px;">${esc(title)}</div>
-          <div class="movie-group-meta">${runtime?runtime+"분 · ":""}${rows.length}회 상영</div>
-        </div>
-        <button class="heart-btn${isMovieWished(title)?" on":""}" onclick="toggleMovieWish(this,'${esc(title)}','${esc(rows[0].poster_url||"")}')" title="영화 찜">${isMovieWished(title)?"♥":"♡"}</button>
-      </div>`;
+    // data-* 방식으로 안전하게 팝업 연결
+    const hdr = document.createElement("div");
+    hdr.className = "movie-group-header";
+    hdr.style.cursor = "pointer";
+    hdr.dataset.title = title;
+    hdr.dataset.rows = encodeURIComponent(JSON.stringify(rows.map(r=>({cinema:r.cinema,screen:r.screen||'',start_dt:r.start_dt,end_dt:r.end_dt,program:r.program,show_type:r.show_type,movie_url:r.movie_url||''}))));
+    hdr.dataset.poster = encodeURIComponent(rows[0].poster_url||'');
+    hdr.onclick = function(){ onMovieGroupClick(this); };
+    hdr.innerHTML = `
+      <div class="movie-thumb">${thumb}</div>
+      <div class="movie-group-info">
+        <div class="movie-group-title" style="display:flex;align-items:center;gap:6px;">${esc(title)}</div>
+        <div class="movie-group-meta">${runtime?runtime+"분 · ":""}${rows.length}회 상영</div>
+      </div>
+      <button class="heart-btn${isMovieWished(title)?" on":""}" onclick="event.stopPropagation();toggleMovieWish(this,'${esc(title)}','${esc(rows[0].poster_url||"")}')" title="영화 찜">${isMovieWished(title)?"♥":"♡"}</button>`;
+    card.appendChild(hdr);
     grid.appendChild(card);
   });
 
