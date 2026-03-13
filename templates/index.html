@@ -113,9 +113,10 @@ header{background:var(--text);color:#fff;padding:0 24px;position:sticky;top:0;z-
 /* ══════════════════════════════════
    팝업
 ══════════════════════════════════ */
-.popup-sort-btn{font-size:11px;font-weight:600;font-family:inherit;padding:4px 12px;border-radius:5px;border:1.5px solid var(--border);background:var(--surface);color:var(--text-muted);cursor:pointer;transition:all .12s;}
-.popup-sort-btn.active{background:var(--text);border-color:var(--text);color:#fff;}inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:center;justify-content:center;padding:20px;}
+.popup-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:center;justify-content:center;padding:20px;}
 .popup-overlay.open{display:flex;}
+.popup-sort-btn{font-size:11px;font-weight:600;font-family:inherit;padding:4px 12px;border-radius:5px;border:1.5px solid var(--border);background:var(--surface);color:var(--text-muted);cursor:pointer;transition:all .12s;}
+.popup-sort-btn.active{background:var(--text);border-color:var(--text);color:#fff;}
 .popup{background:var(--surface);border-radius:14px;width:100%;max-width:460px;box-shadow:0 20px 60px rgba(0,0,0,.2);overflow:hidden;position:relative;animation:popIn .16s ease;}
 @keyframes popIn{from{opacity:0;transform:scale(.95);}to{opacity:1;transform:scale(1);}}
 .popup-close{position:absolute;top:12px;right:14px;width:26px;height:26px;border-radius:50%;border:none;background:var(--surface2);color:var(--text-muted);font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:1;}
@@ -192,15 +193,15 @@ header{background:var(--text);color:#fff;padding:0 24px;position:sticky;top:0;z-
 .movie-sort-btn.active{background:var(--text);border-color:var(--text);color:#fff;}
 /* 관리자 추천 배지 */
 .rec-badge{display:inline-flex;align-items:center;font-size:11px;font-weight:800;color:#B45309;flex-shrink:0;letter-spacing:-.01em;}
-.movie-card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;margin-bottom:8px;}
+.movie-card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:8px;}
 .mv-card{border:1.5px solid var(--border);border-radius:8px;padding:0;cursor:pointer;transition:border-color .12s,box-shadow .12s;background:var(--surface);position:relative;overflow:hidden;display:flex;flex-direction:column;}
 .mv-card:hover{border-color:#2D5A1B;box-shadow:0 2px 8px rgba(0,0,0,.08);}
 .mv-card.has-rec{border-color:#F59E0B;}
 .mv-poster{width:100%;aspect-ratio:3/4;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:28px;overflow:hidden;flex-shrink:0;}
 .mv-poster img{width:100%;height:100%;object-fit:cover;}
 .mv-info{padding:7px 8px 9px;flex:1;display:flex;flex-direction:column;gap:3px;}
-.mv-title{font-size:14px;font-weight:800;line-height:1.3;color:var(--text);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
-.mv-meta{font-size:12px;color:var(--text-muted);line-height:1.4;margin-top:2px;}
+.mv-title{font-size:15px;font-weight:800;line-height:1.3;color:var(--text);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
+.mv-meta{font-size:13px;color:var(--text-muted);line-height:1.4;margin-top:2px;}
 .mv-count{font-size:10px;font-weight:700;background:var(--surface2);color:var(--text-muted);padding:1px 5px;border-radius:4px;display:inline-block;margin-top:2px;}
 .mv-rec-badge{position:absolute;top:4px;right:4px;font-size:10px;font-weight:800;color:#B45309;background:rgba(255,255,255,.9);border-radius:3px;padding:0 3px;line-height:1.6;}
 .mv-wish-btn{position:absolute;bottom:6px;right:6px;background:none;border:none;cursor:pointer;font-size:14px;color:#ccc;-webkit-text-stroke:.4px #bbb;line-height:1;padding:1px;transition:color .1s;}
@@ -403,12 +404,12 @@ tr:hover td{background:#FAFAF8;}
 }
 @media(max-width:480px){
   .explore-cinema-chips{grid-template-columns:repeat(3,1fr);}
-  .movie-card-grid{grid-template-columns:repeat(3,1fr);gap:6px;}
+  .movie-card-grid{grid-template-columns:repeat(3,1fr);gap:7px;}
   .mv-poster{aspect-ratio:2/3;}
   .mv-info{padding:5px 6px 7px;}
-  .mv-title{font-size:12px;}
-  .mv-meta{font-size:11px;}
-  .mv-count{font-size:10px;}
+  .mv-title{font-size:13px;}
+  .mv-meta{font-size:12px;}
+  .mv-count{font-size:11px;}
   .tab{padding:10px 12px;font-size:12px;}
   .day-tabs{gap:4px;}
   .day-tab{padding:4px 10px;font-size:11px;}
@@ -540,6 +541,7 @@ tr:hover td{background:#FAFAF8;}
         <button class="quick-sort-btn active" data-sort="time" onclick="setExploreSort(this,'time')">상영시작순</button>
         <button class="quick-sort-btn" data-sort="title" onclick="setExploreSort(this,'title')">제목순</button>
         <span style="width:1px;height:14px;background:var(--border);flex-shrink:0;"></span>
+        <button class="quick-filter-btn" id="recFilterBtn" onclick="toggleExploreRecFilter(this)" title="추천 영화만 보기">★ 추천</button>
         <button class="quick-filter-btn" id="specialFilterBtn" onclick="toggleSpecialFilter(this)" title="GV·토크 등 특별회차만 보기">🎙 특별회차</button>
       </div>
     </div>
@@ -578,6 +580,8 @@ tr:hover td{background:#FAFAF8;}
         <button class="movie-sort-btn active" data-sort="count" data-dir="desc" onclick="setMovieSort(this,'count')">상영횟수 ↓</button>
         <button class="movie-sort-btn" data-sort="title" data-dir="asc" onclick="setMovieSort(this,'title')">제목 ↑</button>
         <button class="movie-sort-btn" data-sort="runtime" data-dir="desc" onclick="setMovieSort(this,'runtime')">러닝타임 ↓</button>
+        <span style="width:1px;height:14px;background:var(--border);flex-shrink:0;"></span>
+        <button class="movie-sort-btn" id="movieRecFilterBtn" onclick="toggleMovieRecFilter(this)" title="추천 영화만 보기">★ 추천</button>
       </div>
     </div>
     <div id="movie-grid-content"><div class="loading"><div class="spinner"></div>로딩 중…</div></div>
@@ -758,6 +762,7 @@ const EXPLORE_AREAS = {
 
 let exploreMode = "direct";    // direct | range | today | tomorrow | saturday | sunday
 let exploreSpecialOnly = false; // 특별회차(GV·토크 등) 필터
+let exploreRecOnly = false; // 추천 영화만 필터
 let exploreDirectOpen = false; // 극장 직접선택 패널
 let exploreSelectedCinemas = new Set(EXPLORE_AREAS.all.cinemas);
 let exploreData = [];
@@ -832,6 +837,7 @@ function renderExploreCards(){
   let cards = Object.values(groups);
   if(exploreSearchQ) cards = cards.filter(c=>c.movie.includes(exploreSearchQ));
   if(exploreSpecialOnly) cards = cards.filter(c=>hasSpecialScreening(c.times));
+  if(exploreRecOnly){ const recSet2=new Set((recData||[]).map(r=>r.title)); cards=cards.filter(c=>recSet2.has(c.movie)); }
 
   // 정렬
   const dir = exploreSortDir==="asc"?1:-1;
@@ -988,6 +994,11 @@ function onExploreSearch(q){
 }
 
 
+function toggleExploreRecFilter(btn){
+  exploreRecOnly = !exploreRecOnly;
+  btn.classList.toggle("active", exploreRecOnly);
+  renderExploreCards();
+}
 function toggleSpecialFilter(btn){
   exploreSpecialOnly = !exploreSpecialOnly;
   btn.classList.toggle("active", exploreSpecialOnly);
@@ -1569,6 +1580,7 @@ let movieSortMode = "count";
 let movieSortDir  = "desc";
 let movieSearchQ  = "";
 let movieDirectorQ = "";
+let movieRecOnly = false;
 
 
 let movieSearchTabMode = "title"; // title | director
@@ -1587,6 +1599,11 @@ function onMovieSearch(q){
   movieSearchQ=q;
   renderMovieGrid(true);
   if(q.length>=2) gtag('event','movie_search',{search_term:q});
+}
+function toggleMovieRecFilter(btn){
+  movieRecOnly = !movieRecOnly;
+  btn.classList.toggle("active", movieRecOnly);
+  renderMovieGrid(true);
 }
 function onDirectorSearch(q){
   movieDirectorQ=q.trim();
@@ -1651,12 +1668,14 @@ function renderMovieGrid(resetCount=true){
     if(!groups[r.movie]) groups[r.movie]=[];
     groups[r.movie].push(r);
   });
+  const recFilterSet = movieRecOnly ? new Set((recData||[]).map(r=>r.title)) : null;
   let titles=Object.keys(groups).filter(t=>{
     if(movieSearchQ && !t.includes(movieSearchQ)) return false;
     if(movieDirectorQ){
       const dir=(groups[t][0]?.director||"").toLowerCase();
       if(!dir.includes(movieDirectorQ.toLowerCase())) return false;
     }
+    if(recFilterSet && !recFilterSet.has(t)) return false;
     return true;
   });
   // 정렬 (방향 포함)
@@ -1701,7 +1720,9 @@ function renderMovieGrid(resetCount=true){
         </button>
        </div>`
     : "";
-  document.getElementById("movie-grid-content").innerHTML=`<div class="movie-card-grid">${html}${moreBtn}</div>`;
+  const mgc = document.getElementById("movie-grid-content");
+  mgc.className = "movie-card-grid";
+  mgc.innerHTML = `${html}${moreBtn}`;
   lazyLoadImages();
 }
 
@@ -1740,8 +1761,7 @@ function loadMoreMovies(){
 
   // 새 카드 추가 (renderMovieGrid와 동일 형태)
   const recSet2 = new Set((recData||[]).map(r=>r.title));
-  let cardGrid = grid.querySelector(".movie-card-grid");
-  if(!cardGrid){ cardGrid=document.createElement("div"); cardGrid.className="movie-card-grid"; grid.appendChild(cardGrid); }
+  const cardGrid = grid;  // movie-grid-content 자체가 그리드
   newTitles.forEach(title=>{
     const rows=groups[title];
     const runtime=rows.find(r=>r.runtime)?.runtime;
