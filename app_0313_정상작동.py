@@ -179,9 +179,6 @@ def ensure_db():
     """)
     cur.execute("ALTER TABLE cinemas ADD COLUMN IF NOT EXISTS price_info TEXT DEFAULT ''")
     cur.execute("ALTER TABLE cinemas ADD COLUMN IF NOT EXISTS price_table JSONB DEFAULT '{}'")
-    cur.execute("ALTER TABLE movies ADD COLUMN IF NOT EXISTS is_4k BOOLEAN DEFAULT FALSE")
-    cur.execute("ALTER TABLE movies ADD COLUMN IF NOT EXISTS is_dolby BOOLEAN DEFAULT FALSE")
-    cur.execute("ALTER TABLE movies ADD COLUMN IF NOT EXISTS director_en TEXT DEFAULT ''")
     cur.execute("""
         CREATE TABLE IF NOT EXISTS posters (
             title TEXT PRIMARY KEY,
@@ -453,7 +450,7 @@ def api_screenings():
 @app.route("/api/movies")
 def api_movies():
     conn = get_db(); cur = conn.cursor()
-    cur.execute("SELECT title, director, synopsis, poster_url, is_4k FROM movies WHERE poster_url != '' ORDER BY title")
+    cur.execute("SELECT title, director, synopsis, poster_url FROM movies WHERE poster_url != '' ORDER BY title")
     rows = [dict(r) for r in cur.fetchall()]
     cur.close(); conn.close()
     return jsonify(rows)
@@ -743,16 +740,8 @@ def api_movie_detail_get():
     conn = get_db(); cur = conn.cursor()
     cur.execute("SELECT * FROM movies WHERE title=%s", (title,))
     row = cur.fetchone()
-    result = dict(row) if row else {}
-    # recommended 테이블에서 awards, comment, is_rec 합치기
-    cur.execute("SELECT awards, comment, is_rec FROM recommended WHERE title=%s", (title,))
-    rec = cur.fetchone()
-    if rec:
-        result["awards"]  = rec["awards"]  or ""
-        result["comment"] = rec["comment"] or ""
-        result["is_rec"]  = bool(rec["is_rec"])
     cur.close(); conn.close()
-    return jsonify(result)
+    return jsonify(dict(row) if row else {})
 
 @app.route("/api/movie-detail", methods=["POST"])
 def api_movie_detail_post():
@@ -766,25 +755,17 @@ def api_movie_detail_post():
     director = (d.get("director") or "").strip()
     synopsis = (d.get("synopsis") or "").strip()
     year     = int(d["year"]) if d.get("year") else None
-    is_4k      = bool(d.get("is_4k", False))
-    is_dolby   = bool(d.get("is_dolby", False))
-    title_en   = (d.get("title_en") or "").strip()
-    director_en= (d.get("director_en") or "").strip()
     conn = get_db(); cur = conn.cursor()
     cur.execute("""
-        INSERT INTO movies (title, title_en, poster_url, director, director_en, synopsis, year, is_4k, is_dolby, updated_at)
-        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,NOW())
+        INSERT INTO movies (title, poster_url, director, synopsis, year, updated_at)
+        VALUES (%s,%s,%s,%s,%s,NOW())
         ON CONFLICT (title) DO UPDATE SET
-            title_en   =EXCLUDED.title_en,
-            poster_url =EXCLUDED.poster_url,
-            director   =EXCLUDED.director,
-            director_en=EXCLUDED.director_en,
-            synopsis   =EXCLUDED.synopsis,
-            year       =EXCLUDED.year,
-            is_4k      =EXCLUDED.is_4k,
-            is_dolby   =EXCLUDED.is_dolby,
-            updated_at =NOW()
-    """, (title, title_en, poster, director, director_en, synopsis, year, is_4k, is_dolby))
+            poster_url=EXCLUDED.poster_url,
+            director=EXCLUDED.director,
+            synopsis=EXCLUDED.synopsis,
+            year=EXCLUDED.year,
+            updated_at=NOW()
+    """, (title, poster, director, synopsis, year))
     conn.commit(); cur.close(); conn.close()
     return jsonify({"ok": True})
 
@@ -822,20 +803,16 @@ def admin_dashboard():
     cur.execute("""
         SELECT DISTINCT sq.movie,
                BOOL_OR(sq.is_event) AS is_event,
-               m.poster_url, m.director, m.synopsis,
-               COALESCE(m.is_4k, FALSE) AS is_4k,
-               COALESCE(m.is_dolby, FALSE) AS is_dolby,
-               r.id AS rec_id, r.is_rec, r.comment, r.awards,
-               BOOL_OR(sq.cinema IN ('KU시네마테크','서울아트시네마','한국영상자료원')) AS in_4k_cinema,
-               BOOL_OR(sq.cinema = '라이카시네마') AS in_dolby_cinema
+               m.poster_url, m.director,
+               r.id AS rec_id, r.is_rec, r.comment, r.awards
         FROM (
-            SELECT movie, cinema, FALSE AS is_event FROM screenings WHERE start_dt::date >= CURRENT_DATE
+            SELECT movie, FALSE AS is_event FROM screenings WHERE start_dt::date >= CURRENT_DATE
             UNION ALL
-            SELECT title AS movie, '' AS cinema, TRUE AS is_event FROM events WHERE event_date >= CURRENT_DATE
+            SELECT title AS movie, TRUE AS is_event FROM events WHERE event_date >= CURRENT_DATE
         ) sq
         LEFT JOIN movies m ON m.title = sq.movie
         LEFT JOIN recommended r ON r.title = sq.movie
-        GROUP BY sq.movie, m.poster_url, m.director, m.synopsis, m.is_4k, m.is_dolby, r.id, r.is_rec, r.comment, r.awards
+        GROUP BY sq.movie, m.poster_url, m.director, r.id, r.is_rec, r.comment, r.awards
         ORDER BY sq.movie
     """)
     screening_movies = [dict(r) for r in cur.fetchall()]
@@ -883,18 +860,18 @@ def admin_movie_save():
     d = request.form
     conn = get_db(); cur = conn.cursor()
     cur.execute("""
-        INSERT INTO movies (title,title_en,director,country,year,runtime,synopsis,poster_url,kobis_url,kofa_url,note,is_4k,updated_at)
-        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,NOW())
+        INSERT INTO movies (title,title_en,director,country,year,runtime,synopsis,poster_url,kobis_url,kofa_url,note,updated_at)
+        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,NOW())
         ON CONFLICT (title) DO UPDATE SET
             title_en=EXCLUDED.title_en, director=EXCLUDED.director, country=EXCLUDED.country,
             year=EXCLUDED.year, runtime=EXCLUDED.runtime, synopsis=EXCLUDED.synopsis,
             poster_url=EXCLUDED.poster_url, kobis_url=EXCLUDED.kobis_url,
-            kofa_url=EXCLUDED.kofa_url, note=EXCLUDED.note, is_4k=EXCLUDED.is_4k, updated_at=NOW()
+            kofa_url=EXCLUDED.kofa_url, note=EXCLUDED.note, updated_at=NOW()
     """, (d["title"], d.get("title_en",""), d.get("director",""), d.get("country",""),
           int(d["year"]) if d.get("year") else None,
           int(d["runtime"]) if d.get("runtime") else None,
           d.get("synopsis",""), d.get("poster_url",""), d.get("kobis_url",""),
-          d.get("kofa_url",""), d.get("note",""), d.get("is_4k","") == "on"))
+          d.get("kofa_url",""), d.get("note","")))
     conn.commit(); cur.close(); conn.close()
     return redirect(url_for("admin_dashboard") + "#movies")
 
@@ -1109,13 +1086,9 @@ a{color:#2D5A1B;text-decoration:none}
            data-comment="{{ (m.comment or '')|e }}"
            data-awards="{{ (m.awards or '')|e }}"
            data-rec-id="{{ m.rec_id or '' }}"
-           data-is4k="{{ 'true' if m.is_4k else '' }}"
-           data-isdolby="{{ 'true' if m.is_dolby else '' }}"
            onclick="selectMovieCard(this)">
-        {% if m.rec_id %}<span class="m-badge rec-badge">★</span>
+        {% if m.rec_id %}<span class="m-badge rec-badge">★{{ m.stars }}</span>
         {% elif m.poster_url %}<span class="m-badge info-badge">✓</span>{% endif %}
-        {% if m.is_4k and m.in_4k_cinema %}<span class="m-badge" style="background:#1a56db;color:#fff;position:absolute;bottom:4px;left:4px;font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;">4K</span>{% endif %}
-        {% if m.is_dolby and m.in_dolby_cinema %}<span class="m-badge" style="background:#7c3aed;color:#fff;position:absolute;bottom:4px;right:4px;font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;">돌비</span>{% endif %}
         <div class="m-thumb">
           {% if m.poster_url %}<img src="{{ m.poster_url }}" onerror="this.parentNode.innerHTML='🎬'">
           {% else %}🎬{% endif %}
@@ -1162,21 +1135,6 @@ a{color:#2D5A1B;text-decoration:none}
             <input type="number" id="epYear" placeholder="2024" min="1900" max="2099"></div>
           <div class="fg span2"><label class="lbl">시놉시스</label>
             <textarea id="epSynopsis" rows="3" placeholder="줄거리를 입력하세요"></textarea></div>
-          <div class="fg"><label class="lbl">원어 제목 (영어)</label>
-            <input type="text" id="epTitleEn" placeholder="예: Hamlet's Wife"></div>
-          <div class="fg"><label class="lbl">감독 원어명 (영어)</label>
-            <input type="text" id="epDirectorEn" placeholder="예: William Shakespeare"></div>
-          <div class="fg span2" style="padding-top:4px;display:flex;gap:24px;flex-wrap:wrap;">
-            <label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:700;">
-              <input type="checkbox" id="epIs4k" style="width:15px;height:15px;accent-color:#1a56db;cursor:pointer;">
-              <span style="color:#1a56db;">4K 지원</span>
-            </label>
-            <label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:700;">
-              <input type="checkbox" id="epIsDolby" style="width:15px;height:15px;accent-color:#7c3aed;cursor:pointer;">
-              <span style="color:#7c3aed;">돌비 애트모스 지원</span>
-            </label>
-            <span style="font-size:11px;color:#888;align-self:center;">극장 조건 맞을 때만 배지 표시</span>
-          </div>
         </div>
       </div>
 
@@ -1393,10 +1351,6 @@ function fillMoviePanel(card){
   document.getElementById("epDirector").value = d.director||"";
   document.getElementById("epYear").value     = d.year||"";
   document.getElementById("epSynopsis").value = d.synopsis||"";
-  document.getElementById("epIs4k").checked     = !!(d.is_4k || card.dataset.is4k === "true");
-  document.getElementById("epIsDolby").checked   = !!(d.is_dolby || card.dataset.isdolby === "true");
-  document.getElementById("epTitleEn").value     = d.title_en||"";
-  document.getElementById("epDirectorEn").value  = d.director_en||"";
   document.getElementById("epComment").value  = d.comment||"";
   document.getElementById("epAwards").value   = d.awards||"";
   document.getElementById("epMsg").textContent= "";
@@ -1419,10 +1373,6 @@ function openNewMovie(){
   document.getElementById("epTitle").value="";
   document.getElementById("epMovieTitle").textContent="새 영화 추가";
   ["epPosterUrl","epDirector","epYear","epSynopsis","epComment","epAwards"].forEach(id=>document.getElementById(id).value="");
-  document.getElementById("epIs4k").checked=false;
-  document.getElementById("epIsDolby").checked=false;
-  document.getElementById("epTitleEn").value="";
-  document.getElementById("epDirectorEn").value="";
   document.getElementById("epIsRec").checked=false;
   document.getElementById("epRecDelBtn").style.display="none";
   document.querySelectorAll("input[name='epStars']").forEach(r=>r.checked=false);
@@ -1490,14 +1440,10 @@ async function saveMovie(){
   const comment =document.getElementById("epComment").value.trim();
   const awards  =document.getElementById("epAwards").value.trim();
   const isRec   =document.getElementById("epIsRec").checked;
-  const is4k      =document.getElementById("epIs4k").checked;
-  const isDolby   =document.getElementById("epIsDolby").checked;
-  const titleEn   =document.getElementById("epTitleEn").value.trim();
-  const directorEn=document.getElementById("epDirectorEn").value.trim();
   // 1) 기본 정보 저장
   const r1=await fetch("/api/movie-detail",{
     method:"POST",headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({title,title_en:titleEn,poster_url:poster,director,director_en:directorEn,year:year||null,synopsis,is_4k:is4k,is_dolby:isDolby})
+    body:JSON.stringify({title,poster_url:poster,director,year:year||null,synopsis})
   });
 
   // 2) 추천 저장 or 해제

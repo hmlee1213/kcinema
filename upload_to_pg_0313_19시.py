@@ -198,21 +198,15 @@ def fetch_kofa(cinema):
             # kofa 영화 상세 링크 추출
             movie_href = title_tag.get("href","") if title_tag else ""
             movie_url = ("https://www.koreafilm.or.kr" + movie_href) if movie_href else ""
-            program_text = program_tag.get_text(strip=True) if program_tag else ""
-            show_type_text = type_tag.get_text(strip=True)[4:] if type_tag else ""
-            # 강연 감지 — program이나 제목에 '강연' 포함 시 program에 명시
-            title_text = title_tag.get_text(strip=True) if title_tag else ""
-            if "강연" in title_text and not program_text:
-                program_text = "강연"
             rows.append({
                 "cinema":cinema["name"],
-                "movie":title_text,
+                "movie":title_tag.get_text(strip=True) if title_tag else "",
                 "start_dt":make_datetime(date_obj,start),
                 "end_dt":end_dt, "runtime":runtime,
                 "screen":screen_tag.get_text(strip=True) if screen_tag else "",
                 "source":"kofa",
-                "show_type":show_type_text,
-                "program":program_text,
+                "show_type":type_tag.get_text(strip=True)[4:] if type_tag else "",
+                "program":program_tag.get_text(strip=True) if program_tag else "",
                 "movie_url": movie_url
             })
     return rows
