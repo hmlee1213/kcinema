@@ -991,17 +991,20 @@ header{background:#111;padding:0 24px;position:sticky;top:0;z-index:100}
 .panel-title{font-size:14px;font-weight:700;margin-bottom:18px;padding-bottom:10px;border-bottom:1.5px solid #F0F0EE;display:flex;align-items:center;justify-content:space-between}
 /* 영화 카드 그리드 */
 .movie-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;margin-bottom:4px}
-.m-card{border:2px solid #E8E6E0;border-radius:8px;padding:8px;cursor:pointer;transition:all .12s;background:#FAFAF8;position:relative;text-align:center}
+.m-card{border:2px solid #E8E6E0;border-radius:8px;padding:8px;cursor:pointer;transition:all .12s;background:#FAFAF8;position:relative;text-align:center;min-height:0}
 .m-card:hover{border-color:#2D5A1B}
 .m-card.selected{border-color:#2D5A1B;background:#EEF5E8;box-shadow:0 0 0 3px rgba(45,90,27,.12)}
 .m-card.has-info{border-color:#A3C48A}
 .m-card.has-rec{border-style:solid;border-color:#F59E0B}
 .m-thumb{width:100%;aspect-ratio:2/3;border-radius:5px;object-fit:cover;background:#E8E6E0;display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:5px;overflow:hidden}
 .m-thumb img{width:100%;height:100%;object-fit:cover}
-.m-name{font-size:10px;font-weight:600;line-height:1.3;word-break:keep-all;color:#111}
-.m-badge{position:absolute;top:4px;right:4px;font-size:9px;font-weight:700;padding:1px 4px;border-radius:3px}
+.m-name{font-size:12px;font-weight:700;line-height:1.4;word-break:keep-all;color:#111;white-space:normal;overflow:visible;}
+.m-director{font-size:11px;color:#555;margin-top:2px;line-height:1.3;word-break:keep-all;white-space:normal;overflow:visible;}
+.m-badge{position:absolute;top:4px;right:4px;font-size:11px;font-weight:700;padding:2px 5px;border-radius:3px}
 .rec-badge{background:#F59E0B;color:#fff}
 .info-badge{background:#2D5A1B;color:#fff}
+.m-badge-4k{background:#1a56db;color:#fff;position:absolute;top:4px;left:4px;right:auto;}
+.m-badge-dolby{background:#7c3aed;color:#fff;position:absolute;top:4px;right:auto;}
 /* 편집 패널 */
 .edit-panel{background:#F8F7F4;border:1.5px solid #E0DDD8;border-radius:10px;padding:20px;margin-top:12px;display:none}
 .edit-panel.open{display:block}
@@ -1121,7 +1124,7 @@ a{color:#2D5A1B;text-decoration:none}
           {% else %}🎬{% endif %}
         </div>
         <div class="m-name">{{ m.movie }}</div>
-        {% if m.director %}<div style="font-size:9px;color:#888;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ m.director }}</div>{% endif %}
+        {% if m.director %}<div class="m-director">{{ m.director }}</div>{% endif %}
         {% if m.is_event and not m.rec_id %}<span class="m-badge" style="background:#DBEAFE;color:#1E40AF;position:absolute;top:4px;right:4px;font-size:9px;font-weight:700;padding:1px 4px;border-radius:3px;">특별</span>{% endif %}
       </div>
       {% endfor %}

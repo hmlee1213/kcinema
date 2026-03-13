@@ -566,19 +566,15 @@ tr:hover td{background:#FAFAF8;}
 
   <!-- ③ 영화별 -->
   <div id="tab-movie" style="display:none;">
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
-      <div style="display:flex;gap:6px;flex:1;min-width:0;">
-        <input class="ex-search" type="text" id="movieSearchInput" placeholder="제목 검색…" oninput="onMovieSearch(this.value)" style="flex:1;min-width:80px;">
-        <input class="ex-search" type="text" id="movieDirectorInput" placeholder="감독 검색…" oninput="onDirectorSearch(this.value)" style="flex:1;min-width:80px;">
-      </div>
-      <div style="display:flex;gap:5px;margin-left:auto;align-items:center;">
-        <span style="font-size:11px;color:var(--text-muted);margin-right:2px;">정렬</span>
-        <button class="movie-sort-btn active" data-sort="count" data-dir="desc" onclick="setMovieSort(this,'count')">상영횟수 ↓</button>
-        <button class="movie-sort-btn" data-sort="title" data-dir="asc" onclick="setMovieSort(this,'title')">제목 ↑</button>
-        <button class="movie-sort-btn" data-sort="runtime" data-dir="desc" onclick="setMovieSort(this,'runtime')">러닝타임 ↓</button>
-        <span style="width:1px;height:14px;background:var(--border);flex-shrink:0;"></span>
-        <button class="movie-sort-btn" id="movieRecFilterBtn" onclick="toggleMovieRecFilter(this)" title="추천 영화만 보기">★ 추천</button>
-      </div>
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:14px;flex-wrap:wrap;">
+      <button class="movie-sort-btn" id="movieRecFilterBtn" onclick="toggleMovieRecFilter(this)" title="추천 영화만 보기" style="flex-shrink:0;">★ 추천</button>
+      <span style="width:1px;height:14px;background:var(--border);flex-shrink:0;"></span>
+      <input class="ex-search" type="text" id="movieSearchInput" placeholder="영화명…" oninput="onMovieSearch(this.value)" style="flex:1;min-width:70px;max-width:180px;">
+      <input class="ex-search" type="text" id="movieDirectorInput" placeholder="감독…" oninput="onDirectorSearch(this.value)" style="flex:1;min-width:70px;max-width:140px;">
+      <span style="width:1px;height:14px;background:var(--border);flex-shrink:0;"></span>
+      <button class="movie-sort-btn active" data-sort="count" data-dir="desc" onclick="setMovieSort(this,'count')">상영횟수 ↓</button>
+      <button class="movie-sort-btn" data-sort="title" data-dir="asc" onclick="setMovieSort(this,'title')">제목 ↑</button>
+      <button class="movie-sort-btn" data-sort="runtime" data-dir="desc" onclick="setMovieSort(this,'runtime')">러닝타임 ↓</button>
     </div>
     <div id="movie-grid-content"><div class="loading"><div class="spinner"></div>로딩 중…</div></div>
   </div>
@@ -1203,9 +1199,11 @@ function renderMoviePopupSchedules(){
     const sortedKeys = Object.keys(byKey).sort((a,b)=>a.localeCompare(b,'ko'));
     html = sortedKeys.map(label=>{
       const rs = byKey[label].sort((a,b)=>(a.start_dt||'').localeCompare(b.start_dt||''));
+      const firstR = byKey[label][0];
+      const hSticker = stickerHtml('', '', firstR.cinema, title, firstR.screen||'');
       const slots = rs.map(r=>popupSlotHtml(r, title, posterUrl)).join('');
       return `<div style="padding:10px 0;border-bottom:1px solid var(--border);">
-        <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:7px;">${esc(label)}</div>
+        <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:7px;">${esc(label)}${hSticker}</div>
         <div style="display:flex;flex-direction:column;gap:6px;">${slots}</div>
       </div>`;
     }).join('');
@@ -1222,7 +1220,8 @@ function renderMoviePopupSchedules(){
     html = Object.entries(byDate).map(([dateLabel, rs])=>{
       const slots = rs.map(r=>{
         const cinemaLabel = r.cinema+(r.screen?` · ${r.screen}`:'');
-        return popupSlotHtml(r, title, posterUrl, cinemaLabel);
+        const cSticker = stickerHtml('', '', r.cinema, title, r.screen||'');
+        return popupSlotHtml(r, title, posterUrl, cinemaLabel, cSticker);
       }).join('');
       return `<div style="padding:10px 0;border-bottom:1px solid var(--border);">
         <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:7px;">${esc(dateLabel)}</div>
@@ -1235,7 +1234,7 @@ function renderMoviePopupSchedules(){
     || `<div style="color:var(--text-muted);font-size:12px;padding:12px 0;">상영 정보 없음</div>`;
 }
 
-function popupSlotHtml(r, title, posterUrl, extraLabel=''){
+function popupSlotHtml(r, title, posterUrl, extraLabel='', cinemaSticker=''){
   const {time:stm, dow:sdow} = splitDt(r.start_dt);
   const end = (r.end_dt||'').slice(11,16);
   const s = stickerHtml(r.program, r.show_type, r.cinema, r.movie, r.screen||"");
@@ -1245,7 +1244,7 @@ function popupSlotHtml(r, title, posterUrl, extraLabel=''){
   return `<div class="popup-sched-slot${wished?' wished':''}" style="display:flex;align-items:center;gap:8px;border:1.5px solid ${wished?'var(--green)':'var(--border)'};border-radius:7px;padding:7px 10px;background:${wished?'#EEF5E8':'var(--surface)'};">
     <span style="font-size:13px;font-weight:700;color:var(--text);">${stm}</span>
     <span style="font-size:11px;color:var(--text-muted);">–${end}</span>
-    ${extra}${s}
+    ${cinemaSticker}${extra}${s}
     <button class="sched-wish-btn swb${wished?' on':''}" data-key="${schedKey}" title="${wished?'등록 취소':'스케줄 등록'}" onclick="event.stopPropagation();toggleSchedWish('${schedKey}','${esc(title)}','${esc(r.cinema)}','${esc(r.screen||'')}','${r.start_dt||''}','${r.end_dt||''}','${esc(posterUrl||'')}',this)" style="font-size:13px;margin-left:auto;">${wished?'⏰':'➕'}</button>
   </div>`;
 }
@@ -1310,7 +1309,13 @@ function closeMoviePopup(){ document.getElementById("moviePopupOverlay").classLi
 /* 극장 정보 팝업 */
 let cinemaInfoCache = {};
 async function openCinemaPopup(name){
-  document.getElementById("cpName").textContent = name;
+  // 극장명 + 지원 형식 배지 헤더
+  const cpNameBadges = [];
+  if(["KU시네마테크","서울아트시네마","한국영상자료원"].includes(name))
+    cpNameBadges.push(`<span class="sticker sticker-4k" style="font-size:10px;padding:2px 6px;margin-left:6px;vertical-align:middle;">4K</span>`);
+  if(name === "라이카시네마")
+    cpNameBadges.push(`<span class="sticker sticker-dolby" style="font-size:10px;padding:2px 6px;margin-left:6px;vertical-align:middle;">돌비</span>`);
+  document.getElementById("cpName").innerHTML = esc(name) + cpNameBadges.join("");
   document.getElementById("cpAddress").textContent = "";
   document.getElementById("cpBody").innerHTML = '<div style="font-size:12px;color:var(--text-muted);padding:8px 0;">불러오는 중…</div>';
   document.getElementById("cinemaPopupOverlay").classList.add("open");
@@ -1323,15 +1328,6 @@ async function openCinemaPopup(name){
   const d = cinemaInfoCache[name] || {};
   document.getElementById("cpAddress").textContent = d.address || "";
   let html = "";
-
-  // 지원 형식 배지 (4K 극장, 돌비 극장)
-  const formatBadges = [];
-  if(["KU시네마테크","서울아트시네마","한국영상자료원"].includes(name))
-    formatBadges.push(`<span class="sticker sticker-4k" style="font-size:11px;padding:3px 8px;">4K</span>`);
-  if(name === "라이카시네마")
-    formatBadges.push(`<span class="sticker sticker-dolby" style="font-size:11px;padding:3px 8px;">돌비 애트모스</span>`);
-  if(formatBadges.length)
-    html += `<div style="display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 4px;">${formatBadges.join("")}</div>`;
 
   if(d.description) html += `<p style="font-size:13px;color:#333;margin:10px 0 8px;line-height:1.6;">${esc(d.description)}</p>`;
   // 요금표
@@ -1677,8 +1673,8 @@ function setMovieSort(btn, mode){
     movieSortMode = mode;
     movieSortDir = defaultDir[mode];
   }
-  // 모든 버튼 원래 텍스트로 초기화
-  document.querySelectorAll(".movie-sort-btn").forEach(b=>{
+  // 모든 정렬 버튼(data-sort 있는 것만) 초기화 — ★추천 버튼 제외
+  document.querySelectorAll(".movie-sort-btn[data-sort]").forEach(b=>{
     const m = b.dataset.sort;
     const d = defaultDir[m];
     b.textContent = labels[m] + (d === "asc" ? " ↑" : " ↓");
