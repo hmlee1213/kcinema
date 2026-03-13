@@ -113,7 +113,8 @@ header{background:var(--text);color:#fff;padding:0 24px;position:sticky;top:0;z-
 /* ══════════════════════════════════
    팝업
 ══════════════════════════════════ */
-.popup-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:center;justify-content:center;padding:20px;}
+.popup-sort-btn{font-size:11px;font-weight:600;font-family:inherit;padding:4px 12px;border-radius:5px;border:1.5px solid var(--border);background:var(--surface);color:var(--text-muted);cursor:pointer;transition:all .12s;}
+.popup-sort-btn.active{background:var(--text);border-color:var(--text);color:#fff;}inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:center;justify-content:center;padding:20px;}
 .popup-overlay.open{display:flex;}
 .popup{background:var(--surface);border-radius:14px;width:100%;max-width:460px;box-shadow:0 20px 60px rgba(0,0,0,.2);overflow:hidden;position:relative;animation:popIn .16s ease;}
 @keyframes popIn{from{opacity:0;transform:scale(.95);}to{opacity:1;transform:scale(1);}}
@@ -191,7 +192,7 @@ header{background:var(--text);color:#fff;padding:0 24px;position:sticky;top:0;z-
 .movie-sort-btn.active{background:var(--text);border-color:var(--text);color:#fff;}
 /* 관리자 추천 배지 */
 .rec-badge{display:inline-flex;align-items:center;font-size:11px;font-weight:800;color:#B45309;flex-shrink:0;letter-spacing:-.01em;}
-.movie-card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:8px;}
+.movie-card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;margin-bottom:8px;}
 .mv-card{border:1.5px solid var(--border);border-radius:8px;padding:0;cursor:pointer;transition:border-color .12s,box-shadow .12s;background:var(--surface);position:relative;overflow:hidden;display:flex;flex-direction:column;}
 .mv-card:hover{border-color:#2D5A1B;box-shadow:0 2px 8px rgba(0,0,0,.08);}
 .mv-card.has-rec{border-color:#F59E0B;}
@@ -402,6 +403,12 @@ tr:hover td{background:#FAFAF8;}
 }
 @media(max-width:480px){
   .explore-cinema-chips{grid-template-columns:repeat(3,1fr);}
+  .movie-card-grid{grid-template-columns:repeat(3,1fr);gap:6px;}
+  .mv-poster{aspect-ratio:2/3;}
+  .mv-info{padding:5px 6px 7px;}
+  .mv-title{font-size:12px;}
+  .mv-meta{font-size:11px;}
+  .mv-count{font-size:10px;}
   .tab{padding:10px 12px;font-size:12px;}
   .day-tabs{gap:4px;}
   .day-tab{padding:4px 10px;font-size:11px;}
@@ -573,7 +580,7 @@ tr:hover td{background:#FAFAF8;}
         <button class="movie-sort-btn" data-sort="runtime" data-dir="desc" onclick="setMovieSort(this,'runtime')">러닝타임 ↓</button>
       </div>
     </div>
-    <div class="movie-grid" id="movie-grid-content"><div class="loading"><div class="spinner"></div>로딩 중…</div></div>
+    <div id="movie-grid-content"><div class="loading"><div class="spinner"></div>로딩 중…</div></div>
   </div>
 
   <!-- ③ 관심목록 -->
@@ -629,11 +636,20 @@ tr:hover td{background:#FAFAF8;}
     <div class="popup-top">
       <div class="popup-poster" id="moviePopupPoster">🎬</div>
       <div class="popup-info">
-        <div class="popup-title" id="moviePopupTitle"></div>
-        <div class="popup-meta" id="moviePopupMeta" style="margin-top:4px;"></div>
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:6px;">
+          <div class="popup-title" id="moviePopupTitle" style="flex:1;margin-bottom:0;"></div>
+          <div id="moviePopupMeta" style="flex-shrink:0;margin-top:1px;"></div>
+        </div>
+        <div id="moviePopupDetailMeta" style="font-size:11px;color:var(--text-muted);margin-top:5px;line-height:1.6;"></div>
+        <div id="moviePopupSynopsis" style="font-size:11px;color:var(--text-muted);margin-top:6px;line-height:1.6;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;cursor:pointer;" onclick="expandSynopsis(this)"></div>
       </div>
     </div>
     <div class="popup-divider"></div>
+    <!-- 정렬 토글 -->
+    <div style="display:flex;gap:5px;padding:8px 18px 0;border-bottom:1px solid var(--border);">
+      <button class="popup-sort-btn active" id="mpSortDate" onclick="setMoviePopupSort('date')">날짜순</button>
+      <button class="popup-sort-btn" id="mpSortCinema" onclick="setMoviePopupSort('cinema')">극장별</button>
+    </div>
     <div class="popup-schedules" id="moviePopupSchedules" style="max-height:52vh;overflow-y:auto;"></div>
   </div>
 </div>
@@ -1098,7 +1114,88 @@ function onMovieCardClick(title, encRows, encPoster){
   openMoviePopup(title, rows, posterUrl);
 }
 
+let moviePopupRows = [];
+let moviePopupTitle = '';
+let moviePopupPosterUrl = '';
+let moviePopupSort = 'date'; // 'date' | 'cinema'
+
+function setMoviePopupSort(mode){
+  moviePopupSort = mode;
+  document.getElementById('mpSortDate').classList.toggle('active', mode==='date');
+  document.getElementById('mpSortCinema').classList.toggle('active', mode==='cinema');
+  renderMoviePopupSchedules();
+}
+
+function renderMoviePopupSchedules(){
+  const rows = moviePopupRows;
+  const title = moviePopupTitle;
+  const posterUrl = moviePopupPosterUrl;
+  let html = '';
+
+  if(moviePopupSort === 'cinema'){
+    // 극장별 그룹핑 → 각 극장 내 날짜순
+    const byKey = {};
+    rows.forEach(r=>{
+      const k = r.cinema+(r.screen?` · ${r.screen}`:'');
+      if(!byKey[k]) byKey[k]=[];
+      byKey[k].push(r);
+    });
+    // 극장명 오름차순 정렬
+    const sortedKeys = Object.keys(byKey).sort((a,b)=>a.localeCompare(b,'ko'));
+    html = sortedKeys.map(label=>{
+      const rs = byKey[label].sort((a,b)=>(a.start_dt||'').localeCompare(b.start_dt||''));
+      const slots = rs.map(r=>popupSlotHtml(r, title, posterUrl)).join('');
+      return `<div style="padding:10px 0;border-bottom:1px solid var(--border);">
+        <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:7px;">${esc(label)}</div>
+        <div style="display:flex;flex-direction:column;gap:6px;">${slots}</div>
+      </div>`;
+    }).join('');
+  } else {
+    // 날짜순 — 날짜 그룹핑
+    const sorted = [...rows].sort((a,b)=>(a.start_dt||'').localeCompare(b.start_dt||''));
+    const byDate = {};
+    sorted.forEach(r=>{
+      const {mmdd, dow} = splitDt(r.start_dt);
+      const dk = mmdd+(dow?`(${dow})`:'');
+      if(!byDate[dk]) byDate[dk]=[];
+      byDate[dk].push(r);
+    });
+    html = Object.entries(byDate).map(([dateLabel, rs])=>{
+      const slots = rs.map(r=>{
+        const cinemaLabel = r.cinema+(r.screen?` · ${r.screen}`:'');
+        return popupSlotHtml(r, title, posterUrl, cinemaLabel);
+      }).join('');
+      return `<div style="padding:10px 0;border-bottom:1px solid var(--border);">
+        <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:7px;">${esc(dateLabel)}</div>
+        <div style="display:flex;flex-direction:column;gap:6px;">${slots}</div>
+      </div>`;
+    }).join('');
+  }
+
+  document.getElementById('moviePopupSchedules').innerHTML = html
+    || `<div style="color:var(--text-muted);font-size:12px;padding:12px 0;">상영 정보 없음</div>`;
+}
+
+function popupSlotHtml(r, title, posterUrl, extraLabel=''){
+  const {time:stm, dow:sdow} = splitDt(r.start_dt);
+  const end = (r.end_dt||'').slice(11,16);
+  const s = stickerHtml(r.program, r.show_type);
+  const schedKey = `${esc(title)}|${esc(r.cinema)}|${esc(r.screen||'')}|${r.start_dt||''}`;
+  const wished = isSchedWished(schedKey);
+  const extra = extraLabel ? `<span style="font-size:11px;color:var(--text-muted);margin-left:4px;">${esc(extraLabel)}</span>` : '';
+  return `<div class="popup-sched-slot${wished?' wished':''}" style="display:flex;align-items:center;gap:8px;border:1.5px solid ${wished?'var(--green)':'var(--border)'};border-radius:7px;padding:7px 10px;background:${wished?'#EEF5E8':'var(--surface)'};">
+    <span style="font-size:13px;font-weight:700;color:var(--text);">${stm}</span>
+    <span style="font-size:11px;color:var(--text-muted);">–${end}</span>
+    ${extra}${s}
+    <button class="sched-wish-btn swb${wished?' on':''}" data-key="${schedKey}" title="${wished?'등록 취소':'스케줄 등록'}" onclick="event.stopPropagation();toggleSchedWish('${schedKey}','${esc(title)}','${esc(r.cinema)}','${esc(r.screen||'')}','${r.start_dt||''}','${r.end_dt||''}','${esc(posterUrl||'')}',this)" style="font-size:13px;margin-left:auto;">${wished?'⏰':'➕'}</button>
+  </div>`;
+}
+
 function openMoviePopup(title, rows, posterUrl){
+  moviePopupTitle = title;
+  moviePopupRows = rows;
+  moviePopupPosterUrl = posterUrl;
+
   document.getElementById("moviePopupTitle").textContent = title;
   const poster = document.getElementById("moviePopupPoster");
   if(posterUrl){ poster.innerHTML=`<img src="${esc(posterUrl)}" alt="" style="width:100%;height:100%;object-fit:cover;" onerror="this.parentNode.textContent='🎬'">`; }
@@ -1107,37 +1204,40 @@ function openMoviePopup(title, rows, posterUrl){
     `<button class="heart-btn${isMovieWished(title)?" on":""}" onclick="toggleMovieWish(this,'${esc(title)}','${esc(posterUrl||"")}')">
       ${isMovieWished(title)?"♥":"♡"}
     </button>`;
-  // 극장별 그룹핑
-  const byKey = {};
-  rows.forEach(r=>{
-    const k = r.cinema+(r.screen?` · ${r.screen}`:"");
-    if(!byKey[k]) byKey[k]=[];
-    byKey[k].push(r);
-  });
-  const html = Object.entries(byKey).map(([label, rs])=>{
-    const times = rs.map(r=>{
-      const {mmdd:smm, time:stm, dow:sdow} = splitDt(r.start_dt);
-      const start = smm+(sdow?`(${sdow})`:"")+" "+stm;
-      const end=(r.end_dt||"").slice(11,16);
-      const s=stickerHtml(r.program, r.show_type);
-      const schedKey=`${esc(title)}|${esc(r.cinema)}|${esc(r.screen||"")}|${r.start_dt||""}`;
-      const wished=isSchedWished(schedKey);
-      return `<div class="popup-sched-slot${wished?" wished":""}" style="display:flex;align-items:center;justify-content:space-between;gap:8px;border:1.5px solid ${wished?'var(--green)':'var(--border)'};border-radius:7px;padding:7px 10px;background:${wished?'#EEF5E8':'var(--surface)'};">
-        <span style="font-size:13px;font-weight:700;color:var(--text);">${start}</span>
-        <span style="font-size:11px;color:var(--text-muted);">–</span>
-        <span style="font-size:12px;font-weight:600;color:var(--text-muted);">${end}</span>
-        ${s}
-        <button class="sched-wish-btn swb${wished?" on":""}" data-key="${schedKey}" title="${wished?'등록 취소':'스케줄 등록'}" onclick="event.stopPropagation();toggleSchedWish('${schedKey}','${esc(title)}','${esc(r.cinema)}','${esc(r.screen||"")}','${r.start_dt||""}','${r.end_dt||""}','${esc(posterUrl||"")}',this)" style="font-size:13px;margin-left:auto;">${wished?"⏰":"➕"}</button>
-      </div>`;
-    }).join("");
-    return `<div style="padding:10px 0;border-bottom:1px solid var(--border);">
-      <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:7px;">${esc(label)}</div>
-      <div style="display:flex;flex-direction:column;gap:6px;">${times}</div>
-    </div>`;
-  }).join("");
-  document.getElementById("moviePopupSchedules").innerHTML = html || `<div style="color:var(--text-muted);font-size:12px;padding:12px 0;">상영 정보 없음</div>`;
+
+  // 정렬 버튼 초기화
+  document.getElementById('mpSortDate').classList.add('active');
+  document.getElementById('mpSortCinema').classList.remove('active');
+  moviePopupSort = 'date';
+
+  // 상세 메타 초기화
+  document.getElementById("moviePopupDetailMeta").textContent = "";
+  document.getElementById("moviePopupSynopsis").textContent = "";
+  document.getElementById("moviePopupSynopsis").style.webkitLineClamp = "3";
+
+  renderMoviePopupSchedules();
   document.getElementById("moviePopupOverlay").classList.add("open");
   document.body.style.overflow="hidden";
+
+  // 감독/연도/러닝타임/시놉시스 비동기 로드
+  fetch(`/api/movie-detail?title=${encodeURIComponent(title)}`)
+    .then(r=>r.json())
+    .then(d=>{
+      if(!d || !d.title) return;
+      const parts=[];
+      if(d.director) parts.push(d.director);
+      if(d.year) parts.push(d.year+"년");
+      if(d.runtime) parts.push(d.runtime+"분");
+      document.getElementById("moviePopupDetailMeta").textContent = parts.join(" · ");
+      if(d.synopsis){
+        const el = document.getElementById("moviePopupSynopsis");
+        el.textContent = d.synopsis;
+      }
+    }).catch(()=>{});
+}
+
+function expandSynopsis(el){
+  el.style.webkitLineClamp = el.style.webkitLineClamp === "3" ? "unset" : "3";
 }
 function closeMoviePopup(){ document.getElementById("moviePopupOverlay").classList.remove("open"); document.body.style.overflow=""; }
 
