@@ -33,41 +33,6 @@ CINEMAS = [
 
 DTRYX_CGID = "FE8EF4D2-F22D-4802-A39A-D58F23A29C1E"
 
-# ── 수동 GV/토크/강연 오버라이드 ──────────────────────────
-# show_type이 자동으로 감지 안 되는 회차를 여기서 직접 지정
-#
-# 키 형식:
-#   (극장명, 영화제목, "YYYY-MM-DD")  → 특정 날짜 회차만
-#   (극장명, 영화제목)                → 해당 영화 전체 회차
-#
-# 값: "GV" | "토크" | "강연" | "GV / 강연" 등 자유롭게
-#
-# 예시:
-#   ("한국영상자료원", "시네마 오디세이", "2026-03-15"): "강연",
-#   ("서울아트시네마", "어느 감독의 고백", "2026-03-22"): "GV",
-#   ("KU시네마테크", "특별전 영화", ): "토크",  ← 전체 회차
-# ─────────────────────────────────────────────────────────
-MANUAL_SHOW_TYPE = {
-    # 여기에 추가하세요:
-
-}
-# ─────────────────────────────────────────────────────────
-
-def apply_manual_show_type(rows):
-    """MANUAL_SHOW_TYPE 딕셔너리 적용 — INSERT 직전에 호출"""
-    for r in rows:
-        cinema = r.get("cinema", "")
-        movie  = r.get("movie", "")
-        date   = str(r["start_dt"])[:10] if r.get("start_dt") else ""
-        # 날짜 특정 키 우선, 없으면 영화 전체 키
-        key_date = (cinema, movie, date)
-        key_all  = (cinema, movie)
-        if key_date in MANUAL_SHOW_TYPE:
-            r["show_type"] = MANUAL_SHOW_TYPE[key_date]
-        elif key_all in MANUAL_SHOW_TYPE:
-            r["show_type"] = MANUAL_SHOW_TYPE[key_all]
-    return rows
-
 def make_datetime(date_obj, time_str):
     if not time_str: return None
     try:
@@ -148,9 +113,6 @@ def fetch_moviee(cinema, start_date, days=14):
                 show_type=movie_name.split("(")[1].replace(")","").strip()
             else:
                 main_title=movie_name.strip()
-            # 조조 회차 감지 (TIME_TYPE == "01")
-            if item.get("TIME_TYPE") == "01":
-                show_type = ("조조 / " + show_type).strip(" /") if show_type else "조조"
             rows.append({"cinema":cinema["name"],"movie":main_title,
                          "start_dt":start_dt,"end_dt":end_dt,"runtime":runtime,
                          "screen":item.get("ROOM_NM",""),"source":"moviee",
@@ -238,9 +200,9 @@ def fetch_kofa(cinema):
             movie_url = ("https://www.koreafilm.or.kr" + movie_href) if movie_href else ""
             program_text = program_tag.get_text(strip=True) if program_tag else ""
             show_type_text = type_tag.get_text(strip=True)[4:] if type_tag else ""
-            # 강연 감지 — program_text 또는 제목에 '강연' 포함 시 program에 명시
+            # 강연 감지 — program이나 제목에 '강연' 포함 시 program에 명시
             title_text = title_tag.get_text(strip=True) if title_tag else ""
-            if "강연" in (program_text + title_text):
+            if "강연" in title_text and not program_text:
                 program_text = "강연"
             rows.append({
                 "cinema":cinema["name"],
@@ -422,7 +384,6 @@ def save_to_pg(rows):
     cur.execute("ALTER TABLE screenings ADD COLUMN IF NOT EXISTS movie_url TEXT")
     cur.execute("ALTER TABLE screenings ADD COLUMN IF NOT EXISTS movie_cd TEXT")
     cur.execute("CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT)")
-    rows = apply_manual_show_type(rows)
     for r in rows:
         cur.execute("""
             INSERT INTO screenings (cinema,movie,start_dt,end_dt,runtime,screen,source,show_type,program,movie_url,movie_cd)

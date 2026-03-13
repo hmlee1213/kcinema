@@ -1665,9 +1665,14 @@ function renderCinemaGrid(){
           const {time:endTime}=splitDt(r.end_dt);
           const s=stickerHtml(r.program,r.show_type,cinema,r.movie,r.screen||"");
           const _scrVal = (r.screen||'').trim();
+          const _isDolbyRow = movieDolbySet.has(r.movie) && CINEMA_DOLBY_SUPPORT.has(cinema)
+            && (!_scrVal || !_scrVal.includes("2"));
+          const _dolbyTag = _isDolbyRow
+            ? `<span style="display:inline-block;font-size:9px;font-weight:700;background:#ff6633;color:#fff;padding:1px 4px;border-radius:3px;margin-left:4px;vertical-align:middle;">돌비</span>`
+            : '';
           const movieHtml=r.movie_url
-            ?`<a href="${esc(r.movie_url)}" target="_blank" onclick="event.stopPropagation()">${esc(r.movie)}</a>`
-            :`<span class="movie-link" style="cursor:pointer;" onclick="event.stopPropagation();openPopup('${esc(r.movie)}','${esc(cinema)}','${esc(r.screen||'')}','')">${esc(r.movie)}</span>`;
+            ?`<a href="${esc(r.movie_url)}" target="_blank" onclick="event.stopPropagation()">${esc(r.movie)}</a>${_dolbyTag}`
+            :`<span class="movie-link" style="cursor:pointer;" onclick="event.stopPropagation();openPopup('${esc(r.movie)}','${esc(cinema)}','${esc(r.screen||'')}','')">${esc(r.movie)}</span>${_dolbyTag}`;
           const schedKey=`${esc(r.movie)}|${esc(cinema)}|${esc(r.screen||"")}|${r.start_dt||""}`;
           const wished=isSchedWished(schedKey);
           const _showScreen = !["KU시네마테크","KT&G상상마당시네마","서울아트시네마"].includes(cinema) && _scrVal;
