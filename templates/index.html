@@ -305,16 +305,15 @@ tr:hover td{background:#FAFAF8;}
    탐색 탭
 ══════════════════════════════════ */
 .condition-bar{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:14px;box-shadow:var(--shadow);}
-.cond-block{border-bottom:1px solid var(--border);}
+.cond-block{border-bottom:1px solid var(--border);padding:10px 14px;}
 .cond-block:last-child{border-bottom:none;}
-.cond-row{display:flex;align-items:stretch;}
-.cond-label{width:52px;padding:10px 8px;font-size:12px;font-weight:800;color:var(--text);letter-spacing:.01em;flex-shrink:0;border-right:1px solid var(--border);display:flex;align-items:center;justify-content:center;text-align:center;}
-.cond-body{flex:1;padding:8px 10px;display:flex;flex-wrap:nowrap;overflow-x:auto;gap:5px;align-items:center;scrollbar-width:none;-ms-overflow-style:none;}
-.cond-body::-webkit-scrollbar{display:none;}
-.cond-sub{padding:0 10px 8px 62px;display:none;flex-wrap:wrap;gap:5px;align-items:center;}
+.cond-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.cond-label{font-size:11px;font-weight:800;color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;}
+.cond-body{display:flex;flex-wrap:wrap;gap:5px;align-items:center;}
+.cond-sub{padding:8px 0 0 0;display:none;flex-wrap:wrap;gap:5px;align-items:center;}
 .cond-sub.open{display:flex;}
 .cond-sub-label{font-size:10px;font-weight:700;color:var(--text-sub);letter-spacing:.04em;white-space:nowrap;}
-.cond-sub-label--section{font-size:13px;font-weight:800;color:var(--text);letter-spacing:0;background:var(--surface2);padding:3px 8px;border-radius:6px;}
+.cond-sub-label--section{font-size:12px;font-weight:800;color:var(--text);letter-spacing:0;background:var(--surface2);padding:3px 8px;border-radius:6px;}
 .cond-sep{width:1px;height:16px;background:var(--border);flex-shrink:0;margin:0 2px;}
 .ex-chip{font-size:12px;font-weight:600;font-family:inherit;padding:5px 12px;border-radius:20px;border:1.5px solid var(--border);background:var(--surface);color:var(--text-muted);cursor:pointer;transition:all .12s;white-space:nowrap;user-select:none;}
 .ex-chip:hover{border-color:var(--text);color:var(--text);}
@@ -339,8 +338,7 @@ tr:hover td{background:#FAFAF8;}
 .result-count-text{font-size:12px;font-weight:600;color:var(--text-muted);}
 .explore-grid{display:grid;gap:8px;}
 @media(max-width:700px){
-  .cond-label{width:44px;font-size:11px;font-weight:800;padding:9px 6px;}
-  .cond-sub{padding-left:54px;}
+  .cond-sub{padding:6px 0 0 0;}
   .explore-grid{grid-template-columns:repeat(2,1fr) !important;}
 }
 
@@ -456,22 +454,20 @@ tr:hover td{background:#FAFAF8;}
     <!-- 조건 바 -->
     <div class="condition-bar">
 
-      <!-- 언제? -->
+      <!-- 언제 -->
       <div class="cond-block">
-        <div class="cond-row">
-          <div class="cond-label">언제?</div>
-          <div class="cond-body">
-            <button class="ex-chip active" id="directSetBtn" onclick="setDirectMode()">직접 설정</button>
-            <div class="cond-sep"></div>
-            <button class="ex-chip" data-mode="today" onclick="setExploreDate(this,'today')">오늘</button>
-            <button class="ex-chip" data-mode="tomorrow" onclick="setExploreDate(this,'tomorrow')">내일</button>
-            <button class="ex-chip" data-mode="saturday" onclick="setExploreDate(this,'saturday')">토</button>
-            <button class="ex-chip" data-mode="sunday" onclick="setExploreDate(this,'sunday')">일</button>
-            <div class="cond-sep"></div>
-            <button class="ex-chip" id="rangeToggleBtn" onclick="setRangeMode()">기간 선택</button>
-          </div>
+        <div class="cond-label">언제</div>
+        <div class="cond-body">
+          <button class="ex-chip active" id="directSetBtn" onclick="setDirectMode()">직접 설정</button>
+          <div class="cond-sep"></div>
+          <button class="ex-chip" data-mode="today" onclick="setExploreDate(this,'today')">오늘</button>
+          <button class="ex-chip" data-mode="tomorrow" onclick="setExploreDate(this,'tomorrow')">내일</button>
+          <button class="ex-chip" data-mode="saturday" onclick="setExploreDate(this,'saturday')">토</button>
+          <button class="ex-chip" data-mode="sunday" onclick="setExploreDate(this,'sunday')">일</button>
+          <div class="cond-sep"></div>
+          <button class="ex-chip" id="rangeToggleBtn" onclick="setRangeMode()">기간 선택</button>
         </div>
-        <!-- 직접 설정 패널: 날짜 1개 + 시간대, 기본 오늘 17~23시 -->
+        <!-- 직접 설정 패널 -->
         <div class="cond-sub open" id="directSub">
           <span class="cond-sub-label cond-sub-label--section">날짜</span>
           <input class="ex-date" type="date" id="exploreDate" onchange="loadExploreData()">
@@ -497,7 +493,7 @@ tr:hover td{background:#FAFAF8;}
           </select>
           <button class="ex-chip" id="timeAllBtn" onclick="setTimeAll(this)" style="flex-shrink:0;">전체</button>
         </div>
-        <!-- 기간 선택 패널: 날짜 from~to, 기본 전체 기간 -->
+        <!-- 기간 선택 패널 -->
         <div class="cond-sub" id="rangeSub">
           <span class="cond-sub-label cond-sub-label--section">기간</span>
           <input class="ex-date" type="date" id="exploreDateFrom" onchange="loadExploreData()">
@@ -507,35 +503,31 @@ tr:hover td{background:#FAFAF8;}
         </div>
       </div>
 
-      <!-- 어디서? -->
+      <!-- 어디서 -->
       <div class="cond-block">
-        <div class="cond-row">
-          <div class="cond-label">어디서?</div>
-          <div class="cond-body">
-            <button class="ex-chip active" data-area="all" onclick="setExploreArea(this,'all')">전체</button>
-            <button class="ex-chip" data-area="sinchon" onclick="setExploreArea(this,'sinchon')">신촌·이대</button>
-            <button class="ex-chip" data-area="hongdae" onclick="setExploreArea(this,'hongdae')">홍대·상암</button>
-            <button class="ex-chip" data-area="gwanghwa" onclick="setExploreArea(this,'gwanghwa')">광화문·종로</button>
-            <button class="ex-chip" data-area="kondae" onclick="setExploreArea(this,'kondae')">건대·성수</button>
-            <button class="ex-chip" data-area="north" onclick="setExploreArea(this,'north')">성북·노원</button>
-            <button class="ex-chip" data-area="gangnam" onclick="setExploreArea(this,'gangnam')">강남</button>
-            <div class="cond-sep"></div>
-            <button class="ex-chip" id="cinemaDirectBtn" onclick="toggleCinemaDirect()">직접 선택</button>
-          </div>
+        <div class="cond-label">어디서</div>
+        <div class="cond-body">
+          <button class="ex-chip active" data-area="all" onclick="setExploreArea(this,'all')">전체</button>
+          <button class="ex-chip" data-area="sinchon" onclick="setExploreArea(this,'sinchon')">신촌·이대</button>
+          <button class="ex-chip" data-area="hongdae" onclick="setExploreArea(this,'hongdae')">홍대·상암</button>
+          <button class="ex-chip" data-area="gwanghwa" onclick="setExploreArea(this,'gwanghwa')">광화문·종로</button>
+          <button class="ex-chip" data-area="kondae" onclick="setExploreArea(this,'kondae')">건대·성수</button>
+          <button class="ex-chip" data-area="north" onclick="setExploreArea(this,'north')">성북·노원</button>
+          <button class="ex-chip" data-area="gangnam" onclick="setExploreArea(this,'gangnam')">강남</button>
+          <div class="cond-sep"></div>
+          <button class="ex-chip" id="cinemaDirectBtn" onclick="toggleCinemaDirect()">직접 선택</button>
         </div>
         <div class="cond-sub" id="cinemaDirectSub">
-          <div class="cond-sub-label">극장 선택</div>
           <div id="explorecinemaChips" class="explore-cinema-chips"></div>
         </div>
       </div>
 
-      <!-- 어떤 거? -->
+      <!-- 어떤 영화? -->
       <div class="cond-block">
-        <div class="cond-row">
-          <div class="cond-label">어떤 거?</div>
-          <div class="cond-body">
-            <input class="ex-search" id="exploreMovieSearch" placeholder="영화 제목 검색…" oninput="onExploreSearch(this.value)">
-          </div>
+        <div class="cond-label">어떤 영화?</div>
+        <div class="cond-body" style="gap:8px;">
+          <input class="ex-search" id="exploreMovieSearch" placeholder="제목 검색…" oninput="onExploreSearch(this.value)" style="flex:1;min-width:120px;">
+          <input class="ex-search" id="exploreDirectorSearch" placeholder="감독 검색…" oninput="onExploreDirSearch(this.value)" style="flex:1;min-width:100px;">
         </div>
       </div>
     </div>
@@ -569,19 +561,10 @@ tr:hover td{background:#FAFAF8;}
 
   <!-- ③ 영화별 -->
   <div id="tab-movie" style="display:none;">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
-      <div style="display:flex;gap:0;border-bottom:1.5px solid var(--border);margin-bottom:0;align-items:center;">
-        <button class="movie-search-tab active" id="mstTitle" onclick="setMovieSearchTab('title')">제목 검색</button>
-        <button class="movie-search-tab" id="mstDirector" onclick="setMovieSearchTab('director')">감독 검색</button>
-        <div style="flex:1;"></div>
-      </div>
-      <div style="margin:10px 0 14px;">
-        <div id="movieSearchTitleWrap" class="movie-search-bar" style="margin-bottom:0;">
-          <input type="text" id="movieSearchInput" placeholder="영화 제목으로 검색…" oninput="onMovieSearch(this.value)">
-        </div>
-        <div id="movieSearchDirWrap" class="movie-search-bar" style="margin-bottom:0;display:none;">
-          <input type="text" id="movieDirectorInput" placeholder="감독 이름으로 검색 (일부 일치)…" oninput="onDirectorSearch(this.value)">
-        </div>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+      <div style="display:flex;gap:6px;flex:1;min-width:0;">
+        <input class="ex-search" type="text" id="movieSearchInput" placeholder="제목 검색…" oninput="onMovieSearch(this.value)" style="flex:1;min-width:80px;">
+        <input class="ex-search" type="text" id="movieDirectorInput" placeholder="감독 검색…" oninput="onDirectorSearch(this.value)" style="flex:1;min-width:80px;">
       </div>
       <div style="display:flex;gap:5px;margin-left:auto;align-items:center;">
         <span style="font-size:11px;color:var(--text-muted);margin-right:2px;">정렬</span>
@@ -769,8 +752,9 @@ const EXPLORE_AREAS = {
 };
 
 let exploreMode = "direct";    // direct | range | today | tomorrow | saturday | sunday
-let exploreSpecialOnly = false; // 특별회차(GV·토크 등) 필터
-let exploreRecOnly = false; // 추천 영화만 필터
+let exploreSpecialOnly = false;
+let exploreRecOnly = false;
+let exploreDirQ = "";
 let exploreDirectOpen = false; // 극장 직접선택 패널
 let exploreSelectedCinemas = new Set(EXPLORE_AREAS.all.cinemas);
 let exploreData = [];
@@ -844,6 +828,7 @@ function renderExploreCards(){
   });
   let cards = Object.values(groups);
   if(exploreSearchQ) cards = cards.filter(c=>c.movie.includes(exploreSearchQ));
+  if(exploreDirQ){ cards = cards.filter(c=>{ const dir=(movieDirectorMap[c.movie]||"").toLowerCase(); return dir.includes(exploreDirQ.toLowerCase()); }); }
   if(exploreSpecialOnly) cards = cards.filter(c=>hasSpecialScreening(c.times));
   if(exploreRecOnly){ const recSet2=new Set((recData||[]).map(r=>r.title)); cards=cards.filter(c=>recSet2.has(c.movie)); }
 
@@ -995,6 +980,10 @@ function initExploreCinemaChips(){
   }).join("");
 }
 
+function onExploreDirSearch(q){
+  exploreDirQ = q.trim();
+  renderExploreCards();
+}
 function onExploreSearch(q){
   exploreSearchQ = q;
   if(q.length>=2) gtag("event","explore_search",{search_term:q});
@@ -1594,17 +1583,7 @@ let movieRecOnly = false;
 
 
 let movieSearchTabMode = "title"; // title | director
-function setMovieSearchTab(mode){
-  movieSearchTabMode = mode;
-  document.getElementById("mstTitle").classList.toggle("active", mode==="title");
-  document.getElementById("mstDirector").classList.toggle("active", mode==="director");
-  document.getElementById("movieSearchTitleWrap").style.display = mode==="title" ? "block" : "none";
-  document.getElementById("movieSearchDirWrap").style.display = mode==="director" ? "block" : "none";
-  // 반대쪽 검색어 초기화
-  if(mode==="title"){ movieDirectorQ=""; document.getElementById("movieDirectorInput").value=""; }
-  else { movieSearchQ=""; document.getElementById("movieSearchInput").value=""; }
-  renderMovieGrid();
-}
+// setMovieSearchTab — 탭 토글 제거, 두 검색창 동시 사용
 function onMovieSearch(q){
   movieSearchQ=q;
   renderMovieGrid(true);
