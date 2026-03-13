@@ -80,7 +80,7 @@ header{background:var(--text);color:#fff;padding:0 24px;position:sticky;top:0;z-
 .sticker-dolby{background:#ff6633;color:#fff;}
 .sticker-film{background:#cc0066;color:#fff;}
 .sticker-morning{background:#333333;color:#fff;}
-.sticker-4k-supported{background:#fff;color:#0033cc;border:1px solid #0033cc;}
+.sticker-4k-supported{background:#e8f0fe;color:#1a56db;border:1px solid #a4c2f4;}
 .award-tag{display:inline-block;font-size:10px;font-weight:700;background:#fffbea;color:#92400e;border:1px solid #fcd34d;padding:2px 7px;border-radius:4px;margin:2px 3px 2px 0;white-space:nowrap;}
 .award-wrap{display:flex;flex-wrap:wrap;align-items:center;gap:0;}
 
@@ -337,8 +337,8 @@ tr:hover td{background:#FAFAF8;}
 .ex-chip.active{background:var(--text);border-color:var(--text);color:#fff;}
 .ex-date{font-size:12px;font-weight:600;font-family:inherit;padding:5px 8px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface);color:var(--text);outline:none;}
 .ex-date:focus{border-color:var(--text);}
-input[type="date"].ex-date::-webkit-datetime-edit-year-field{display:none !important;width:0;padding:0;margin:0;}
-input[type="date"].ex-date::-webkit-datetime-edit-text:last-of-type{display:none !important;width:0;padding:0;margin:0;}
+input[type="date"]::-webkit-datetime-edit-year-field{display:none !important;width:0;padding:0;margin:0;}
+input[type="date"]::-webkit-datetime-edit-text:last-of-type{display:none !important;width:0;padding:0;margin:0;}
 .ex-select{font-size:12px;font-weight:600;font-family:inherit;padding:5px 8px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface);color:var(--text);outline:none;cursor:pointer;}
 .ex-select:focus{border-color:var(--text);}
 .ex-search{font-size:13px;font-family:inherit;padding:5px 12px;border:1.5px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);outline:none;min-width:160px;flex:1;max-width:320px;}
@@ -1237,10 +1237,9 @@ function renderMoviePopupSchedules(){
     html = sortedKeys.map(label=>{
       const rs = byKey[label].sort((a,b)=>(a.start_dt||'').localeCompare(b.start_dt||''));
       const firstR = byKey[label][0];
-      const hSticker = stickerHtml('', '', firstR.cinema, title, firstR.screen||'');
       const slots = rs.map(r=>popupSlotHtml(r, title, posterUrl)).join('');
       return `<div style="padding:10px 0;border-bottom:1px solid var(--border);">
-        <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:7px;"><span class="movie-link" style="cursor:pointer;" onclick="openCinemaPopup('${esc(firstR.cinema)}')">${esc(label)}</span>${hSticker}</div>
+        <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:7px;"><span class="movie-link" style="cursor:pointer;" onclick="openCinemaPopup('${esc(firstR.cinema)}')">${esc(label)}</span></div>
         <div style="display:flex;flex-direction:column;gap:6px;">${slots}</div>
       </div>`;
     }).join('');
@@ -1257,9 +1256,8 @@ function renderMoviePopupSchedules(){
     html = Object.entries(byDate).map(([dateLabel, rs])=>{
       const slots = rs.map(r=>{
         const cinemaLabel = r.cinema+(r.screen?` · ${r.screen}`:'');
-        const cSticker = stickerHtml('', '', r.cinema, title, r.screen||'');
         const cinemaLabelHtml = `<span class="movie-link" style="cursor:pointer;" onclick="openCinemaPopup('${esc(r.cinema)}')">${esc(cinemaLabel)}</span>`;
-        return popupSlotHtml(r, title, posterUrl, cinemaLabelHtml, cSticker, true);
+        return popupSlotHtml(r, title, posterUrl, cinemaLabelHtml, '', true);
       }).join('');
       return `<div style="padding:10px 0;border-bottom:1px solid var(--border);">
         <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:7px;">${esc(dateLabel)}</div>
