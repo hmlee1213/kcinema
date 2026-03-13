@@ -209,7 +209,7 @@ header{background:var(--text);color:#fff;padding:0 24px;position:sticky;top:0;z-
 .mv-meta{font-size:13px;color:var(--text-muted);line-height:1.4;margin-top:2px;}
 .mv-count{font-size:10px;font-weight:700;background:var(--surface2);color:var(--text-muted);padding:1px 5px;border-radius:4px;display:inline-block;margin-top:2px;}
 .mv-rec-badge{position:absolute;top:4px;right:4px;font-size:10px;font-weight:800;color:#B45309;background:rgba(255,255,255,.9);border-radius:3px;padding:0 3px;line-height:1.6;}
-.mv-tag-row{position:absolute;top:4px;left:4px;display:flex;gap:3px;}
+.mv-tag-row{position:absolute;top:4px;left:4px;display:flex;flex-direction:column;gap:3px;}
 .mv-4k-badge{background:#1a56db;color:#fff;font-size:9px;font-weight:800;padding:1px 5px;border-radius:3px;line-height:1.6;}
 .mv-dolby-badge{background:#7c3aed;color:#fff;font-size:9px;font-weight:800;padding:1px 5px;border-radius:3px;line-height:1.6;}
 .mv-title-row{display:flex;align-items:flex-start;gap:4px;justify-content:space-between;}
@@ -331,6 +331,8 @@ tr:hover td{background:#FAFAF8;}
 .ex-chip.active{background:var(--text);border-color:var(--text);color:#fff;}
 .ex-date{font-size:12px;font-weight:600;font-family:inherit;padding:5px 8px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface);color:var(--text);outline:none;}
 .ex-date:focus{border-color:var(--text);}
+input[type="date"].ex-date::-webkit-datetime-edit-year-field{display:none !important;width:0;padding:0;margin:0;}
+input[type="date"].ex-date::-webkit-datetime-edit-text:last-of-type{display:none !important;width:0;padding:0;margin:0;}
 .ex-select{font-size:12px;font-weight:600;font-family:inherit;padding:5px 8px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface);color:var(--text);outline:none;cursor:pointer;}
 .ex-select:focus{border-color:var(--text);}
 .ex-search{font-size:13px;font-family:inherit;padding:5px 12px;border:1.5px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);outline:none;min-width:160px;flex:1;max-width:320px;}
@@ -421,8 +423,6 @@ tr:hover td{background:#FAFAF8;}
 }
 @media(max-width:480px){
   input[type="date"].ex-date{font-size:11px;padding:4px 5px;letter-spacing:-.3px;}
-  input[type="date"].ex-date::-webkit-datetime-edit-year-field{display:none !important;width:0;padding:0;margin:0;}
-  input[type="date"].ex-date::-webkit-datetime-edit-text:last-of-type{display:none !important;width:0;padding:0;margin:0;}
   .explore-cinema-chips{grid-template-columns:repeat(3,1fr);}
   .movie-card-grid{grid-template-columns:repeat(3,1fr);gap:7px;}
   .mv-poster{aspect-ratio:2/3;}
