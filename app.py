@@ -1127,9 +1127,9 @@ a{color:#2D5A1B;text-decoration:none}
           {% if m.poster_url %}<img src="{{ m.poster_url }}" onerror="this.parentNode.innerHTML='🎬'">
           {% else %}🎬{% endif %}
         </div>
-        {# 포스터 아래: 제목 + 감독 + 4K/돌비 태그 #}
+        {# 포스터 아래: 제목 + 감독 + 수상 + 4K/돌비 태그 #}
         <div class="m-text">
-          <div class="m-name">{{ m.movie }}</div>
+          <div class="m-name">{{ m.movie }}{% if m.awards %} <span style="font-size:11px;">🏆</span>{% endif %}</div>
           {% if m.director %}<div class="m-director">{{ m.director }}</div>{% endif %}
           {% if m.is_4k or m.is_dolby %}<div class="m-tag-row">
             {% if m.is_4k %}<span class="m-tag m-tag-4k">4K</span>{% endif %}

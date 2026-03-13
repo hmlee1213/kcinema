@@ -209,8 +209,13 @@ header{background:var(--text);color:#fff;padding:0 24px;position:sticky;top:0;z-
 .mv-meta{font-size:13px;color:var(--text-muted);line-height:1.4;margin-top:2px;}
 .mv-count{font-size:10px;font-weight:700;background:var(--surface2);color:var(--text-muted);padding:1px 5px;border-radius:4px;display:inline-block;margin-top:2px;}
 .mv-rec-badge{position:absolute;top:4px;right:4px;font-size:10px;font-weight:800;color:#B45309;background:rgba(255,255,255,.9);border-radius:3px;padding:0 3px;line-height:1.6;}
-.mv-4k-badge{position:absolute;top:4px;left:4px;background:#1a56db;color:#fff;font-size:9px;font-weight:800;padding:1px 5px;border-radius:3px;line-height:1.6;}
-.mv-wish-btn{position:absolute;bottom:6px;right:6px;background:none;border:none;cursor:pointer;font-size:14px;color:#ccc;-webkit-text-stroke:.4px #bbb;line-height:1;padding:1px;transition:color .1s;}
+.mv-tag-row{position:absolute;top:4px;left:4px;display:flex;gap:3px;}
+.mv-4k-badge{background:#1a56db;color:#fff;font-size:9px;font-weight:800;padding:1px 5px;border-radius:3px;line-height:1.6;}
+.mv-dolby-badge{background:#7c3aed;color:#fff;font-size:9px;font-weight:800;padding:1px 5px;border-radius:3px;line-height:1.6;}
+.mv-title-row{display:flex;align-items:flex-start;gap:4px;justify-content:space-between;}
+.mv-title-row .mv-title{flex:1;min-width:0;}
+.mv-award-icon{font-size:12px;line-height:1;margin-left:2px;vertical-align:middle;}
+.mv-wish-btn{background:none;border:none;cursor:pointer;font-size:14px;color:#ccc;-webkit-text-stroke:.4px #bbb;line-height:1;padding:1px;transition:color .1s;flex-shrink:0;margin-top:1px;}
 .mv-wish-btn:hover,.mv-wish-btn.on{color:#e05;-webkit-text-stroke:.4px #c00;}
 /* 페이지네이션 */
 .pg-bar{display:flex;align-items:center;justify-content:center;gap:4px;padding:16px 0 8px;flex-wrap:wrap;}
@@ -708,8 +713,9 @@ function renderDowBadge(dow, dowIdx){
 
 function awardsHtml(awards, is4k, isDolby, cinema){
   const parts = [];
-  if(is4k    && CINEMA_4K_SUPPORT.has(cinema||""))    parts.push(`<span class="sticker sticker-4k" style="font-size:10px;padding:2px 7px;">4K</span>`);
-  if(isDolby && CINEMA_DOLBY_SUPPORT.has(cinema||"")) parts.push(`<span class="sticker sticker-dolby" style="font-size:10px;padding:2px 7px;">돌비</span>`);
+  // cinema 지정 시 극장 조건 체크, null이면 마킹만으로 표시 (영화별 팝업)
+  if(is4k    && (cinema===null || CINEMA_4K_SUPPORT.has(cinema||"")))    parts.push(`<span class="sticker sticker-4k" style="font-size:10px;padding:2px 7px;">4K</span>`);
+  if(isDolby && (cinema===null || CINEMA_DOLBY_SUPPORT.has(cinema||""))) parts.push(`<span class="sticker sticker-dolby" style="font-size:10px;padding:2px 7px;">돌비</span>`);
   if(awards){
     awards.split(",").map(s=>s.trim()).filter(Boolean).forEach(a=>{
       parts.push(`<span class="award-tag">🏆 ${esc(a)}</span>`);
@@ -1759,6 +1765,8 @@ function renderMovieGrid(resetPage=true){
   const start = (movieCurrentPage-1)*MOVIE_PAGE;
   const visible = titles.slice(start, start+MOVIE_PAGE);
   const recSet = new Set((recData||[]).map(r=>r.title));
+  const recMap = {};
+  (recData||[]).forEach(r=>{ if(r.awards) recMap[r.title]=r.awards; });
 
   const cards = visible.map(title=>{
     const rows=groups[title];
@@ -1771,17 +1779,23 @@ function renderMovieGrid(resetPage=true){
     const _encPost=encodeURIComponent(posterUrl);
     const isRec=recSet.has(title);
     const is4k=movie4kSet.has(title);
+    const isDolby=movieDolbySet.has(title);
+    const hasAward=!!(recMap[title]);
     const dirText=rows[0]?.director||'';
+    const wished=isMovieWished(title);
     return `<div class="mv-card${isRec?' has-rec':''}" onclick="onMovieCardClick('${esc(title)}','${_encRows}','${_encPost}')">
       <div class="mv-poster">${thumb}</div>
-      ${isRec?'<div class="mv-rec-badge">★</div>':''}
-      ${is4k?'<div class="mv-4k-badge">4K</div>':''}
+      ${isRec?`<div class="mv-rec-badge">★${hasAward?'🏆':''}</div>`:''}
+      ${!isRec&&hasAward?'<div class="mv-rec-badge">🏆</div>':''}
+      <div class="mv-tag-row">${is4k?'<div class="mv-4k-badge">4K</div>':''}${isDolby?'<div class="mv-dolby-badge">돌비</div>':''}</div>
       <div class="mv-info">
-        <div class="mv-title">${esc(title)}</div>
+        <div class="mv-title-row">
+          <span class="mv-title">${esc(title)}</span>
+          <button class="mv-wish-btn${wished?' on':''}" onclick="event.stopPropagation();toggleMovieWish(this,'${esc(title)}','${esc(posterUrl)}')" title="관심 목록 추가">${wished?'♥':'♡'}</button>
+        </div>
         <div class="mv-meta">${dirText?esc(dirText)+(runtime?' · ':''):''}${runtime?runtime+'분':''}</div>
         <div class="mv-count">${rows.length}회 상영</div>
       </div>
-      <button class="mv-wish-btn${isMovieWished(title)?' on':''}" onclick="event.stopPropagation();toggleMovieWish(this,'${esc(title)}','${esc(posterUrl)}')" title="관심 목록 추가">${isMovieWished(title)?'♥':'♡'}</button>
     </div>`;
   }).join("");
 
