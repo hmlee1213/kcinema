@@ -247,36 +247,13 @@ def fetch_poster_from_dtryx(movie_cd):
                 if dd:
                     director = dd.get_text(strip=True)
                     break
-        # 줄거리 — CSS 셀렉터 우선, 없으면 "줄거리" 헤딩 다음 텍스트 블록
+        # 줄거리
         synopsis = ""
-        for sel in [".movie-synopsis", ".synopsis", ".txt-synopsis", ".movie-info-txt",
-                    ".movie-story", ".movie-desc", ".story", "[class*='synopsis']",
-                    "[class*='story']", "[class*='intro']", ".desc-txt", ".movie-text"]:
+        for sel in [".movie-synopsis", ".synopsis", ".txt-synopsis", ".movie-info-txt"]:
             el = soup.select_one(sel)
             if el:
-                txt = el.get_text(strip=True)
-                if len(txt) > 20:
-                    synopsis = txt[:600]
-                    break
-        # 헤딩 "줄거리" 텍스트 다음 형제 블록 탐색
-        if not synopsis:
-            for heading in soup.find_all(["dt", "h3", "h4", "strong", "p", "span"]):
-                if heading.get_text(strip=True) in ("줄거리", "STORY", "Story", "시놉시스"):
-                    nxt = heading.find_next_sibling()
-                    if not nxt:
-                        nxt = heading.parent.find_next_sibling()
-                    if nxt:
-                        txt = nxt.get_text(strip=True)
-                        if len(txt) > 20:
-                            synopsis = txt[:600]
-                            break
-        # 마지막 fallback: 페이지에서 긴 문단 텍스트
-        if not synopsis:
-            for tag in soup.find_all(["p", "dd"]):
-                txt = tag.get_text(strip=True)
-                if len(txt) > 60:
-                    synopsis = txt[:600]
-                    break
+                synopsis = el.get_text(strip=True)[:500]
+                break
         return {"poster_url": poster_url, "director": director, "synopsis": synopsis}
     except Exception as e:
         print(f"  포스터 수집 실패 ({movie_cd}): {e}")
