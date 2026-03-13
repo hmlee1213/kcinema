@@ -1622,9 +1622,14 @@ function renderCinemaGrid(){
           const {mmdd,time,dow,dowIdx}=splitDt(r.start_dt);
           const {time:endTime}=splitDt(r.end_dt);
           const s=stickerHtml(r.program,r.show_type,cinema,r.movie,r.screen||"");
+          const _isDolbyRow = movieDolbySet.has(r.movie) && CINEMA_DOLBY_SUPPORT.has(cinema)
+            && (!r.screen || /^s관$|^1관$/i.test(r.screen.trim()));
+          const _dolbyTag = _isDolbyRow
+            ? `<span style="display:inline-block;font-size:9px;font-weight:700;background:#ff6633;color:#fff;padding:1px 4px;border-radius:3px;margin-left:4px;vertical-align:middle;">돌비</span>`
+            : '';
           const movieHtml=r.movie_url
-            ?`<a href="${esc(r.movie_url)}" target="_blank">${esc(r.movie)}</a>`
-            :esc(r.movie);
+            ?`<a href="${esc(r.movie_url)}" target="_blank">${esc(r.movie)}</a>${_dolbyTag}`
+            :`${esc(r.movie)}${_dolbyTag}`;
           const schedKey=`${esc(r.movie)}|${esc(cinema)}|${esc(r.screen||"")}|${r.start_dt||""}`;
           const wished=isSchedWished(schedKey);
           return `<div class="c-row">
@@ -1765,6 +1770,7 @@ function renderMovieGrid(resetPage=true){
     const _encRows=encodeURIComponent(JSON.stringify(rows.map(r=>({cinema:r.cinema,screen:r.screen||'',start_dt:r.start_dt,end_dt:r.end_dt,program:r.program,show_type:r.show_type,movie_url:r.movie_url||'',poster_url:r.poster_url||''}))));
     const _encPost=encodeURIComponent(posterUrl);
     const isRec=recSet.has(title);
+    const is4k=movie4kSet.has(title);
     const dirText=rows[0]?.director||'';
     return `<div class="mv-card${isRec?' has-rec':''}" onclick="onMovieCardClick('${esc(title)}','${_encRows}','${_encPost}')">
       <div class="mv-poster">${thumb}</div>

@@ -991,20 +991,23 @@ header{background:#111;padding:0 24px;position:sticky;top:0;z-index:100}
 .panel-title{font-size:14px;font-weight:700;margin-bottom:18px;padding-bottom:10px;border-bottom:1.5px solid #F0F0EE;display:flex;align-items:center;justify-content:space-between}
 /* 영화 카드 그리드 */
 .movie-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;margin-bottom:4px}
-.m-card{border:2px solid #E8E6E0;border-radius:8px;padding:8px;cursor:pointer;transition:all .12s;background:#FAFAF8;position:relative;text-align:center;min-height:0}
+.m-card{border:2px solid #E8E6E0;border-radius:8px;padding:6px;cursor:pointer;transition:all .12s;background:#FAFAF8;position:relative;text-align:center}
 .m-card:hover{border-color:#2D5A1B}
 .m-card.selected{border-color:#2D5A1B;background:#EEF5E8;box-shadow:0 0 0 3px rgba(45,90,27,.12)}
 .m-card.has-info{border-color:#A3C48A}
 .m-card.has-rec{border-style:solid;border-color:#F59E0B}
-.m-thumb{width:100%;aspect-ratio:2/3;border-radius:5px;object-fit:cover;background:#E8E6E0;display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:5px;overflow:hidden}
+.m-thumb{width:100%;aspect-ratio:2/3;border-radius:4px;background:#E8E6E0;display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:6px;overflow:hidden}
 .m-thumb img{width:100%;height:100%;object-fit:cover}
-.m-name{font-size:12px;font-weight:700;line-height:1.4;word-break:keep-all;color:#111;white-space:normal;overflow:visible;}
-.m-director{font-size:11px;color:#555;margin-top:2px;line-height:1.3;word-break:keep-all;white-space:normal;overflow:visible;}
-.m-badge{position:absolute;top:4px;right:4px;font-size:11px;font-weight:700;padding:2px 5px;border-radius:3px}
+.m-text{padding:0 2px;}
+.m-name{font-size:12px;font-weight:700;line-height:1.4;word-break:keep-all;white-space:normal;color:#111;}
+.m-director{font-size:11px;color:#555;margin-top:3px;line-height:1.3;word-break:keep-all;white-space:normal;}
+.m-badge{position:absolute;top:4px;right:4px;font-size:10px;font-weight:800;padding:2px 5px;border-radius:3px;z-index:2;line-height:1.2;}
 .rec-badge{background:#F59E0B;color:#fff}
-.info-badge{background:#2D5A1B;color:#fff}
-.m-badge-4k{background:#1a56db;color:#fff;position:absolute;top:4px;left:4px;right:auto;}
-.m-badge-dolby{background:#7c3aed;color:#fff;position:absolute;top:4px;right:auto;}
+.info-badge{background:#A3C48A;color:#fff}
+.m-tag-row{display:flex;gap:3px;flex-wrap:wrap;margin-top:4px;}
+.m-tag{font-size:10px;font-weight:700;padding:2px 5px;border-radius:3px;line-height:1.2;}
+.m-tag-4k{background:#1a56db;color:#fff;}
+.m-tag-dolby{background:#7c3aed;color:#fff;}
 /* 편집 패널 */
 .edit-panel{background:#F8F7F4;border:1.5px solid #E0DDD8;border-radius:10px;padding:20px;margin-top:12px;display:none}
 .edit-panel.open{display:block}
