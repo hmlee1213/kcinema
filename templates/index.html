@@ -178,10 +178,10 @@ header{background:var(--text);color:#fff;padding:0 24px;position:sticky;top:0;z-
 .chip-loc{font-size:9px;font-weight:600;background:#E5E7EB;color:#6B7280;padding:1px 5px;border-radius:3px;margin-left:4px;vertical-align:middle;}
 .chip-free{font-size:9px;font-weight:700;background:#D1FAE5;color:#065F46;padding:1px 5px;border-radius:3px;margin-left:3px;vertical-align:middle;}
 .c-row{display:grid;grid-template-columns:80px 118px minmax(0,1fr) 24px;align-items:center;gap:6px;padding:8px 14px;border-bottom:1px solid var(--border);font-size:14px;}
-.c-row.has-screen{grid-template-columns:80px 118px minmax(0,1fr) 44px 24px;}
+.c-row.has-screen{grid-template-columns:80px 118px minmax(0,1fr) 36px 24px;}
 .c-row.has-book{grid-template-columns:80px 118px minmax(0,1fr) 46px 24px;}
-.c-row.has-screen.has-book{grid-template-columns:80px 118px minmax(0,1fr) 44px 46px 24px;}
-.c-screen{font-size:11px;font-weight:700;color:var(--text-muted);white-space:nowrap;text-align:right;}
+.c-row.has-screen.has-book{grid-template-columns:80px 118px minmax(0,1fr) 36px 46px 24px;}
+.c-screen{font-size:11px;font-weight:700;color:var(--text-muted);white-space:nowrap;text-align:center;width:36px;}
 .c-row:last-child{border-bottom:none;}
 .c-date{font-weight:600;color:var(--text);white-space:nowrap;}
 .c-time{font-weight:600;color:var(--text);white-space:nowrap;}
@@ -649,7 +649,10 @@ input[type="date"]::-webkit-datetime-edit-text:last-of-type{display:none !import
       <div class="popup-poster" id="moviePopupPoster">🎬</div>
       <div class="popup-info">
         <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:6px;">
-          <div class="popup-title" id="moviePopupTitle" style="flex:1;margin-bottom:0;"></div>
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+            <div class="popup-title" id="moviePopupTitle" style="margin-bottom:0;"></div>
+            <div id="moviePopupTypeTags" style="display:flex;gap:4px;flex-shrink:0;"></div>
+          </div>
           <div id="moviePopupMeta" style="flex-shrink:0;margin-top:1px;"></div>
         </div>
         <div id="moviePopupDetailMeta" style="font-size:11px;color:var(--text-muted);margin-top:5px;line-height:1.6;"></div>
@@ -663,7 +666,13 @@ input[type="date"]::-webkit-datetime-edit-text:last-of-type{display:none !import
       <button class="popup-sort-btn active" id="mpSortDate" onclick="setMoviePopupSort('date')">날짜순</button>
       <button class="popup-sort-btn" id="mpSortCinema" onclick="setMoviePopupSort('cinema')">극장별</button>
     </div>
-    <div class="popup-schedules" id="moviePopupSchedules" style="max-height:52vh;overflow-y:auto;"></div>
+    <div style="position:relative;">
+      <div class="popup-schedules" id="moviePopupSchedules" style="max-height:52vh;overflow-y:auto;" id="moviePopupSchedules"></div>
+      <div id="moviePopupNav" style="display:none;position:sticky;bottom:0;display:flex;justify-content:flex-end;gap:6px;padding:6px 18px;background:var(--surface);border-top:1px solid var(--border);">
+        <button onclick="document.getElementById('moviePopupSchedules').scrollTop=0" style="font-size:11px;background:none;border:1px solid var(--border);border-radius:5px;padding:2px 8px;cursor:pointer;color:var(--text);">↑ 맨위</button>
+        <button onclick="document.getElementById('moviePopupSchedules').scrollTop=9999" style="font-size:11px;background:none;border:1px solid var(--border);border-radius:5px;padding:2px 8px;cursor:pointer;color:var(--text);">↓ 맨아래</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -721,19 +730,21 @@ function renderDowBadge(dow, dowIdx){
   return `<span class="${cls}">${dow}</span>`;
 }
 
-function awardsHtml(awards, is4k, cinema){
-  const parts = [];
-  // 4K: 극장 조건 체크 (cinema=null이면 마킹만으로 표시)
-  if(is4k && (cinema===null || CINEMA_4K_SUPPORT.has(cinema||"")))
-    parts.push(`<span class="sticker sticker-4k" style="font-size:10px;padding:2px 7px;">4K</span>`);
-  // 돌비는 stickerHtml(상영 슬롯)에서만 표시
-  if(awards){
-    awards.split(",").map(s=>s.trim()).filter(Boolean).forEach(a=>{
-      parts.push(`<span class="award-tag">🏆 ${esc(a)}</span>`);
-    });
-  }
+function awardsHtml(awards){
+  if(!awards) return "";
+  const parts = awards.split(",").map(s=>s.trim()).filter(Boolean)
+    .map(a=>`<span class="award-tag">🏆 ${esc(a)}</span>`);
   if(!parts.length) return "";
   return `<div class="award-wrap">${parts.join("")}</div>`;
+}
+
+function normalizeScreen(cinema, screen){
+  if(cinema !== "아리랑시네센터") return screen;
+  const s = (screen||"").replace(/\s/g,"").toLowerCase();
+  if(s.includes("인디")) return "인디";
+  if(s.includes("2")) return "2관";
+  if(s.includes("1")) return "1관";
+  return screen;
 }
 function stickerHtml(program, showType, cinema, movie, screen){
   const tags = [];
@@ -750,7 +761,7 @@ function stickerHtml(program, showType, cinema, movie, screen){
   // ── 4K vs 필름 (동시 표시 없음 — 필름 우선)
   const isFilm    = /35mm|16mm/.test(src);
   const is4kTag   = /4k/.test(src);
-  const is4kMovie = movie && movie4kSet.has(movie) && cinema && CINEMA_4K_SUPPORT.has(cinema);
+  const is4kMovie = movie && movie4kSet.has(movie);
   if(isFilm)                  tags.push({t:"필름", cls:"sticker-film"});
   else if(is4kTag || is4kMovie) tags.push({t:"4K",   cls:"sticker-4k"});
 
@@ -1151,7 +1162,7 @@ function openPopup(movie, cinema, screen, movieUrl){
           <button class="sched-wish-btn swb${wished?" on":""}" data-key="${schedKey}" style="margin-left:auto;" onclick="toggleSchedWish('${schedKey}','${esc(movie)}','${esc(cinema)}','${esc(screen||"")}','${r.start_dt||""}','${r.end_dt||""}','${esc(r.poster_url||"")}',this)">${wished?"⏰":"➕"}</button>
         </div>`;
       }).join("")
-    : `<div style="font-size:12px;color:var(--text-muted);padding:8px 0;">일정 정보 없음</div>`;
+    : "";
 
   // 영화 정보 비동기 로드
   fetch(`/api/movie-detail?title=${encodeURIComponent(movie)}`)
@@ -1165,7 +1176,7 @@ function openPopup(movie, cinema, screen, movieUrl){
       if(rt) parts.push(rt+"분");
       document.getElementById("popupMeta").textContent = parts.join(" · ");
       // 수상 + 4K
-      const awHtml = awardsHtml(d.awards||"", d.is_4k, cinema);
+      const awHtml = awardsHtml(d.awards||"");
       const awEl = document.getElementById("popupAwards");
       if(awHtml){ awEl.innerHTML=awHtml; awEl.style.display="block"; }
       else { awEl.style.display="none"; }
@@ -1268,6 +1279,9 @@ function renderMoviePopupSchedules(){
 
   document.getElementById('moviePopupSchedules').innerHTML = html
     || `<div style="color:var(--text-muted);font-size:12px;padding:12px 0;">상영 정보 없음</div>`;
+  // 11개 이상이면 맨위/맨아래 버튼 표시
+  const navEl = document.getElementById('moviePopupNav');
+  if(navEl) navEl.style.display = rows.length >= 11 ? 'flex' : 'none';
 }
 
 function popupSlotHtml(r, title, posterUrl, extraLabel='', cinemaSticker='', extraIsHtml=false){
@@ -1312,6 +1326,7 @@ function openMoviePopup(title, rows, posterUrl){
   document.getElementById("moviePopupDetailMeta").textContent = "";
   document.getElementById("moviePopupAwards").style.display = "none";
   document.getElementById("moviePopupSynopsis").textContent = "";
+  document.getElementById("moviePopupTypeTags").innerHTML = "";
   document.getElementById("moviePopupSynopsis").style.webkitLineClamp = "3";
 
   renderMoviePopupSchedules();
@@ -1328,8 +1343,14 @@ function openMoviePopup(title, rows, posterUrl){
       if(d.year) parts.push(d.year+"년");
       if(d.runtime) parts.push(d.runtime+"분");
       document.getElementById("moviePopupDetailMeta").textContent = parts.join(" · ");
-      // 수상 + 4K
-      const awHtml2 = awardsHtml(d.awards||"", d.is_4k, null);
+      // 제목 옆 유형 태그 (4K / 필름 / 돌비)
+      const typeTags = [];
+      if(d.is_4k)    typeTags.push(`<span class="sticker sticker-4k"    style="font-size:10px;padding:2px 6px;">4K</span>`);
+      if(d.is_film)  typeTags.push(`<span class="sticker sticker-film"   style="font-size:10px;padding:2px 6px;">필름</span>`);
+      if(d.is_dolby) typeTags.push(`<span class="sticker sticker-dolby"  style="font-size:10px;padding:2px 6px;">돌비</span>`);
+      document.getElementById("moviePopupTypeTags").innerHTML = typeTags.join("");
+      // 수상
+      const awHtml2 = awardsHtml(d.awards||"");
       const awEl2 = document.getElementById("moviePopupAwards");
       if(awHtml2){ awEl2.innerHTML=awHtml2; awEl2.style.display="block"; }
       else { awEl2.style.display="none"; }
@@ -1662,7 +1683,7 @@ function renderCinemaGrid(){
           const {mmdd,time,dow,dowIdx}=splitDt(r.start_dt);
           const {time:endTime}=splitDt(r.end_dt);
           const s=stickerHtml(r.program,r.show_type,cinema,r.movie,r.screen||"");
-          const _scrVal = (r.screen||'').trim();
+          const _scrVal = normalizeScreen(cinema, (r.screen||'').trim());
           const movieHtml=r.movie_url
             ?`<a href="${esc(r.movie_url)}" target="_blank" onclick="event.stopPropagation()">${esc(r.movie)}</a>`
             :`<span class="movie-link" style="cursor:pointer;" onclick="event.stopPropagation();openPopup('${esc(r.movie)}','${esc(cinema)}','${esc(r.screen||'')}','')">${esc(r.movie)}</span>`;
