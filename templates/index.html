@@ -26,7 +26,7 @@
 <style>
 :root {
   --bg:#F5F4F0;--surface:#fff;--surface2:#EDECE8;--border:#DDDBD4;--border2:#CDD2DB;
-  --text:#1A1916;--text-muted:#7A7870;--text-sub:#B0AEA6;
+  --text:#1A1916;--text-muted:#555250;--text-sub:#8A8880;
   --green:#2D5A1B;--green-light:#EEF4EA;
   --chip-bg:#666666;
   --radius:10px;--shadow:0 1px 4px rgba(0,0,0,.07);--shadow-md:0 6px 20px rgba(0,0,0,.13);
@@ -104,7 +104,7 @@ header{background:var(--text);color:#fff;padding:0 24px;position:sticky;top:0;z-
 .qc-poster{width:70px;flex-shrink:0;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:24px;overflow:hidden;align-self:stretch;}
 .qc-poster img{width:100%;height:100%;object-fit:cover;}
 .qc-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px;padding:11px 13px 13px;}
-.qc-title{font-size:17px;font-weight:700;line-height:1.3;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
+.qc-title{font-size:15px;font-weight:700;line-height:1.3;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
 .qc-title a{color:inherit;text-decoration:none;border-bottom:1.5px solid var(--green);}
 .qc-title a:hover{color:var(--green);}
 .qc-venue{font-size:13px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:4px;overflow:hidden;flex-wrap:wrap;}
@@ -113,8 +113,8 @@ header{background:var(--text);color:#fff;padding:0 24px;position:sticky;top:0;z-
 .venue-sep{color:var(--border2);font-size:11px;}
 .qc-times{display:flex;flex-wrap:wrap;gap:3px 8px;align-items:center;}
 .qc-date{font-size:13px;font-weight:600;color:var(--text-muted);display:flex;align-items:center;gap:4px;}
-.time-chip{display:inline-flex;align-items:center;background:none;color:var(--text);border-radius:0;padding:0;font-size:17px;font-weight:700;white-space:nowrap;gap:0;}
-.time-dash{color:var(--text-muted);font-weight:600;margin:0 2px;font-size:17px;}
+.time-chip{display:inline-flex;align-items:center;background:none;color:var(--text);border-radius:0;padding:0;font-size:15px;font-weight:700;white-space:nowrap;gap:0;}
+.time-dash{color:var(--text-muted);font-weight:600;margin:0 2px;font-size:15px;}
 .time-chip .sticker{background:#555;color:#fff;margin-left:5px;}
 
 /* ══════════════════════════════════
@@ -162,6 +162,11 @@ header{background:var(--text);color:#fff;padding:0 24px;position:sticky;top:0;z-
 .cinema-grid{display:grid;grid-template-columns:1fr;gap:8px;}
 .cinema-group{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
 .cinema-group-header{display:flex;align-items:center;gap:10px;padding:11px 14px;background:var(--surface2);}
+.cinema-group-meta span{white-space:nowrap;}
+
+.cgr-top{display:flex;align-items:center;gap:10px;width:100%;}
+.cgr-meta-mobile{display:none;}
+
 .cinema-group-name{font-size:13px;font-weight:700;flex:1;display:flex;align-items:center;gap:6px;}
 .cinema-group-meta{font-size:12px;color:var(--text-muted);display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
 /* 극장 카드 내부 2열 그리드 — 헤더 배경색과 동일한 구분선 */
@@ -425,12 +430,19 @@ tr:hover td{background:#FAFAF8;}
   .popup-info{width:100%;padding-right:0;max-height:none;}
   .popup-info .popup-schedules{max-height:50vh;overflow-y:auto;}
   .qc-poster{width:58px;}
-  .qc-title{font-size:13px;}
+  .qc-title{font-size:14px;}
+  .time-chip{font-size:14px;}
+  .time-dash{font-size:14px;}
   .qc-venue{font-size:10px;}
   .qc-date{font-size:10px;}
   .time-chip{font-size:15px;}
   .time-dash{font-size:15px;}
   .cinema-grid{grid-template-columns:1fr;}
+  .cinema-group-header{flex-direction:column;align-items:flex-start;gap:3px;padding:9px 12px;}
+  .cgr-top{gap:6px;}
+  .cinema-group-name{font-size:13px;}
+  .cgr-meta-pc{display:none;}
+  .cgr-meta-mobile{display:flex;gap:10px;font-size:11px;color:var(--text-muted);flex-wrap:wrap;}
   .movie-grid{grid-template-columns:repeat(2,1fr);}
   .cinema-rows-2col{grid-template-columns:1fr;}
   .cinema-rows-2col .c-row:nth-child(odd){border-right:none;}
@@ -1249,6 +1261,14 @@ function onMovieCardClick(title, encRows, encPoster){
   const posterUrl = decodeURIComponent(encPoster||"");
   openMoviePopup(title, rows, posterUrl);
 }
+function onMovieCardClickByTitle(title){
+  // movieData에서 직접 조회 — 카드에 rows 인라인 불필요
+  const rows = movieData.filter(r=>r.movie===title)
+    .map(r=>({cinema:r.cinema,screen:r.screen||'',start_dt:r.start_dt,end_dt:r.end_dt,
+              program:r.program,show_type:r.show_type,movie_url:r.movie_url||'',poster_url:r.poster_url||''}));
+  const posterUrl = rows[0]?.poster_url || '';
+  openMoviePopup(title, rows, posterUrl);
+}
 
 let moviePopupRows = [];
 let moviePopupTitle = '';
@@ -1711,8 +1731,11 @@ function renderCinemaGrid(){
     const addrText = cinemaInfoCache[cinema]?.address || "";
     return `<div class="cinema-group">
       <div class="cinema-group-header" style="cursor:pointer;" onclick="openCinemaPopup('${esc(cinema)}')">
-        <div class="cinema-group-name">${esc(cinema)}${locBadge}<span style="font-size:10px;font-weight:500;color:var(--text-muted);margin-left:2px;">ℹ︎</span>${freeBadge}</div>
-        <div class="cinema-group-meta">${metaParts.map(p=>`<span>${p}</span>`).join("")}${addrText?`<span style="font-size:11px;color:var(--text-muted);margin-left:4px;">${esc(addrText)}</span>`:""}</div>
+        <div class="cgr-top">
+          <div class="cinema-group-name">${esc(cinema)}${locBadge}<span style="font-size:10px;font-weight:500;color:var(--text-muted);margin-left:2px;">ℹ︎</span>${freeBadge}</div>
+          <div class="cinema-group-meta cgr-meta-pc">${metaParts.map(p=>`<span>${p}</span>`).join("")}${addrText?`<span style="font-size:11px;color:var(--text-muted);">${esc(addrText)}</span>`:""}</div>
+        </div>
+        <div class="cinema-group-meta cgr-meta-mobile">${metaParts.map(p=>`<span>${p}</span>`).join("")}${addrText?`<span>${esc(addrText)}</span>`:""}</div>
       </div>
       <div class="cinema-group-rows cinema-rows-2col">
         ${rows.map(r=>{
@@ -1866,15 +1889,13 @@ function renderMovieGrid(resetPage=true){
     const thumb=posterUrl
       ?`<img data-src="${esc(posterUrl)}" alt="" class="lazy-img" onerror="this.parentNode.textContent='🎬'">`
       :"🎬";
-    const _encRows=encodeURIComponent(JSON.stringify(rows.map(r=>({cinema:r.cinema,screen:r.screen||'',start_dt:r.start_dt,end_dt:r.end_dt,program:r.program,show_type:r.show_type,movie_url:r.movie_url||'',poster_url:r.poster_url||''}))));
-    const _encPost=encodeURIComponent(posterUrl);
     const isRec=recSet.has(title);
     const is4k=movie4kSet.has(title);
     const isDolby=movieDolbySet.has(title);
     const hasAward=!!(recMap[title]);
     const dirText=rows[0]?.director||'';
     const wished=isMovieWished(title);
-    return `<div class="mv-card${isRec?' has-rec':''}" onclick="onMovieCardClick('${esc(title)}','${_encRows}','${_encPost}')">
+    return `<div class="mv-card${isRec?' has-rec':''}" onclick="onMovieCardClickByTitle('${esc(title)}')">
       <div class="mv-poster">${thumb}</div>
       ${isRec?`<div class="mv-rec-badge">★${hasAward?'🏆':''}</div>`:''}
       ${!isRec&&hasAward?'<div class="mv-rec-badge">🏆</div>':''}
