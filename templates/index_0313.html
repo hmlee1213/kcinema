@@ -1,0 +1,1941 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>오늘 뭐 볼까?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+<!-- Google Analytics (GA4) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-XXXXXXXXXX');
+  function trackSearch(query, cinemas, resultCount) {
+    gtag('event', 'search', { search_term: query, cinema_filter: cinemas.join(','), result_count: resultCount });
+  }
+  function trackCinemaClick(cinemaName) {
+    gtag('event', 'cinema_click', { cinema_name: cinemaName });
+  }
+  function trackTabSwitch(tabName) {
+    gtag('event', 'tab_switch', { tab_name: tabName });
+  }
+</script>
+<style>
+:root {
+  --bg:#F5F4F0;--surface:#fff;--surface2:#EDECE8;--border:#DDDBD4;--border2:#CDD2DB;
+  --text:#1A1916;--text-muted:#7A7870;--text-sub:#B0AEA6;
+  --green:#2D5A1B;--green-light:#EEF4EA;
+  --chip-bg:#666666;
+  --radius:10px;--shadow:0 1px 4px rgba(0,0,0,.07);--shadow-md:0 6px 20px rgba(0,0,0,.13);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Pretendard',sans-serif;background:var(--bg);color:var(--text);font-size:14px;-webkit-font-smoothing:antialiased;}
+
+/* ── 헤더 ── */
+header{background:var(--text);color:#fff;padding:0 24px;position:sticky;top:0;z-index:100;box-shadow:0 1px 4px rgba(0,0,0,.2);}
+.header-inner{max-width:1280px;margin:0 auto;display:flex;align-items:center;gap:16px;height:52px;}
+.logo{font-family:'DM Serif Display',serif;font-size:18px;font-weight:400;letter-spacing:.01em;color:#fff;white-space:nowrap;flex-shrink:0;}
+.header-stats{display:flex;gap:16px;margin-left:auto;font-size:11px;color:rgba(255,255,255,.7);}
+.header-stats strong{color:#fff;font-weight:700;}
+.stat-item{display:flex;flex-direction:column;align-items:center;gap:1px;line-height:1.2;}
+.stat-item .stat-label{font-size:11px;color:rgba(255,255,255,.7);}
+.stat-item strong{font-size:11px;font-weight:700;color:#fff;}
+.header-refresh{font-size:11px;font-weight:600;font-family:inherit;padding:5px 12px;border-radius:6px;border:1px solid rgba(255,255,255,.2);background:transparent;color:rgba(255,255,255,.7);cursor:pointer;transition:all .12s;}
+.header-refresh:hover{background:rgba(255,255,255,.1);color:#fff;}
+
+/* ── 탭 바 ── */
+.tab-bar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;position:sticky;top:52px;z-index:99;}
+.tab-bar-inner{max-width:1280px;margin:0 auto;display:flex;overflow-x:auto;}
+.tab{padding:12px 16px;font-size:13px;font-weight:600;color:var(--text-muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .12s;white-space:nowrap;user-select:none;}
+.tab:hover{color:var(--text);}
+.tab.active{color:var(--green);border-bottom-color:var(--green);}
+.tab-badge{display:inline-block;background:var(--surface2);color:var(--text-muted);font-size:10px;font-weight:700;padding:1px 5px;border-radius:10px;margin-left:4px;}
+.tab.active .tab-badge{background:var(--green-light);color:var(--green);}
+
+/* ── 메인 ── */
+.main{max-width:1280px;margin:0 auto;padding:20px 24px 60px;}
+
+/* ── 공통 섹션 헤더 ── */
+.section-header{margin-bottom:16px;}
+.quick-title-row{display:flex;align-items:baseline;gap:10px;margin-bottom:10px;}
+.section-title{font-family:'DM Serif Display',serif;font-size:20px;}
+.section-sub{font-size:12px;color:var(--text-muted);}
+.quick-ctrl-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.day-tabs{display:flex;gap:6px;}
+.day-tab{font-size:12px;font-weight:600;font-family:inherit;padding:5px 14px;border-radius:20px;border:1.5px solid var(--border);background:var(--surface);color:var(--text-muted);cursor:pointer;transition:all .12s;}
+.day-tab:hover{border-color:var(--text);color:var(--text);}
+.day-tab.active{background:var(--text);border-color:var(--text);color:#fff;}
+.quick-sort-btns{display:flex;gap:5px;margin-left:auto;}
+.quick-sort-btn{font-size:11px;font-weight:600;font-family:inherit;padding:4px 11px;border-radius:5px;border:1.5px solid var(--border);background:var(--surface);color:var(--text-muted);cursor:pointer;transition:all .12s;white-space:nowrap;}
+.quick-sort-btn:hover{border-color:var(--text);color:var(--text);}
+.quick-sort-btn.active{background:var(--text);border-color:var(--text);color:#fff;}
+.quick-filter-btn{font-size:11px;font-weight:600;font-family:inherit;padding:4px 11px;border-radius:5px;border:1.5px solid var(--border);background:var(--surface);color:var(--text-muted);cursor:pointer;transition:all .12s;white-space:nowrap;}
+.quick-filter-btn:hover{border-color:var(--text);color:var(--text);}
+.quick-filter-btn.active{background:var(--text);border-color:var(--text);color:#fff;}
+.sticker{display:inline-block;font-size:9px;font-weight:700;background:#555;color:#fff;padding:1px 4px;border-radius:3px;white-space:nowrap;vertical-align:middle;margin-left:4px;letter-spacing:.02em;}
+.sticker-4k{background:#0033cc;color:#fff;}
+.sticker-dolby{background:#ff6633;color:#fff;}
+.sticker-film{background:#cc0066;color:#fff;}
+.sticker-morning{background:#333333;color:#fff;}
+.sticker-4k-supported{background:#e8f0fe;color:#1a56db;border:1px solid #a4c2f4;}
+.award-tag{display:inline-block;font-size:10px;font-weight:700;background:#fffbea;color:#92400e;border:1px solid #fcd34d;padding:2px 7px;border-radius:4px;margin:2px 3px 2px 0;white-space:nowrap;}
+.award-wrap{display:flex;flex-wrap:wrap;align-items:center;gap:0;}
+
+/* ── 로딩/빈상태 ── */
+.loading{text-align:center;padding:60px 20px;color:var(--text-muted);font-size:13px;}
+.spinner{width:26px;height:26px;border:2.5px solid var(--border);border-top-color:var(--text);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 14px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.empty{text-align:center;padding:60px 20px;color:var(--text-muted);font-size:14px;}
+
+/* ── 맨위로 ── */
+.scroll-top-btn{position:fixed;bottom:28px;right:28px;width:42px;height:42px;border-radius:50%;background:#111827;color:#fff;border:none;font-size:18px;font-weight:700;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,.2);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:200;line-height:1;}
+.scroll-top-btn.visible{opacity:1;pointer-events:auto;}
+.scroll-top-btn:hover{background:#374151;transform:translateY(-2px);}
+
+/* ══════════════════════════════════
+   ① 빠른 조회
+══════════════════════════════════ */
+.quick-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:10px;}
+.quick-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);cursor:pointer;transition:all .18s;display:flex;flex-direction:row;overflow:hidden;align-items:stretch;}
+.quick-card:hover{box-shadow:var(--shadow-md);transform:translateY(-2px);}
+.qc-poster{width:70px;flex-shrink:0;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:24px;overflow:hidden;align-self:stretch;}
+.qc-poster img{width:100%;height:100%;object-fit:cover;}
+.qc-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px;padding:11px 13px 13px;}
+.qc-title{font-size:14px;font-weight:700;line-height:1.3;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
+.qc-title a{color:inherit;text-decoration:none;border-bottom:1.5px solid var(--green);}
+.qc-title a:hover{color:var(--green);}
+.qc-venue{font-size:11px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:4px;overflow:hidden;flex-wrap:wrap;}
+.venue-dot{width:6px;height:6px;border-radius:50%;background:var(--text);flex-shrink:0;}
+.venue-dot.free{background:var(--green);}
+.venue-sep{color:var(--border2);font-size:11px;}
+.qc-times{display:flex;flex-wrap:wrap;gap:3px 8px;align-items:center;}
+.qc-date{font-size:11px;font-weight:600;color:var(--text-muted);display:flex;align-items:center;gap:4px;}
+.time-chip{display:inline-flex;align-items:center;background:none;color:var(--text);border-radius:0;padding:0;font-size:14px;font-weight:700;white-space:nowrap;gap:0;}
+.time-dash{color:var(--text-muted);font-weight:600;margin:0 2px;font-size:14px;}
+.time-chip .sticker{background:#555;color:#fff;margin-left:5px;}
+
+/* ══════════════════════════════════
+   팝업
+══════════════════════════════════ */
+.popup-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:center;justify-content:center;padding:20px;}
+.popup-overlay.open{display:flex;}
+.popup-sort-btn{font-size:11px;font-weight:600;font-family:inherit;padding:4px 12px;border-radius:5px;border:1.5px solid var(--border);background:var(--surface);color:var(--text-muted);cursor:pointer;transition:all .12s;}
+.popup-sort-btn.active{background:var(--text);border-color:var(--text);color:#fff;}
+.popup{background:var(--surface);border-radius:14px;width:100%;max-width:460px;box-shadow:0 20px 60px rgba(0,0,0,.2);overflow:hidden;position:relative;animation:popIn .16s ease;}
+@keyframes popIn{from{opacity:0;transform:scale(.95);}to{opacity:1;transform:scale(1);}}
+.popup-close{position:absolute;top:12px;right:14px;width:26px;height:26px;border-radius:50%;border:none;background:var(--surface2);color:var(--text-muted);font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:1;}
+.popup-close:hover{background:var(--text);color:#fff;}
+.popup-top{display:flex;gap:14px;padding:18px 18px 14px;}
+.popup-poster{width:70px;height:98px;border-radius:6px;flex-shrink:0;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:26px;overflow:hidden;}
+.popup-poster img{width:100%;height:100%;object-fit:cover;}
+.popup-info{flex:1;min-width:0;padding-right:20px;}
+.popup-title{font-size:15px;font-weight:800;line-height:1.3;margin-bottom:7px;}
+.popup-meta{font-size:12px;color:var(--text-muted);line-height:2.}
+.popup-meta span{color:var(--text);font-weight:600;}
+.popup-divider{height:1px;background:var(--border);margin:0 18px;}
+.popup-schedules{padding:12px 18px 18px;}
+.popup-sched-title{font-size:10px;font-weight:700;color:var(--text-sub);letter-spacing:.07em;text-transform:uppercase;margin-bottom:8px;}
+.sched-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px;flex-wrap:wrap;}
+.sched-row:last-child{border-bottom:none;}
+.sched-cinema{font-weight:600;flex:1;}
+.sched-time-chip{background:var(--chip-bg);color:#fff;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600;white-space:nowrap;}
+
+/* ══════════════════════════════════
+   ② 극장별
+══════════════════════════════════ */
+.filter-ctrl-row{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:12px;flex-wrap:wrap;}
+/* 극장 칩: 6열 균등 그리드 */
+.cinema-chips-wrap{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:5px;flex:1;min-width:0;}
+/* 12개 극장 → PC: 6열×2행, 모바일: 2열×6행 */
+.cinema-chip-btn{font-size:12px;font-weight:600;font-family:inherit;padding:5px 12px;border-radius:20px;border:1.5px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;transition:all .12s;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;user-select:none;}
+.cinema-chip-btn.off{border-color:var(--border);background:var(--surface);color:var(--text);}
+.cinema-chip-btn:not(.off){border-color:#444;background:#444;color:#fff;}
+.cinema-chip-btn.off:hover{border-color:var(--text);}
+.ctrl-btns{display:flex;gap:6px;flex-shrink:0;}
+.ctrl-btn{font-size:11px;font-weight:700;font-family:inherit;padding:4px 12px;border-radius:5px;border:1.5px solid var(--border);background:var(--surface);color:var(--text-muted);cursor:pointer;white-space:nowrap;transition:all .12s;}
+.ctrl-btn:hover{background:var(--text);border-color:var(--text);color:#fff;}
+
+
+.cinema-grid{display:grid;grid-template-columns:1fr;gap:8px;}
+.cinema-group{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+.cinema-group-header{display:flex;align-items:center;gap:10px;padding:11px 14px;background:var(--surface2);}
+.cinema-group-name{font-size:13px;font-weight:700;flex:1;display:flex;align-items:center;gap:6px;}
+.cinema-group-meta{font-size:12px;color:var(--text-muted);display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
+/* 극장 카드 내부 2열 그리드 — 헤더 배경색과 동일한 구분선 */
+.cinema-rows-2col{
+  display:grid;
+  grid-template-columns:1fr;
+  column-gap:0;
+}
+.cinema-rows-2col .c-row{border-bottom:1px solid var(--surface2);}
+.cinema-rows-2col .c-row:nth-child(odd){border-right:none;}
+.cinema-rows-2col .c-row:nth-last-child(-n+2){border-bottom:none;}
+/* 무료 태그 */
+.free-tag{font-size:10px;font-weight:700;background:#D1FAE5;color:#065F46;padding:1px 6px;border-radius:3px;}
+.chip-loc{font-size:9px;font-weight:600;background:#E5E7EB;color:#6B7280;padding:1px 5px;border-radius:3px;margin-left:4px;vertical-align:middle;}
+.chip-free{font-size:9px;font-weight:700;background:#D1FAE5;color:#065F46;padding:1px 5px;border-radius:3px;margin-left:3px;vertical-align:middle;}
+.c-row{display:grid;grid-template-columns:80px 118px minmax(0,1fr) 24px;align-items:center;gap:6px;padding:8px 14px;border-bottom:1px solid var(--border);font-size:14px;}
+.c-row.has-screen{grid-template-columns:80px 118px minmax(0,1fr) 44px 24px;}
+.c-row.has-book{grid-template-columns:80px 118px minmax(0,1fr) 46px 24px;}
+.c-row.has-screen.has-book{grid-template-columns:80px 118px minmax(0,1fr) 44px 46px 24px;}
+.c-screen{font-size:11px;font-weight:700;color:var(--text-muted);white-space:nowrap;text-align:right;}
+.c-row:last-child{border-bottom:none;}
+.c-date{font-weight:600;color:var(--text);white-space:nowrap;}
+.c-time{font-weight:600;color:var(--text);white-space:nowrap;}
+.c-movie{font-weight:600;display:flex;align-items:flex-start;gap:4px;flex-wrap:wrap;word-break:keep-all;}
+.c-movie a{color:var(--text);text-decoration:none;border-bottom:1.5px solid var(--green);word-break:keep-all;}
+.c-movie a:hover{color:var(--green);}
+
+/* ══════════════════════════════════
+   ③ 영화별
+══════════════════════════════════ */
+.movie-search-bar{position:relative;margin-bottom:14px;}
+.movie-search-bar input{width:100%;max-width:320px;padding:8px 12px 8px 32px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;color:var(--text);outline:none;background:var(--surface);}
+.movie-search-bar input:focus{border-color:var(--green);}
+.movie-search-bar::before{content:'🔍';position:absolute;left:9px;top:50%;transform:translateY(-50%);font-size:12px;}
+.movie-search-tab{font-size:13px;font-weight:600;font-family:inherit;padding:7px 16px;border:none;background:none;color:var(--text-muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1.5px;transition:all .12s;}
+.movie-search-tab.active{color:var(--green);border-bottom-color:var(--green);}
+/* 영화별 정렬 버튼 */
+.movie-sort-btn{font-size:11px;font-weight:600;font-family:inherit;padding:5px 12px;border-radius:6px;border:1.5px solid var(--border);background:var(--surface);color:var(--text-muted);cursor:pointer;transition:all .12s;white-space:nowrap;}
+.movie-sort-btn:hover{border-color:var(--text);color:var(--text);}
+.movie-sort-btn.active{background:var(--text);border-color:var(--text);color:#fff;}
+/* 관리자 추천 배지 */
+.rec-badge{display:inline-flex;align-items:center;font-size:11px;font-weight:800;color:#B45309;flex-shrink:0;letter-spacing:-.01em;}
+.movie-card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:8px;}
+.mv-card{border:1.5px solid var(--border);border-radius:8px;padding:0;cursor:pointer;transition:border-color .12s,box-shadow .12s;background:var(--surface);position:relative;overflow:hidden;display:flex;flex-direction:column;}
+.mv-card:hover{border-color:#2D5A1B;box-shadow:0 2px 8px rgba(0,0,0,.08);}
+.mv-card.has-rec{border-color:#F59E0B;}
+.mv-poster{width:100%;aspect-ratio:3/4;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:28px;overflow:hidden;flex-shrink:0;}
+.mv-poster img{width:100%;height:100%;object-fit:cover;}
+.mv-info{padding:7px 8px 9px;flex:1;display:flex;flex-direction:column;gap:3px;}
+.mv-title{font-size:15px;font-weight:800;line-height:1.3;color:var(--text);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
+.mv-meta{font-size:13px;color:var(--text-muted);line-height:1.4;margin-top:2px;}
+.mv-count{font-size:10px;font-weight:700;background:var(--surface2);color:var(--text-muted);padding:1px 5px;border-radius:4px;display:inline-block;margin-top:2px;}
+.mv-rec-badge{position:absolute;top:4px;right:4px;font-size:10px;font-weight:800;color:#B45309;background:rgba(255,255,255,.9);border-radius:3px;padding:0 3px;line-height:1.6;}
+.mv-tag-row{position:absolute;top:4px;left:4px;display:flex;flex-direction:column;gap:3px;}
+.mv-4k-badge{background:#1a56db;color:#fff;font-size:9px;font-weight:800;padding:1px 5px;border-radius:3px;line-height:1.6;}
+.mv-dolby-badge{background:#ff6633;color:#fff;font-size:9px;font-weight:800;padding:1px 5px;border-radius:3px;line-height:1.6;}
+.mv-title-row{display:flex;align-items:flex-start;gap:4px;justify-content:space-between;}
+.mv-title-row .mv-title{flex:1;min-width:0;}
+.mv-award-icon{font-size:12px;line-height:1;margin-left:2px;vertical-align:middle;}
+.mv-wish-btn{background:none;border:none;cursor:pointer;font-size:14px;color:#ccc;-webkit-text-stroke:.4px #bbb;line-height:1;padding:1px;transition:color .1s;flex-shrink:0;margin-top:1px;}
+.mv-wish-btn:hover,.mv-wish-btn.on{color:#e05;-webkit-text-stroke:.4px #c00;}
+/* 페이지네이션 */
+.pg-bar{display:flex;align-items:center;justify-content:center;gap:4px;padding:16px 0 8px;flex-wrap:wrap;}
+.pg-btn{font-family:inherit;font-size:12px;font-weight:600;min-width:32px;height:32px;padding:0 8px;border-radius:6px;border:1.5px solid var(--border);background:var(--surface);color:var(--text-muted);cursor:pointer;transition:all .12s;}
+.pg-btn:hover{border-color:var(--text);color:var(--text);}
+.pg-btn.active{background:var(--text);border-color:var(--text);color:#fff;}
+.pg-ellipsis{font-size:12px;color:var(--text-muted);padding:0 2px;}
+.pg-info{font-size:11px;color:var(--text-muted);margin-left:8px;white-space:nowrap;}
+.movie-group{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+.movie-group-header{display:flex;align-items:center;gap:10px;padding:11px 14px;cursor:pointer;transition:background .12s;}
+.movie-group-header:hover{background:#FAFAF8;}
+.movie-thumb{width:32px;height:44px;background:var(--surface2);border-radius:4px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;overflow:hidden;}
+.movie-thumb img{width:100%;height:100%;object-fit:cover;}
+.movie-group-info{flex:1;min-width:0;}
+.movie-group-title{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.movie-group-meta{font-size:11px;color:var(--text-muted);margin-top:2px;}
+.movie-group-count{font-size:11px;font-weight:700;background:var(--surface2);padding:2px 7px;border-radius:10px;color:var(--text-muted);white-space:nowrap;flex-shrink:0;}
+.movie-rows{display:none;border-top:1px solid var(--border);max-height:240px;overflow-y:auto;}
+.movie-rows.open{display:block;}
+/* 영화별 행: 극장정보 / 날짜 / 시간 */
+.m-row{display:grid;grid-template-columns:1fr 68px 104px;align-items:center;gap:6px;padding:7px 14px;border-bottom:1px solid var(--border);font-size:12px;}
+.m-row:last-child{border-bottom:none;}
+.m-cinema-cell{display:flex;align-items:center;gap:5px;overflow:hidden;}
+.m-cinema{font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.m-screen{color:var(--text-muted);white-space:nowrap;flex-shrink:0;}
+.m-free{font-size:10px;font-weight:700;background:#D1FAE5;color:#065F46;padding:1px 5px;border-radius:3px;flex-shrink:0;}
+.m-date{font-weight:600;color:var(--text);white-space:nowrap;}
+.m-time{font-weight:600;color:var(--text);white-space:nowrap;display:flex;align-items:center;gap:0;}
+
+/* ══════════════════════════════════
+   ④ 상세 조회
+══════════════════════════════════ */
+.filter-section{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;margin-bottom:14px;}
+.filter-row{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin-bottom:10px;}
+.filter-row:last-child{margin-bottom:0;}
+.filter-label{font-size:11px;font-weight:700;color:var(--text-muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em;}
+.filter-input{padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-family:inherit;font-size:13px;color:var(--text);outline:none;background:var(--surface);}
+.filter-input:focus{border-color:var(--green);}
+input[type="date"].filter-input{border:none;background:#fff;color:var(--text);padding:7px 4px;font-size:13px;cursor:pointer;}
+input[type="date"].filter-input:focus{outline:none;}
+.shortcut{font-size:11px;font-weight:600;font-family:inherit;padding:4px 10px;border-radius:5px;border:1.5px solid var(--border);background:var(--surface);color:var(--text-muted);cursor:pointer;transition:all .12s;}
+.shortcut.active,.shortcut:hover{background:var(--text);border-color:var(--text);color:#fff;}
+.detail-chip{font-size:11px;font-weight:600;font-family:inherit;padding:5px 4px;border-radius:6px;border:1.5px solid var(--text);background:var(--surface);color:var(--text);cursor:pointer;user-select:none;transition:all .12s;text-align:center;white-space:normal;word-break:keep-all;line-height:1.3;}
+.detail-chip.off{border-color:var(--border);color:var(--text-sub);text-decoration:line-through;}
+.btn-search{padding:8px 22px;background:var(--text);color:#fff;border:none;border-radius:7px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;transition:opacity .12s;}
+.btn-search:hover{opacity:.8;}
+.btn-excel{padding:8px 16px;background:var(--surface);color:var(--text);border:1.5px solid var(--border2);border-radius:7px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:all .12s;}
+.btn-excel:hover{border-color:var(--text);}
+.btn-reset{padding:8px 14px;background:var(--surface);color:var(--text-muted);border:1.5px solid var(--border);border-radius:7px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:all .12s;}
+.btn-reset:hover{color:var(--text);border-color:var(--text);}
+.filter-note{font-size:11px;color:var(--green);font-weight:600;}
+
+.result-meta{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;}
+.result-count{font-size:13px;color:var(--text-muted);}
+.result-count strong{color:var(--text);font-weight:700;}
+.view-toggle{display:flex;background:var(--surface2);border:1.5px solid var(--border);border-radius:7px;overflow:hidden;margin-left:auto;}
+.v-btn{padding:5px 13px;font-size:11px;font-weight:600;font-family:inherit;background:none;border:none;color:var(--text-muted);cursor:pointer;transition:all .1s;}
+.v-btn.active{background:var(--surface);color:var(--text);}
+
+.table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow-x:auto;}
+table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;}
+thead{background:var(--surface2);}
+th{padding:9px 14px;text-align:left;font-size:10px;font-weight:700;color:var(--text-muted);letter-spacing:.05em;text-transform:uppercase;border-bottom:1px solid var(--border);cursor:pointer;user-select:none;white-space:nowrap;}
+th:hover{color:var(--text);}
+th.sort-asc::after{content:" ↑";font-size:9px;}
+th.sort-desc::after{content:" ↓";font-size:9px;}
+.sort-reset-th{padding:0 8px;}
+.sort-reset-btn{font-size:10px;font-family:inherit;font-weight:600;padding:3px 7px;border-radius:4px;cursor:pointer;background:var(--surface2);border:1px solid var(--border);color:var(--text-muted);}
+.sort-reset-btn:hover{background:var(--text);color:#fff;border-color:var(--text);}
+td{padding:10px 14px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:#FAFAF8;}
+
+/* 테이블 내 요소 — 전부 흰바탕 검정글씨 */
+.dt-cinema{font-weight:700;font-size:13px;color:var(--text);}
+.dt-screen{font-size:12px;color:var(--text-muted);margin-left:4px;}
+.dt-date{font-size:12px;font-weight:600;color:var(--text);}
+.dt-dow{display:inline-block;font-size:10px;font-weight:700;background:#111827;color:#fff;padding:1px 4px;border-radius:3px;margin-left:3px;vertical-align:middle;}
+.dt-dow.sat,.dt-dow.sun{background:#990000;}
+.dt-time{font-size:12px;font-weight:600;color:var(--text);white-space:nowrap;}
+.movie-link{color:var(--text);text-decoration:none;font-weight:600;border-bottom:1.5px solid var(--green);}
+.movie-link:hover{color:var(--green);}
+
+/* 카드 뷰 */
+.cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:13px 15px;transition:box-shadow .15s,transform .15s;display:flex;flex-direction:column;gap:7px;}
+.card:hover{box-shadow:var(--shadow-md);transform:translateY(-2px);}
+.card-title{font-weight:700;font-size:15px;line-height:1.35;color:var(--text);}
+.card-time{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:13px;font-weight:600;color:var(--text);}
+.card-cinema-row{display:flex;align-items:center;gap:5px;flex-wrap:wrap;}
+.card-cinema-badge{font-size:12px;font-weight:700;background:var(--text);color:#fff;padding:2px 8px;border-radius:4px;text-decoration:none;white-space:nowrap;}
+.card-cinema-badge:hover{opacity:.8;}
+.screen-tag{background:#E5E7EB;color:#111;font-size:11px;font-weight:600;padding:2px 7px;border-radius:4px;}
+
+.rec-empty-icon{font-size:40px;margin-bottom:12px;}
+
+/* ══════════════════════════════════
+   탐색 탭
+══════════════════════════════════ */
+.condition-bar{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:14px;box-shadow:var(--shadow);}
+.cond-block{border-bottom:1px solid var(--border);padding:10px 14px;}
+.cond-block:last-child{border-bottom:none;}
+.cond-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.cond-label{font-size:11px;font-weight:800;color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;}
+.cond-body{display:flex;flex-wrap:wrap;gap:5px;align-items:center;}
+.cond-sub{padding:8px 0 0 0;display:none;flex-wrap:wrap;gap:5px;align-items:center;}
+.cond-sub.open{display:flex;}
+.cond-sub-label{font-size:10px;font-weight:700;color:var(--text-sub);letter-spacing:.04em;white-space:nowrap;}
+.cond-sub-label--section{font-size:12px;font-weight:800;color:var(--text);letter-spacing:0;background:var(--surface2);padding:3px 8px;border-radius:6px;}
+.cond-sep{width:1px;height:16px;background:var(--border);flex-shrink:0;margin:0 2px;}
+.ex-chip{font-size:12px;font-weight:600;font-family:inherit;padding:5px 12px;border-radius:20px;border:1.5px solid var(--border);background:var(--surface);color:var(--text-muted);cursor:pointer;transition:all .12s;white-space:nowrap;user-select:none;}
+.ex-chip:hover{border-color:var(--text);color:var(--text);}
+.ex-chip.active{background:var(--text);border-color:var(--text);color:#fff;}
+.ex-date{font-size:12px;font-weight:600;font-family:inherit;padding:5px 8px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface);color:var(--text);outline:none;}
+.ex-date:focus{border-color:var(--text);}
+input[type="date"]::-webkit-datetime-edit-year-field{display:none !important;width:0;padding:0;margin:0;}
+input[type="date"]::-webkit-datetime-edit-text:last-of-type{display:none !important;width:0;padding:0;margin:0;}
+.ex-select{font-size:12px;font-weight:600;font-family:inherit;padding:5px 8px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface);color:var(--text);outline:none;cursor:pointer;}
+.ex-select:focus{border-color:var(--text);}
+.ex-search{font-size:13px;font-family:inherit;padding:5px 12px;border:1.5px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);outline:none;min-width:160px;flex:1;max-width:320px;}
+.ex-search:focus{border-color:var(--text);}
+.ex-search::placeholder{color:var(--text-sub);}
+.ex-cinema-chip{font-size:11px;font-weight:600;font-family:inherit;padding:4px 10px;border-radius:14px;border:1.5px solid var(--border);background:var(--surface);color:var(--text-muted);cursor:pointer;transition:all .12s;white-space:nowrap;}
+.ex-cinema-chip:hover{border-color:var(--text);color:var(--text);}
+.ex-cinema-chip.active{background:var(--green);border-color:var(--green);color:#fff;}
+.ex-cinema-chip.active .free-badge{color:rgba(255,255,255,.8);}
+.explore-cinema-chips{display:grid;grid-template-columns:repeat(6,1fr);gap:5px;}
+.free-badge{font-size:9px;font-weight:700;color:var(--green);margin-left:3px;}
+.result-header-row{display:flex;align-items:center;gap:14px;margin-bottom:16px;flex-wrap:wrap;}
+
+.result-title-text{font-size:15px;font-weight:800;color:var(--text);}
+.result-sub-text{font-size:13px;font-weight:600;color:var(--text-muted);}
+.result-count-text{font-size:12px;font-weight:600;color:var(--text-muted);}
+.explore-grid{display:grid;gap:8px;}
+@media(max-width:700px){
+  .cond-sub{padding:6px 0 0 0;}
+  .explore-grid{grid-template-columns:repeat(2,1fr) !important;}
+}
+
+/* ══════════════════════════════════
+   찜 / 내 일정
+══════════════════════════════════ */
+.heart-btn{background:none;border:none;cursor:pointer;font-size:16px;padding:2px 4px;line-height:1;color:#999;-webkit-text-stroke:.5px #888;transition:all .12s;flex-shrink:0;}
+.heart-btn:hover{color:#e05;-webkit-text-stroke:.5px #c00;transform:scale(1.15);}
+.heart-btn.on{color:#e05;-webkit-text-stroke:.5px #c00;}
+/* 상영찜 북마크 아이콘 */
+.sched-wish-btn{background:none;border:none;cursor:pointer;font-size:11px;padding:0 2px;line-height:1;color:#ccc;transition:color .08s,transform .08s;flex-shrink:0;font-family:inherit;}
+.book-btn{font-size:10px;font-weight:700;color:#fff;background:#111;border:none;border-radius:4px;padding:2px 7px;cursor:pointer;text-decoration:none;line-height:1.6;flex-shrink:0;white-space:nowrap;}
+.book-btn:hover{background:#2D5A1B;}
+.sched-wish-btn:hover{color:#555;transform:scale(1.2);}
+.sched-wish-btn.on{color:#111;}
+.wish-subtabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:16px;}
+.wish-subtab{font-size:13px;font-weight:600;font-family:inherit;padding:8px 20px;border:none;background:none;color:var(--text-muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .12s;}
+.wish-subtab.active{color:var(--green);border-bottom-color:var(--green);}
+.wish-count-badge{display:inline-block;background:var(--surface2);color:var(--text-muted);font-size:10px;font-weight:700;padding:1px 5px;border-radius:10px;margin-left:4px;}
+.wish-subtab.active .wish-count-badge{background:var(--green-light);color:var(--green);}
+/* ── 관심목록 2단 레이아웃 ── */
+.wish-dual{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;}
+.wish-col{}
+.wish-col-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding-bottom:10px;border-bottom:2px solid var(--border);}
+.wish-col-title{font-size:18px;font-weight:800;color:var(--text);letter-spacing:-.01em;display:flex;align-items:center;gap:6px;}
+@media(max-width:700px){
+  .wish-dual{grid-template-columns:1fr;}
+}
+
+.wish-empty{text-align:center;padding:60px 20px;color:var(--text-muted);}
+.wish-empty-icon{font-size:36px;margin-bottom:10px;}
+.wish-date-group{margin-bottom:14px;}
+.wish-date-label{font-size:12px;font-weight:700;color:var(--text-muted);padding:6px 0 6px;letter-spacing:.03em;border-bottom:1px solid var(--border);margin-bottom:6px;display:flex;align-items:center;gap:6px;}
+.wish-row{display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:5px;}
+.wish-row.past{opacity:.45;}
+.wish-row-info{flex:1;min-width:0;}
+.wish-row-movie{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.wish-row-meta{font-size:11px;color:var(--text-muted);margin-top:2px;}
+.wish-row-time{font-size:12px;font-weight:700;background:var(--chip-bg);color:#fff;padding:2px 8px;border-radius:5px;white-space:nowrap;flex-shrink:0;}
+.wish-remove{background:none;border:none;cursor:pointer;font-size:13px;color:var(--text-sub);padding:2px 4px;flex-shrink:0;}
+.wish-remove:hover{color:#e05;}
+.wish-movie-row{display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:5px;}
+.wish-movie-thumb{width:36px;height:50px;border-radius:4px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:16px;overflow:hidden;flex-shrink:0;}
+.wish-movie-thumb img{width:100%;height:100%;object-fit:cover;}
+.wish-movie-info{flex:1;min-width:0;}
+.wish-movie-scheds{display:flex;flex-wrap:wrap;gap:4px;padding:2px 0 4px;}
+.wish-sched-chip{font-size:11px;font-weight:600;background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:2px 7px;white-space:nowrap;}
+
+.wish-movie-title{font-size:13px;font-weight:700;}
+.wish-movie-meta{font-size:11px;color:var(--text-muted);margin-top:2px;}
+.wish-clear-btn{font-size:11px;font-family:inherit;font-weight:600;padding:4px 10px;border-radius:5px;border:1px solid var(--border);background:var(--surface);color:var(--text-muted);cursor:pointer;margin-left:auto;}
+.wish-clear-btn:hover{border-color:#e05;color:#e05;}
+.movie-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px;}
+
+@media(max-width:700px){
+  .tab-bar{padding:0;}
+.tab{flex:1 1 20%;text-align:center;padding:9px 4px;font-size:11px;border-bottom:2px solid transparent;box-sizing:border-box;}
+  .cinema-chips-wrap{grid-template-columns:repeat(2,1fr);}
+  .rec-grid{grid-template-columns:repeat(2,1fr);gap:10px;}
+  .quick-grid{grid-template-columns:repeat(2,1fr) !important;}
+  .cinema-grid{grid-template-columns:1fr;}
+  .movie-grid{grid-template-columns:repeat(2,1fr);}
+  .cinema-rows-2col{grid-template-columns:1fr;}
+  .cinema-rows-2col .c-row:nth-child(odd){border-right:none;}
+  .cinema-rows-2col .c-row:nth-last-child(-n+2){border-bottom:1px solid var(--surface2);}
+  .cinema-rows-2col .c-row:last-child{border-bottom:none;}
+  .c-row{grid-template-columns:64px 94px 1fr 22px;}
+  .c-row.has-screen{grid-template-columns:64px 94px 1fr 38px 22px;}
+  .m-row{grid-template-columns:1fr 60px 96px;}
+  .cards-grid{grid-template-columns:1fr;}
+  .main{padding:16px 14px 40px;}
+}
+@media(max-width:480px){
+  input[type="date"].ex-date{font-size:11px;padding:4px 5px;letter-spacing:-.3px;}
+  .explore-cinema-chips{grid-template-columns:repeat(3,1fr);}
+  .movie-card-grid{grid-template-columns:repeat(3,1fr);gap:7px;}
+  .mv-poster{aspect-ratio:2/3;}
+  .mv-info{padding:5px 6px 7px;}
+  .mv-title{font-size:13px;}
+  .mv-meta{font-size:12px;}
+  .mv-count{font-size:11px;}
+  .tab{padding:10px 12px;font-size:12px;}
+  .day-tabs{gap:4px;}
+  .day-tab{padding:4px 10px;font-size:11px;}
+  .c-row{grid-template-columns:58px 86px 1fr 22px;}
+  .c-row.has-screen{grid-template-columns:58px 86px 1fr 34px 22px;}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="logo">오늘 뭐 볼까?</div>
+    <div class="header-stats">
+      <div class="stat-item"><span class="stat-label">극장</span><strong id="statCinemas">—</strong></div>
+      <div class="stat-item"><span class="stat-label">상영</span><strong id="statTotal">—</strong></div>
+      <div class="stat-item"><span class="stat-label">영화</span><strong id="statMovies">—</strong></div>
+    </div>
+    <button class="header-refresh" id="refreshBtn" onclick="refreshData()">↻ 새로고침</button>
+  </div>
+</header>
+
+<div class="tab-bar">
+  <div class="tab-bar-inner">
+    <div class="tab active" id="tab-btn-explore" onclick="switchTab('explore')">탐색</div>
+    <div class="tab" id="tab-btn-cinema" onclick="switchTab('cinema')">극장별</div>
+    <div class="tab" id="tab-btn-movie" onclick="switchTab('movie')">영화별 <span class="tab-badge" id="movie-count-badge">—</span></div>
+    <div class="tab" id="tab-btn-wish" onclick="switchTab('wish')">관심목록 <span class="tab-badge" id="wish-count-badge">0</span></div>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- ① 탐색 -->
+  <div id="tab-explore">
+
+    <!-- 조건 바 -->
+    <div class="condition-bar">
+
+      <!-- 언제 -->
+      <div class="cond-block">
+        <div class="cond-label">언제</div>
+        <div class="cond-body">
+          <button class="ex-chip active" id="directSetBtn" onclick="setDirectMode()">선택</button>
+          <div class="cond-sep"></div>
+          <button class="ex-chip" data-mode="today" onclick="setExploreDate(this,'today')">오늘</button>
+          <button class="ex-chip" data-mode="tomorrow" onclick="setExploreDate(this,'tomorrow')">내일</button>
+          <button class="ex-chip" data-mode="saturday" onclick="setExploreDate(this,'saturday')">토</button>
+          <button class="ex-chip" data-mode="sunday" onclick="setExploreDate(this,'sunday')">일</button>
+          <div class="cond-sep"></div>
+          <button class="ex-chip" id="rangeToggleBtn" onclick="setRangeMode()">기간</button>
+        </div>
+        <!-- 직접 설정 패널 -->
+        <div class="cond-sub open" id="directSub" style="flex-wrap:nowrap;align-items:center;overflow-x:auto;scrollbar-width:none;">
+          <input class="ex-date" type="date" id="exploreDate" onchange="loadExploreData()" style="flex-shrink:0;">
+          <div class="cond-sep" style="flex-shrink:0;"></div>
+          <select class="ex-select" id="exploreTimeFrom" onchange="onTimeSelectChange()" style="flex-shrink:0;">
+            <option value="00">00시~</option><option value="09">09시~</option>
+            <option value="10">10시~</option><option value="11">11시~</option>
+            <option value="12">12시~</option><option value="13">13시~</option>
+            <option value="14">14시~</option><option value="15">15시~</option>
+            <option value="16">16시~</option><option value="17" selected>17시~</option>
+            <option value="18">18시~</option><option value="19">19시~</option>
+            <option value="20">20시~</option><option value="21">21시~</option>
+          </select>
+          <span style="color:var(--text-sub);font-size:12px;flex-shrink:0;padding:0 2px;">~</span>
+          <select class="ex-select" id="exploreTimeTo" onchange="onTimeSelectChange()" style="flex-shrink:0;">
+            <option value="23" selected>23시</option><option value="22">22시</option>
+            <option value="21">21시</option><option value="20">20시</option>
+            <option value="19">19시</option><option value="18">18시</option>
+            <option value="17">17시</option><option value="16">16시</option>
+            <option value="15">15시</option><option value="14">14시</option>
+            <option value="13">13시</option><option value="12">12시</option>
+          </select>
+          <button class="ex-chip" id="timeAllBtn" onclick="setTimeAll(this)" style="flex-shrink:0;">전체</button>
+        </div>
+        <!-- 기간 선택 패널 -->
+        <div class="cond-sub" id="rangeSub" style="flex-wrap:nowrap;align-items:center;overflow-x:auto;scrollbar-width:none;">
+          <input class="ex-date" type="date" id="exploreDateFrom" onchange="loadExploreData()" style="flex-shrink:0;">
+          <span style="color:var(--text-sub);font-size:12px;padding:0 4px;flex-shrink:0;">~</span>
+          <input class="ex-date" type="date" id="exploreDateTo" onchange="loadExploreData()" style="flex-shrink:0;">
+        </div>
+      </div>
+
+      <!-- 어디서 -->
+      <div class="cond-block">
+        <div class="cond-label">어디서</div>
+        <div class="cond-body">
+          <button class="ex-chip active" data-area="all" onclick="setExploreArea(this,'all')">전체</button>
+          <button class="ex-chip" data-area="sinchon" onclick="setExploreArea(this,'sinchon')">신촌·이대</button>
+          <button class="ex-chip" data-area="hongdae" onclick="setExploreArea(this,'hongdae')">홍대·상암</button>
+          <button class="ex-chip" data-area="gwanghwa" onclick="setExploreArea(this,'gwanghwa')">광화문·종로</button>
+          <button class="ex-chip" data-area="kondae" onclick="setExploreArea(this,'kondae')">건대·성수</button>
+          <button class="ex-chip" data-area="north" onclick="setExploreArea(this,'north')">성북·노원</button>
+          <button class="ex-chip" data-area="gangnam" onclick="setExploreArea(this,'gangnam')">강남</button>
+          <div class="cond-sep"></div>
+          <button class="ex-chip" id="cinemaDirectBtn" onclick="toggleCinemaDirect()">직접 선택</button>
+        </div>
+        <div class="cond-sub" id="cinemaDirectSub">
+          <div id="explorecinemaChips" class="explore-cinema-chips"></div>
+        </div>
+      </div>
+
+      <!-- 어떤 영화? -->
+      <div class="cond-block">
+        <div class="cond-label">어떤 영화?</div>
+        <div class="cond-body" style="gap:8px;">
+          <input class="ex-search" id="exploreMovieSearch" placeholder="제목 검색…" oninput="onExploreSearch(this.value)" style="flex:1;min-width:120px;">
+          <input class="ex-search" id="exploreDirectorSearch" placeholder="감독 검색…" oninput="onExploreDirSearch(this.value)" style="flex:1;min-width:100px;">
+        </div>
+      </div>
+    </div>
+
+    <!-- 결과 헤더 -->
+    <div class="result-header-row">
+      <span class="result-title-text">볼 수 있는 영화</span>
+      <span class="result-sub-text" id="exploreSub"></span>
+      <span class="result-count-text" id="exploreCount"></span>
+      <div style="margin-left:auto;display:flex;gap:5px;align-items:center;flex-wrap:wrap;">
+        <button class="quick-sort-btn active" data-sort="time" onclick="setExploreSort(this,'time')">상영시작순</button>
+        <button class="quick-sort-btn" data-sort="title" onclick="setExploreSort(this,'title')">제목순</button>
+        <span style="width:1px;height:14px;background:var(--border);flex-shrink:0;"></span>
+        <button class="quick-filter-btn" id="recFilterBtn" onclick="toggleExploreRecFilter(this)" title="추천 영화만 보기">★ 추천</button>
+        <button class="quick-filter-btn" id="specialFilterBtn" onclick="toggleSpecialFilter(this)" title="GV·토크 등 특별회차만 보기">🎙 특별회차</button>
+      </div>
+    </div>
+
+    <div id="explore-content"><div class="loading"><div class="spinner"></div>로딩 중…</div></div>
+  </div>
+  <div id="tab-cinema" style="display:none;">
+    <div class="filter-ctrl-row">
+      <div class="cinema-chips-wrap" id="cinema-chips-wrap"></div>
+      <div class="ctrl-btns" style="flex-direction:column;">
+        <button class="ctrl-btn" onclick="cinemaChipSelectAll()">전체 선택</button>
+        <button class="ctrl-btn" onclick="cinemaChipDeselectAll()">전체 해제</button>
+      </div>
+    </div>
+    <div class="cinema-grid" id="cinema-grid-content"><div class="loading"><div class="spinner"></div>로딩 중…</div></div>
+  </div>
+
+  <!-- ③ 영화별 -->
+  <div id="tab-movie" style="display:none;">
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:14px;flex-wrap:wrap;">
+      <button class="movie-sort-btn" id="movieRecFilterBtn" onclick="toggleMovieRecFilter(this)" title="추천 영화만 보기" style="flex-shrink:0;">★ 추천</button>
+      <span style="width:1px;height:14px;background:var(--border);flex-shrink:0;"></span>
+      <input class="ex-search" type="text" id="movieSearchInput" placeholder="영화명…" oninput="onMovieSearch(this.value)" style="flex:1;min-width:70px;max-width:180px;">
+      <input class="ex-search" type="text" id="movieDirectorInput" placeholder="감독…" oninput="onDirectorSearch(this.value)" style="flex:1;min-width:70px;max-width:140px;">
+      <span style="width:1px;height:14px;background:var(--border);flex-shrink:0;"></span>
+      <button class="movie-sort-btn active" data-sort="count" data-dir="desc" onclick="setMovieSort(this,'count')">상영횟수 ↓</button>
+      <button class="movie-sort-btn" data-sort="title" data-dir="asc" onclick="setMovieSort(this,'title')">제목 ↑</button>
+      <button class="movie-sort-btn" data-sort="runtime" data-dir="desc" onclick="setMovieSort(this,'runtime')">러닝타임 ↓</button>
+    </div>
+    <div id="movie-grid-content"><div class="loading"><div class="spinner"></div>로딩 중…</div></div>
+  </div>
+
+  <!-- ③ 관심목록 -->
+  <div id="tab-wish" style="display:none;">
+    <div class="wish-dual">
+      <div class="wish-col">
+        <div class="wish-col-header">
+          <span class="wish-col-title">스케줄러 <span class="wish-count-badge" id="wish-sched-badge">0</span></span>
+          <button class="wish-clear-btn" onclick="clearWishSched()">전체 삭제</button>
+        </div>
+        <div id="wish-sched-content"></div>
+      </div>
+      <div class="wish-col">
+        <div class="wish-col-header">
+          <span class="wish-col-title">관심 영화 <span class="wish-count-badge" id="wish-movie-badge">0</span></span>
+          <button class="wish-clear-btn" onclick="clearWishMovies()">전체 삭제</button>
+        </div>
+        <div id="wish-movie-content"></div>
+      </div>
+    </div>
+  </div>
+
+
+
+</div><!-- /main -->
+
+<!-- 탐색/팝업 -->
+<div class="popup-overlay" id="popupOverlay" onclick="closePopupOutside(event)">
+  <div class="popup" onclick="event.stopPropagation()" style="max-width:540px;">
+    <button class="popup-close" onclick="closePopup()">✕</button>
+    <div class="popup-top">
+      <div class="popup-poster" id="popupPoster">🎬</div>
+      <div class="popup-info">
+        <div class="popup-title" id="popupTitle"></div>
+        <div class="popup-meta" id="popupMeta" style="margin-top:3px;font-size:12px;color:var(--text-muted);"></div>
+        <div id="popupAwards" style="display:none;margin-top:6px;"></div>
+        <div id="popupSynopsisWrap" style="margin-top:8px;display:none;">
+          <div id="popupSynopsis" style="font-size:12px;color:var(--text-sub);line-height:1.6;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;"></div>
+          <button id="popupSynopsisMore" onclick="expandSynopsis()" style="font-size:11px;color:var(--green);background:none;border:none;cursor:pointer;padding:2px 0;font-family:inherit;font-weight:600;display:none;">더보기 ▾</button>
+        </div>
+      </div>
+    </div>
+    <div class="popup-divider"></div>
+    <div class="popup-schedules" style="max-height:40vh;overflow-y:auto;">
+      <div id="popupSchedules"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 영화별 팝업 -->
+<div class="popup-overlay" id="moviePopupOverlay" onclick="closeMoviePopupOutside(event)">
+  <div class="popup" onclick="event.stopPropagation()" style="max-width:520px;">
+    <button class="popup-close" onclick="closeMoviePopup()">✕</button>
+    <div class="popup-top">
+      <div class="popup-poster" id="moviePopupPoster">🎬</div>
+      <div class="popup-info">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:6px;">
+          <div class="popup-title" id="moviePopupTitle" style="flex:1;margin-bottom:0;"></div>
+          <div id="moviePopupMeta" style="flex-shrink:0;margin-top:1px;"></div>
+        </div>
+        <div id="moviePopupDetailMeta" style="font-size:11px;color:var(--text-muted);margin-top:5px;line-height:1.6;"></div>
+        <div id="moviePopupAwards" style="display:none;margin-top:5px;"></div>
+        <div id="moviePopupSynopsis" style="font-size:11px;color:var(--text-muted);margin-top:6px;line-height:1.6;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;cursor:pointer;" onclick="expandSynopsis(this)"></div>
+      </div>
+    </div>
+    <div class="popup-divider"></div>
+    <!-- 정렬 토글 -->
+    <div style="display:flex;gap:5px;padding:8px 18px 0;border-bottom:1px solid var(--border);">
+      <button class="popup-sort-btn active" id="mpSortDate" onclick="setMoviePopupSort('date')">날짜순</button>
+      <button class="popup-sort-btn" id="mpSortCinema" onclick="setMoviePopupSort('cinema')">극장별</button>
+    </div>
+    <div class="popup-schedules" id="moviePopupSchedules" style="max-height:52vh;overflow-y:auto;"></div>
+  </div>
+</div>
+
+
+<!-- 극장 정보 팝업 -->
+<div class="popup-overlay" id="cinemaPopupOverlay" onclick="if(event.target===this){closeCinemaPopup();}">
+  <div class="popup" onclick="event.stopPropagation()" style="max-width:480px;">
+    <button class="popup-close" onclick="closeCinemaPopup()">✕</button>
+    <div style="padding:20px 20px 6px;">
+      <div style="font-size:17px;font-weight:800;" id="cpName"></div>
+      <div style="font-size:12px;color:var(--text-muted);margin-top:3px;line-height:1.5;" id="cpAddress"></div>
+    </div>
+    <div style="padding:0 20px 16px;" id="cpBody"></div>
+  </div>
+</div>
+<button class="scroll-top-btn" id="scrollTopBtn" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
+
+<script>
+/* ══════════════════════════════════════
+   유틸
+══════════════════════════════════════ */
+const DOW_KO = ["일","월","화","수","목","금","토"];
+const FREE_CINEMAS = ["서울영화센터","한국영상자료원"];
+const CINEMA_ORDER = [
+  "KT&G상상마당시네마","KU시네마테크","더숲아트시네마","라이카시네마",
+  "서울아트시네마","씨네큐브","아리랑시네센터","아트나인","아트하우스모모","에무시네마",
+  "서울영화센터","한국영상자료원"
+];
+const CINEMA_LOC = {
+  "KT&G상상마당시네마":"홍대","KU시네마테크":"건대","더숲아트시네마":"노원",
+  "라이카시네마":"연희동","서울아트시네마":"서대문","씨네큐브":"광화문",
+  "아리랑시네센터":"성북구","아트나인":"이수","아트하우스모모":"이대","에무시네마":"광화문",
+  "서울영화센터":"충무로","한국영상자료원":"상암"
+};
+
+function esc(s){ return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+function fmtKST(d){
+  const kst = new Date(d.getTime() + 9*60*60*1000);
+  return kst.toISOString().slice(0,10);
+}
+
+function today_kst(){ return fmtKST(new Date()); }
+
+function splitDt(dt){
+  if(!dt) return {date:"",mmdd:"",time:"",dow:"",dowIdx:-1};
+  const date=dt.slice(0,10), time=dt.slice(11,16);
+  const d=new Date(date+"T00:00:00");
+  const dowIdx=d.getDay();
+  return {date, mmdd:date.slice(5).replace("-","/"), time, dow:DOW_KO[dowIdx], dowIdx};
+}
+
+function renderDowBadge(dow, dowIdx){
+  const cls = (dowIdx===0||dowIdx===6) ? "dt-dow sat" : "dt-dow";
+  return `<span class="${cls}">${dow}</span>`;
+}
+
+function awardsHtml(awards, is4k, cinema){
+  const parts = [];
+  // 4K: 극장 조건 체크 (cinema=null이면 마킹만으로 표시)
+  if(is4k && (cinema===null || CINEMA_4K_SUPPORT.has(cinema||"")))
+    parts.push(`<span class="sticker sticker-4k" style="font-size:10px;padding:2px 7px;">4K</span>`);
+  // 돌비는 stickerHtml(상영 슬롯)에서만 표시
+  if(awards){
+    awards.split(",").map(s=>s.trim()).filter(Boolean).forEach(a=>{
+      parts.push(`<span class="award-tag">🏆 ${esc(a)}</span>`);
+    });
+  }
+  if(!parts.length) return "";
+  return `<div class="award-wrap">${parts.join("")}</div>`;
+}
+function stickerHtml(program, showType, cinema, movie, screen){
+  const tags = [];
+  const src = ((program||"")+" "+(showType||"")).toLowerCase();
+
+  // ── GV / 토크 / 강연 (각각 독립 태그)
+  if(/\bgv\b/.test(src))    tags.push({t:"GV",   cls:""});
+  if(/토크|talk/.test(src)) tags.push({t:"토크", cls:""});
+  if(/강연/.test(src))      tags.push({t:"강연", cls:""});
+
+  // ── 조조
+  if(/조조/.test(src)) tags.push({t:"조조", cls:"sticker-morning"});
+
+  // ── 4K vs 필름 (동시 표시 없음 — 필름 우선)
+  const isFilm    = /35mm|16mm/.test(src);
+  const is4kTag   = /4k/.test(src);
+  const is4kMovie = movie && movie4kSet.has(movie) && cinema && CINEMA_4K_SUPPORT.has(cinema);
+  if(isFilm)                  tags.push({t:"필름", cls:"sticker-film"});
+  else if(is4kTag || is4kMovie) tags.push({t:"4K",   cls:"sticker-4k"});
+
+  // ── 돌비: show_type에 '애트머스/atmos' 포함 OR admin is_dolby 마킹
+  const _scr = (screen||"").trim();
+  const isDolbyScreen = !_scr || !_scr.includes("2");
+  const isDolbyByTag  = /애트머스|atmos/i.test(src);
+  const isDolbyByMovie= movie && movieDolbySet.has(movie) && cinema && CINEMA_DOLBY_SUPPORT.has(cinema) && isDolbyScreen;
+  if((isDolbyByTag || isDolbyByMovie) && isDolbyScreen)
+    tags.push({t:"돌비", cls:"sticker-dolby"});
+
+  // 애트머스 감지 시 해당 영화 is_dolby 자동 마킹 (중복 방지)
+  if(isDolbyByTag && movie && !movieDolbySet.has(movie)){
+    movieDolbySet.add(movie);
+    fetch("/api/movie-detail", {method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({title:movie, is_dolby:true})}).catch(()=>{});
+  }
+
+  return tags.map(({t,cls})=>`<span class="sticker ${cls}">${t}</span>`).join("");
+}
+// 극장별 4K 지원 안내 (KU시네마테크)
+const CINEMA_4K_SUPPORT    = new Set(["KU시네마테크", "서울아트시네마", "한국영상자료원"]);
+const CINEMA_DOLBY_SUPPORT  = new Set(["라이카시네마"]);
+function cinema4kSupportBadge(cinema){
+  if(!CINEMA_4K_SUPPORT.has(cinema)) return "";
+  return `<span class="sticker sticker-4k-supported" title="이 극장은 4K 상영을 지원합니다">4K지원</span>`;
+}
+
+/* ══════════════════════════════════════
+   앱 상태
+══════════════════════════════════════ */
+let cinemaData = [];
+let movieData  = [];
+let recData    = [];
+let cinemaChipState = {};
+let statsCache = null;
+
+/* ══════════════════════════════════════
+   초기화
+══════════════════════════════════════ */
+async function init(){
+  await loadStats();
+  initCinemaTabChips();
+  initExploreCinemaChips();
+  document.getElementById("exploreDate").value = today_kst();
+  document.getElementById("exploreDateFrom").value = today_kst();
+  if(statsCache?.date_max)
+    document.getElementById("exploreDateTo").value = statsCache.date_max;
+  // recData + movie4kSet + movieDirectorMap — 모든 탭에서 사용
+  try{ recData = await fetch("/api/recommended").then(r=>r.json()); }catch(e){ recData=[]; }
+  try{
+    const mlist = await fetch("/api/movies").then(r=>r.json());
+    movieDirectorMap = {}; movie4kSet = new Set();
+    mlist.forEach(m=>{ if(m.director) movieDirectorMap[m.title]=m.director; if(m.is_4k) movie4kSet.add(m.title); if(m.is_dolby) movieDolbySet.add(m.title); });
+  }catch(e){}
+  await loadExploreData();
+  updateWishBadge();
+}
+
+/* ══════════════════════════════════════
+   ① 탐색 탭
+══════════════════════════════════════ */
+const EXPLORE_AREAS = {
+  all:      {label:'전체',       cinemas:['KT&G상상마당시네마','라이카시네마','한국영상자료원','아트하우스모모','서울아트시네마','에무시네마','씨네큐브','서울영화센터','KU시네마테크','아리랑시네센터','더숲아트시네마','아트나인']},
+  hongdae:  {label:'홍대·상암', cinemas:['KT&G상상마당시네마','라이카시네마','한국영상자료원']},
+  sinchon:  {label:'신촌·이대', cinemas:['라이카시네마','아트하우스모모']},
+  gwanghwa: {label:'광화문·종로',cinemas:['서울아트시네마','에무시네마','씨네큐브','서울영화센터']},
+  kondae:   {label:'건대·성수', cinemas:['KU시네마테크']},
+  north:    {label:'성북·노원', cinemas:['아리랑시네센터','더숲아트시네마']},
+  gangnam:  {label:'강남',      cinemas:['아트나인']},
+};
+
+let exploreMode = "direct";    // direct | range | today | tomorrow | saturday | sunday
+let exploreSpecialOnly = false;
+let exploreRecOnly = false;
+let exploreDirQ = "";
+let exploreDirectOpen = false; // 극장 직접선택 패널
+let exploreSelectedCinemas = new Set(EXPLORE_AREAS.all.cinemas);
+let exploreData = [];
+let exploreSearchQ = "";
+let exploreSortMode = "time";
+let exploreSortDir = "asc";
+
+function getExploreParams(){
+  const now = new Date();
+  const kst = d => { const x=new Date(d); x.setHours(x.getHours()+9); return x.toISOString().slice(0,10); };
+  const todayStr = kst(now);
+  const t = new Date(now.getTime() + 9*3600000);
+  const sat = new Date(t); sat.setDate(t.getDate() + ((6-t.getDay()+7)%7 || 7));
+  const sun = new Date(sat); sun.setDate(sat.getDate()+1);
+  const fmt = d => d.toISOString().slice(0,10);
+
+  if(exploreMode === "range"){
+    const df = document.getElementById("exploreDateFrom").value || todayStr;
+    const dt = document.getElementById("exploreDateTo").value || (statsCache?.date_max || todayStr);
+    return {dateFrom:df, dateTo:dt, timeFrom:"00:00", timeTo:"23:59"};
+  }
+  if(exploreMode === "direct"){
+    const sd = document.getElementById("exploreDate").value || todayStr;
+    const tf = document.getElementById("exploreTimeFrom").value || "17";
+    const tt = document.getElementById("exploreTimeTo").value || "23";
+    return {dateFrom:sd, dateTo:sd, timeFrom:tf+":00", timeTo:tt+":59"};
+  }
+  // 빠른선택
+  let dateFrom = todayStr, dateTo = todayStr;
+  if(exploreMode==="tomorrow"){ const tm=new Date(t); tm.setDate(t.getDate()+1); dateFrom=dateTo=fmt(tm); }
+  else if(exploreMode==="saturday"){ dateFrom=dateTo=fmt(sat); }
+  else if(exploreMode==="sunday")  { dateFrom=dateTo=fmt(sun); }
+  return {dateFrom, dateTo, timeFrom:"00:00", timeTo:"23:59"};
+}
+
+async function loadExploreData(){
+  const el = document.getElementById("explore-content");
+  el.innerHTML = `<div class="loading"><div class="spinner"></div>로딩 중…</div>`;
+  try{
+    const {dateFrom, dateTo, timeFrom, timeTo} = getExploreParams();
+    const cinemas = [...exploreSelectedCinemas];
+    const params = new URLSearchParams({date_from:dateFrom, date_to:dateTo, time_from:timeFrom, time_to:timeTo});
+    cinemas.forEach(c=>params.append("cinema",c));
+    if(exploreSearchQ) params.set("movie", exploreSearchQ);
+    exploreData = await fetch(`/api/screenings?${params}`).then(r=>r.json());
+    renderExploreCards();
+    updateExploreHeader(dateFrom, dateTo, timeFrom, timeTo);
+  }catch(e){
+    el.innerHTML = `<div class="empty">데이터를 불러오지 못했습니다</div>`;
+  }
+}
+
+function updateExploreHeader(dateFrom, dateTo, timeFrom, timeTo){
+  const d = new Date(dateFrom+"T00:00:00");
+  const mmdd = dateFrom.slice(5).replace("-","/");
+  const dow = DOW_KO[d.getDay()];
+  let sub = `${mmdd}(${dow})`;
+  if(dateFrom !== dateTo) sub += ` ~ ${dateTo.slice(5).replace("-","/")}`;
+  if(timeFrom && timeFrom !== "00:00") sub += ` · ${timeFrom.slice(0,2)}시~${(timeTo||"23:59").slice(0,2)}시`;
+  document.getElementById("exploreSub").textContent = sub;
+}
+
+function renderExploreCards(){
+  const el = document.getElementById("explore-content");
+  // 영화+극장+화면 기준 그룹핑 (빠른조회 방식)
+  const groups = {};
+  exploreData.forEach(r=>{
+    const key = `${r.movie}||${r.cinema}||${r.screen||""}`;
+    if(!groups[key]){ groups[key]={...r, times:[]}; }
+    groups[key].times.push({start:(r.start_dt||"").slice(11,16), end:(r.end_dt||"").slice(11,16), start_dt:r.start_dt, end_dt:r.end_dt, program:r.program, show_type:r.show_type, movie_url:r.movie_url||""});
+  });
+  let cards = Object.values(groups);
+  if(exploreSearchQ) cards = cards.filter(c=>c.movie.includes(exploreSearchQ));
+  if(exploreDirQ){ cards = cards.filter(c=>{ const dir=(movieDirectorMap[c.movie]||"").toLowerCase(); return dir.includes(exploreDirQ.toLowerCase()); }); }
+  if(exploreSpecialOnly) cards = cards.filter(c=>hasSpecialScreening(c.times));
+  if(exploreRecOnly){ const recSet2=new Set((recData||[]).map(r=>r.title)); cards=cards.filter(c=>recSet2.has(c.movie)); }
+
+  // 정렬
+  const dir = exploreSortDir==="asc"?1:-1;
+  if(exploreSortMode==="time") cards.sort((a,b)=>(a.start_dt||"").localeCompare(b.start_dt||"")*dir);
+  else cards.sort((a,b)=>(a.movie||"").localeCompare(b.movie||"","ko")*dir);
+
+  document.getElementById("exploreCount").textContent = cards.length ? cards.length+"편" : "";
+
+  if(!cards.length){ el.innerHTML=`<div class="empty">조건에 맞는 상영이 없습니다</div>`; return; }
+
+  const maxLen = Math.max(...cards.map(c=>c.movie.length));
+  const cardW = Math.max(225, Math.min(360, 70+24+maxLen*14));
+  const recSet = new Set((recData||[]).map(r=>r.title));
+
+  const html = cards.map(g=>{
+    const isFree = FREE_CINEMAS.includes(g.cinema);
+    const posterHtml = g.poster_url
+      ? `<img src="${esc(g.poster_url)}" alt="" loading="lazy" onerror="this.parentNode.textContent='🎬'">`
+      : "🎬";
+    const venueHtml = g.screen
+      ? `<div class="venue-dot${isFree?" free":""}"></div><span>${esc(g.cinema)}</span><span class="venue-sep">·</span><span>${esc(g.screen)}</span>`
+      : `<div class="venue-dot${isFree?" free":""}"></div><span>${esc(g.cinema)}</span>${isFree?`<span class="chip-free" style="font-size:10px;font-weight:700;color:var(--green);margin-left:3px;">무료</span>`:""}`;
+    const timesHtml = g.times.map(t=>{
+      const s = stickerHtml(t.program, t.show_type, g.cinema, g.movie, g.screen||"");
+      const schedKey = `${esc(g.movie)}|${esc(g.cinema)}|${esc(g.screen||"")}|${t.start_dt||""}`;
+      const wished = isSchedWished(schedKey);
+      return `<div class="time-chip${wished?" wished":""}" style="display:flex;align-items:center;gap:3px;cursor:pointer;"
+        onclick="event.stopPropagation();">
+        ${t.start}<span class="time-dash">-</span>${t.end}${s}<button class="sched-wish-btn swb${wished?" on":""}" data-key="${schedKey}" onclick="event.stopPropagation();toggleSchedWish('${schedKey}','${esc(g.movie)}','${esc(g.cinema)}','${esc(g.screen||"")}','${t.start_dt||""}','${t.end_dt||""}','${esc(g.poster_url||"")}',this)">${wished?"⏰":"➕"}</button>
+      </div>`;
+    }).join("");
+    const titleHtml = g.movie_url
+      ? `<a href="${esc(g.movie_url)}" target="_blank" onclick="event.stopPropagation()">${esc(g.movie)}</a>`
+      : esc(g.movie);
+    return `<div class="quick-card" onclick="openPopup('${esc(g.movie)}','${esc(g.cinema)}','${esc(g.screen||"")}','${esc(g.movie_url||"")}')">
+      <div class="qc-poster">${posterHtml}</div>
+      <div class="qc-body">
+        <div class="qc-title" style="display:flex;align-items:flex-start;gap:4px;">
+          <span style="flex:1;min-width:0;">${titleHtml}${recSet&&recSet.has(g.movie)?'<span class="rec-badge" style="margin-left:4px;">★</span>':''}</span>
+          <button class="heart-btn${isMovieWished(g.movie)?" on":""}" onclick="event.stopPropagation();toggleMovieWish(this,'${esc(g.movie)}','${esc(g.poster_url||"")}')" title="관심 목록 추가">${isMovieWished(g.movie)?"♥":"♡"}</button>
+        </div>
+        <div class="qc-venue">${venueHtml}</div>
+        <div class="qc-times" style="display:flex;flex-wrap:wrap;gap:4px;">${timesHtml}</div>
+      </div>
+    </div>`;
+  }).join("");
+
+  el.innerHTML = `<div class="explore-grid quick-grid">${html}</div>`;
+  el.querySelector(".explore-grid").style.gridTemplateColumns = `repeat(auto-fill,${cardW}px)`;
+}
+
+// 직접 설정
+function setDirectMode(){
+  exploreMode = "direct";
+  document.querySelectorAll(".ex-chip[data-mode]").forEach(b=>b.classList.remove("active"));
+  document.getElementById("directSetBtn").classList.add("active");
+  document.getElementById("rangeToggleBtn").classList.remove("active");
+  document.getElementById("directSub").classList.add("open");
+  document.getElementById("rangeSub").classList.remove("open");
+  if(!document.getElementById("exploreDate").value){
+    document.getElementById("exploreDate").value = today_kst();
+    document.getElementById("exploreTimeFrom").value = "17";
+    document.getElementById("exploreTimeTo").value = "23";
+  }
+  loadExploreData();
+}
+
+// 기간 선택
+
+function setTimeAll(btn){
+  btn.classList.add("active");
+  document.getElementById("exploreTimeFrom").value = "00";
+  document.getElementById("exploreTimeTo").value = "23";
+  loadExploreData();
+}
+function onTimeSelectChange(){
+  document.getElementById("timeAllBtn").classList.remove("active");
+  loadExploreData();
+}
+
+function setRangeMode(){
+  exploreMode = "range";
+  document.querySelectorAll(".ex-chip[data-mode]").forEach(b=>b.classList.remove("active"));
+  document.getElementById("rangeToggleBtn").classList.add("active");
+  document.getElementById("directSetBtn").classList.remove("active");
+  document.getElementById("rangeSub").classList.add("open");
+  document.getElementById("directSub").classList.remove("open");
+  // 기본값: From=오늘, To=전체 기간 끝
+  if(!document.getElementById("exploreDateFrom").value)
+    document.getElementById("exploreDateFrom").value = today_kst();
+  if(!document.getElementById("exploreDateTo").value && statsCache?.date_max)
+    document.getElementById("exploreDateTo").value = statsCache.date_max;
+  loadExploreData();
+}
+
+// 오늘/내일/토/일 빠른선택
+function setExploreDate(btn, mode){
+  exploreMode = mode;
+  document.querySelectorAll(".ex-chip[data-mode]").forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active");
+  document.getElementById("directSetBtn").classList.remove("active");
+  document.getElementById("rangeToggleBtn").classList.remove("active");
+  document.getElementById("directSub").classList.remove("open");
+  document.getElementById("rangeSub").classList.remove("open");
+  loadExploreData();
+}
+
+function setExploreArea(btn, area){
+  document.querySelectorAll(".ex-chip[data-area]").forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active");
+  const cinemas = EXPLORE_AREAS[area].cinemas;
+  exploreSelectedCinemas = new Set(cinemas);
+  // 극장 칩 상태 업데이트
+  document.querySelectorAll(".ex-cinema-chip").forEach(b=>{
+    b.classList.toggle("active", cinemas.includes(b.dataset.cinema));
+  });
+  if(area !== "all"){
+    exploreDirectOpen = true;
+    document.getElementById("cinemaDirectBtn").classList.add("active");
+    document.getElementById("cinemaDirectSub").classList.add("open");
+  }
+  loadExploreData();
+}
+
+function toggleCinemaDirect(){
+  exploreDirectOpen = !exploreDirectOpen;
+  document.getElementById("cinemaDirectBtn").classList.toggle("active", exploreDirectOpen);
+  document.getElementById("cinemaDirectSub").classList.toggle("open", exploreDirectOpen);
+}
+
+function toggleExploreCinema(btn, name){
+  btn.classList.toggle("active");
+  if(btn.classList.contains("active")) exploreSelectedCinemas.add(name);
+  else exploreSelectedCinemas.delete(name);
+  // 권역 칩 해제
+  document.querySelectorAll(".ex-chip[data-area]").forEach(b=>b.classList.remove("active"));
+  loadExploreData();
+}
+
+function initExploreCinemaChips(){
+  const wrap = document.getElementById("explorecinemaChips");
+  const sorted = [...EXPLORE_AREAS.all.cinemas].sort((a,b)=>a.localeCompare(b,"ko"));
+  wrap.style.cssText = "display:grid;grid-template-columns:repeat(2,auto);gap:5px;";
+  wrap.innerHTML = sorted.map(c=>{
+    const isFree = FREE_CINEMAS.includes(c);
+    return `<button class="ex-cinema-chip active" data-cinema="${c}" onclick="toggleExploreCinema(this,'${c}')">${c}${isFree?`<span class="free-badge">무료</span>`:""}`;
+  }).join("");
+}
+
+function onExploreDirSearch(q){
+  exploreDirQ = q.trim();
+  renderExploreCards();
+}
+function onExploreSearch(q){
+  exploreSearchQ = q;
+  if(q.length>=2) gtag("event","explore_search",{search_term:q});
+  renderExploreCards();
+}
+
+
+function toggleExploreRecFilter(btn){
+  exploreRecOnly = !exploreRecOnly;
+  btn.classList.toggle("active", exploreRecOnly);
+  renderExploreCards();
+}
+function toggleSpecialFilter(btn){
+  exploreSpecialOnly = !exploreSpecialOnly;
+  btn.classList.toggle("active", exploreSpecialOnly);
+  renderExploreCards();
+}
+
+function hasSpecialScreening(times){
+  return times.some(t => {
+    const src = ((t.program||"")+" "+(t.show_type||"")).toLowerCase();
+    return src.includes("gv") || src.includes("감독") || src.includes("토크") ||
+           src.includes("talk") || src.includes("강연") || src.includes("특별") || src.includes("시사");
+  });
+}
+
+function setExploreSort(btn, mode){
+  const labels = {time:"상영시작순", title:"제목순"};
+  if(exploreSortMode===mode){ exploreSortDir = exploreSortDir==="asc"?"desc":"asc"; }
+  else { exploreSortMode=mode; exploreSortDir="asc"; }
+  document.querySelectorAll(".quick-sort-btn").forEach(b=>{ b.classList.remove("active"); b.textContent=labels[b.dataset.sort]+" ↑"; });
+  btn.classList.add("active");
+  btn.textContent = labels[mode]+(exploreSortDir==="asc"?" ↑":" ↓");
+  renderExploreCards();
+}
+
+async function loadStats(){
+  try{
+    const d = await fetch("/api/stats").then(r=>r.json());
+    statsCache = d;
+    document.getElementById("statCinemas").textContent = d.cinemas||"—";
+    document.getElementById("statTotal").textContent   = (d.total||0).toLocaleString();
+    document.getElementById("statMovies").textContent  = d.movies||"—";
+    document.getElementById("movie-count-badge").textContent = d.movies||"—";
+  }catch(e){}
+}
+
+/* ══════════════════════════════════════
+   탭 전환
+══════════════════════════════════════ */
+async function switchTab(name){
+  ["explore","cinema","movie","wish"].forEach(t=>{
+    document.getElementById("tab-"+t).style.display = t===name?"block":"none";
+    document.getElementById("tab-btn-"+t).classList.toggle("active", t===name);
+  });
+  trackTabSwitch(name);
+  if(name==="cinema"){
+    if(cinemaData.length===0) await loadCinemaTabData();
+    // 극장 주소 캐시 미리 로드
+    if(!Object.keys(cinemaInfoCache).length){
+      try{ const all=await fetch("/api/cinemas/all").then(r=>r.json()); all.forEach(ci=>{cinemaInfoCache[ci.name]=ci;}); }catch(e){}
+    }
+  }
+  if(name==="movie"  && movieData.length===0)  await loadMovieTabData();
+  if(name==="wish") renderWishTab();
+}
+
+/* ══════════════════════════════════════
+   팝업
+══════════════════════════════════════ */
+function openPopup(movie, cinema, screen, movieUrl){
+  trackCinemaClick(cinema);
+  document.getElementById("popupTitle").textContent = movie;
+  document.getElementById("popupPoster").innerHTML = "🎬";
+  document.getElementById("popupMeta").textContent = "";
+  document.getElementById("popupSynopsisWrap").style.display = "none";
+  document.getElementById("popupSynopsis").style["-webkit-line-clamp"] = "3";
+  document.getElementById("popupAwards").style.display = "none";
+
+  // 상영 일정 (즉시)
+  const sc = screen ? ` · ${screen}` : "";
+  const rows = exploreData.filter(r=>r.movie===movie && r.cinema===cinema && (r.screen||"")===screen);
+  document.getElementById("popupSchedules").innerHTML = rows.length
+    ? rows.map(r=>{
+        const {mmdd,time}=splitDt(r.start_dt), end=(r.end_dt||"").slice(11,16);
+        const s=stickerHtml(r.program,r.show_type,cinema,movie,screen);
+        const schedKey=`${esc(movie)}|${esc(cinema)}|${esc(screen||"")}|${r.start_dt||""}`;
+        const wished=isSchedWished(schedKey);
+        const bookBtn=r.movie_url?`<a class="book-btn" href="${esc(r.movie_url)}" target="_blank" onclick="event.stopPropagation()">예매 →</a>`:'';
+        return `<div class="sched-row" style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);">
+          <span style="font-size:12px;font-weight:600;color:var(--text-muted);min-width:44px;">${mmdd}</span>
+          <span class="sched-time-chip">${time} – ${end}</span>${s}${bookBtn}
+          <button class="sched-wish-btn swb${wished?" on":""}" data-key="${schedKey}" style="margin-left:auto;" onclick="toggleSchedWish('${schedKey}','${esc(movie)}','${esc(cinema)}','${esc(screen||"")}','${r.start_dt||""}','${r.end_dt||""}','${esc(r.poster_url||"")}',this)">${wished?"⏰":"➕"}</button>
+        </div>`;
+      }).join("")
+    : `<div style="font-size:12px;color:var(--text-muted);padding:8px 0;">일정 정보 없음</div>`;
+
+  // 영화 정보 비동기 로드
+  fetch(`/api/movie-detail?title=${encodeURIComponent(movie)}`)
+    .then(r=>r.json()).then(d=>{
+      // 포스터
+      if(d.poster_url) document.getElementById("popupPoster").innerHTML=`<img src="${esc(d.poster_url)}" style="width:100%;height:100%;object-fit:cover" onerror="this.parentNode.innerHTML='🎬'">`;
+      // 감독·러닝타임 메타
+      const parts=[];
+      if(d.director) parts.push(d.director);
+      const rt = rows[0]?.runtime || d.runtime;
+      if(rt) parts.push(rt+"분");
+      document.getElementById("popupMeta").textContent = parts.join(" · ");
+      // 수상 + 4K
+      const awHtml = awardsHtml(d.awards||"", d.is_4k, cinema);
+      const awEl = document.getElementById("popupAwards");
+      if(awHtml){ awEl.innerHTML=awHtml; awEl.style.display="block"; }
+      else { awEl.style.display="none"; }
+      // 시놉시스
+      if(d.synopsis){
+        const synEl = document.getElementById("popupSynopsis");
+        synEl.textContent = d.synopsis;
+        document.getElementById("popupSynopsisWrap").style.display = "block";
+        requestAnimationFrame(()=>{
+          if(synEl.scrollHeight > synEl.clientHeight + 2)
+            document.getElementById("popupSynopsisMore").style.display = "inline";
+        });
+      }
+    }).catch(()=>{});
+
+  document.getElementById("popupOverlay").classList.add("open");
+  document.body.style.overflow="hidden";
+}
+
+function expandSynopsis(){
+  document.getElementById("popupSynopsis").style["-webkit-line-clamp"] = "unset";
+  document.getElementById("popupSynopsis").style.display = "block";
+  document.getElementById("popupSynopsisMore").style.display = "none";
+}
+function closePopup(){ document.getElementById("popupOverlay").classList.remove("open"); document.body.style.overflow=""; }
+function closePopupOutside(e){ if(e.target===document.getElementById("popupOverlay")) closePopup(); }
+
+/* 영화별 팝업 */
+function onMovieGroupClick(el){
+  const title = el.dataset.title;
+  const rows = JSON.parse(decodeURIComponent(el.dataset.rows||'[]'));
+  const posterUrl = decodeURIComponent(el.dataset.poster||"");
+  openMoviePopup(title, rows, posterUrl);
+}
+function onMovieCardClick(title, encRows, encPoster){
+  const rows = JSON.parse(decodeURIComponent(encRows||'[]'));
+  const posterUrl = decodeURIComponent(encPoster||"");
+  openMoviePopup(title, rows, posterUrl);
+}
+
+let moviePopupRows = [];
+let moviePopupTitle = '';
+let moviePopupPosterUrl = '';
+let moviePopupSort = 'date'; // 'date' | 'cinema'
+
+function setMoviePopupSort(mode){
+  moviePopupSort = mode;
+  document.getElementById('mpSortDate').classList.toggle('active', mode==='date');
+  document.getElementById('mpSortCinema').classList.toggle('active', mode==='cinema');
+  renderMoviePopupSchedules();
+}
+
+function renderMoviePopupSchedules(){
+  const rows = moviePopupRows;
+  const title = moviePopupTitle;
+  const posterUrl = moviePopupPosterUrl;
+  let html = '';
+
+  if(moviePopupSort === 'cinema'){
+    // 극장별 그룹핑 → 각 극장 내 날짜순
+    const byKey = {};
+    rows.forEach(r=>{
+      const k = r.cinema+(r.screen?` · ${r.screen}`:'');
+      if(!byKey[k]) byKey[k]=[];
+      byKey[k].push(r);
+    });
+    // 극장명 오름차순 정렬
+    const sortedKeys = Object.keys(byKey).sort((a,b)=>a.localeCompare(b,'ko'));
+    html = sortedKeys.map(label=>{
+      const rs = byKey[label].sort((a,b)=>(a.start_dt||'').localeCompare(b.start_dt||''));
+      const firstR = byKey[label][0];
+      const slots = rs.map(r=>popupSlotHtml(r, title, posterUrl)).join('');
+      return `<div style="padding:10px 0;border-bottom:1px solid var(--border);">
+        <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:7px;"><span class="movie-link" style="cursor:pointer;" onclick="openCinemaPopup('${esc(firstR.cinema)}')">${esc(label)}</span></div>
+        <div style="display:flex;flex-direction:column;gap:6px;">${slots}</div>
+      </div>`;
+    }).join('');
+  } else {
+    // 날짜순 — 날짜 그룹핑
+    const sorted = [...rows].sort((a,b)=>(a.start_dt||'').localeCompare(b.start_dt||''));
+    const byDate = {};
+    sorted.forEach(r=>{
+      const {mmdd, dow} = splitDt(r.start_dt);
+      const dk = mmdd+(dow?`(${dow})`:'');
+      if(!byDate[dk]) byDate[dk]=[];
+      byDate[dk].push(r);
+    });
+    html = Object.entries(byDate).map(([dateLabel, rs])=>{
+      const slots = rs.map(r=>{
+        const cinemaLabel = r.cinema+(r.screen?` · ${r.screen}`:'');
+        const cinemaLabelHtml = `<span class="movie-link" style="cursor:pointer;" onclick="openCinemaPopup('${esc(r.cinema)}')">${esc(cinemaLabel)}</span>`;
+        return popupSlotHtml(r, title, posterUrl, cinemaLabelHtml, '', true);
+      }).join('');
+      return `<div style="padding:10px 0;border-bottom:1px solid var(--border);">
+        <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:7px;">${esc(dateLabel)}</div>
+        <div style="display:flex;flex-direction:column;gap:6px;">${slots}</div>
+      </div>`;
+    }).join('');
+  }
+
+  document.getElementById('moviePopupSchedules').innerHTML = html
+    || `<div style="color:var(--text-muted);font-size:12px;padding:12px 0;">상영 정보 없음</div>`;
+}
+
+function popupSlotHtml(r, title, posterUrl, extraLabel='', cinemaSticker='', extraIsHtml=false){
+  const {time:stm, dow:sdow} = splitDt(r.start_dt);
+  const end = (r.end_dt||'').slice(11,16);
+  const s = stickerHtml(r.program, r.show_type, r.cinema, r.movie, r.screen||"");
+  const schedKey = `${esc(title)}|${esc(r.cinema)}|${esc(r.screen||'')}|${r.start_dt||''}`;
+  const wished = isSchedWished(schedKey);
+  const extra = extraLabel
+    ? `<span style="font-size:11px;color:var(--text);margin-left:4px;">${extraIsHtml ? extraLabel : esc(extraLabel)}</span>`
+    : '';
+  const bookBtn2 = r.movie_url ? `<a class="book-btn" href="${esc(r.movie_url)}" target="_blank" onclick="event.stopPropagation()">예매 →</a>` : '';
+  return `<div class="popup-sched-slot${wished?' wished':''}" style="display:flex;align-items:center;gap:8px;border:1.5px solid ${wished?'var(--green)':'var(--border)'};border-radius:7px;padding:7px 10px;background:${wished?'#EEF5E8':'var(--surface)'};">
+    <span style="font-size:13px;font-weight:700;color:var(--text);">${stm}</span>
+    <span style="font-size:11px;color:var(--text-muted);">–${end}</span>
+    ${cinemaSticker}${extra}${s}
+    ${bookBtn2}
+    <button class="sched-wish-btn swb${wished?' on':''}" data-key="${schedKey}" title="${wished?'등록 취소':'스케줄 등록'}" onclick="event.stopPropagation();toggleSchedWish('${schedKey}','${esc(title)}','${esc(r.cinema)}','${esc(r.screen||'')}','${r.start_dt||''}','${r.end_dt||''}','${esc(posterUrl||'')}',this)" style="font-size:13px;margin-left:auto;">${wished?'⏰':'➕'}</button>
+  </div>`;
+}
+
+function openMoviePopup(title, rows, posterUrl){
+  moviePopupTitle = title;
+  moviePopupRows = rows;
+  moviePopupPosterUrl = posterUrl;
+
+  document.getElementById("moviePopupTitle").textContent = title;
+  const poster = document.getElementById("moviePopupPoster");
+  if(posterUrl){ poster.innerHTML=`<img src="${esc(posterUrl)}" alt="" style="width:100%;height:100%;object-fit:cover;" onerror="this.parentNode.textContent='🎬'">`; }
+  else { poster.textContent="🎬"; }
+  document.getElementById("moviePopupMeta").innerHTML =
+    `<button class="heart-btn${isMovieWished(title)?" on":""}" onclick="toggleMovieWish(this,'${esc(title)}','${esc(posterUrl||"")}')">
+      ${isMovieWished(title)?"♥":"♡"}
+    </button>`;
+
+  // 정렬 버튼 초기화
+  document.getElementById('mpSortDate').classList.add('active');
+  document.getElementById('mpSortCinema').classList.remove('active');
+  moviePopupSort = 'date';
+
+  // 상세 메타 초기화
+  document.getElementById("moviePopupDetailMeta").textContent = "";
+  document.getElementById("moviePopupAwards").style.display = "none";
+  document.getElementById("moviePopupSynopsis").textContent = "";
+  document.getElementById("moviePopupSynopsis").style.webkitLineClamp = "3";
+
+  renderMoviePopupSchedules();
+  document.getElementById("moviePopupOverlay").classList.add("open");
+  document.body.style.overflow="hidden";
+
+  // 감독/연도/러닝타임/시놉시스 비동기 로드
+  fetch(`/api/movie-detail?title=${encodeURIComponent(title)}`)
+    .then(r=>r.json())
+    .then(d=>{
+      if(!d || !d.title) return;
+      const parts=[];
+      if(d.director) parts.push(d.director);
+      if(d.year) parts.push(d.year+"년");
+      if(d.runtime) parts.push(d.runtime+"분");
+      document.getElementById("moviePopupDetailMeta").textContent = parts.join(" · ");
+      // 수상 + 4K
+      const awHtml2 = awardsHtml(d.awards||"", d.is_4k, null);
+      const awEl2 = document.getElementById("moviePopupAwards");
+      if(awHtml2){ awEl2.innerHTML=awHtml2; awEl2.style.display="block"; }
+      else { awEl2.style.display="none"; }
+      // 시놉시스
+      if(d.synopsis){
+        const el = document.getElementById("moviePopupSynopsis");
+        el.textContent = d.synopsis;
+      }
+    }).catch(()=>{});
+}
+
+function expandSynopsis(el){
+  el.style.webkitLineClamp = el.style.webkitLineClamp === "3" ? "unset" : "3";
+}
+function closeMoviePopup(){ document.getElementById("moviePopupOverlay").classList.remove("open"); document.body.style.overflow=""; }
+
+/* 극장 정보 팝업 */
+let cinemaInfoCache = {};
+async function openCinemaPopup(name){
+  // 극장명 + 지원 형식 배지 헤더
+  const cpNameBadges = [];
+  if(["KU시네마테크","서울아트시네마","한국영상자료원"].includes(name))
+    cpNameBadges.push(`<span class="sticker sticker-4k" style="font-size:10px;padding:2px 6px;margin-left:6px;vertical-align:middle;">4K</span>`);
+  if(name === "라이카시네마")
+    cpNameBadges.push(`<span class="sticker sticker-dolby" style="font-size:10px;padding:2px 6px;margin-left:6px;vertical-align:middle;">돌비</span>`);
+  document.getElementById("cpName").innerHTML = esc(name) + cpNameBadges.join("");
+  document.getElementById("cpAddress").textContent = "";
+  document.getElementById("cpBody").innerHTML = '<div style="font-size:12px;color:var(--text-muted);padding:8px 0;">불러오는 중…</div>';
+  document.getElementById("cinemaPopupOverlay").classList.add("open");
+  document.body.style.overflow = "hidden";
+  // 항상 최신 데이터 로드 (캐시가 있어도 백그라운드 갱신)
+  try{
+    const all = await fetch("/api/cinemas/all").then(r=>r.json());
+    all.forEach(ci=>{ cinemaInfoCache[ci.name]=ci; });
+  }catch(e){}
+  const d = cinemaInfoCache[name] || {};
+  document.getElementById("cpAddress").textContent = d.address || "";
+  let html = "";
+
+  if(d.description) html += `<p style="font-size:13px;color:#333;margin:10px 0 8px;line-height:1.6;">${esc(d.description)}</p>`;
+  // 요금표
+  let pt = {};
+  try{ pt = typeof d.price_table === "string" ? JSON.parse(d.price_table) : (d.price_table||{}); }catch(e){}
+  const hasPriceTable = pt.weekday_normal || pt.weekday_matinee || pt.weekend_normal || pt.weekend_matinee;
+  if(hasPriceTable){
+    html += `<table style="width:100%;border-collapse:collapse;font-size:12px;margin:10px 0;">
+      <thead><tr>
+        <th style="border:1px solid var(--border);padding:5px 8px;background:var(--surface2);font-weight:700;color:#333;"></th>
+        <th style="border:1px solid var(--border);padding:5px 8px;background:var(--surface2);font-weight:700;text-align:center;color:#333;">조조</th>
+        <th style="border:1px solid var(--border);padding:5px 8px;background:var(--surface2);font-weight:700;text-align:center;color:#333;">일반</th>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td style="border:1px solid var(--border);padding:5px 8px;font-weight:700;background:var(--surface2);color:#333;">월~목</td>
+          <td style="border:1px solid var(--border);padding:5px 8px;text-align:center;color:#333;">${esc(pt.weekday_matinee||"—")}</td>
+          <td style="border:1px solid var(--border);padding:5px 8px;text-align:center;color:#333;">${esc(pt.weekday_normal||"—")}</td>
+        </tr>
+        <tr>
+          <td style="border:1px solid var(--border);padding:5px 8px;font-weight:700;background:var(--surface2);color:#333;">금~일·공휴일</td>
+          <td style="border:1px solid var(--border);padding:5px 8px;text-align:center;color:#333;">${esc(pt.weekend_matinee||"—")}</td>
+          <td style="border:1px solid var(--border);padding:5px 8px;text-align:center;color:#333;">${esc(pt.weekend_normal||"—")}</td>
+        </tr>
+      </tbody>
+    </table>`;
+    if(pt.discount) html += `<div style="font-size:12px;color:#444;margin-top:4px;">💡 ${esc(pt.discount)}</div>`;
+  } else if(d.price_info){
+    html += `<div style="font-size:12px;color:#444;margin-top:8px;">💰 ${esc(d.price_info)}</div>`;
+  }
+  if(d.note) html += `<div style="font-size:12px;color:#444;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);">📌 ${esc(d.note)}</div>`;
+  const links = [];
+  if(d.url) links.push(`<a href="${esc(d.url)}" target="_blank" style="font-size:12px;color:var(--green);font-weight:600;">홈페이지 →</a>`);
+  if(d.phone) links.push(`<span style="font-size:12px;color:#444;">📞 ${esc(d.phone)}</span>`);
+  if(links.length) html += `<div style="display:flex;gap:14px;align-items:center;margin-top:12px;padding-top:10px;border-top:1px solid var(--border);">${links.join("")}</div>`;
+  if(!html) html = `<div style="font-size:13px;color:#444;padding:10px 0;">등록된 정보가 없습니다.</div>`;
+  document.getElementById("cpBody").innerHTML = html;
+}
+function closeCinemaPopup(){
+  document.getElementById("cinemaPopupOverlay").classList.remove("open");
+  document.body.style.overflow = "";
+}
+
+function closeMoviePopupOutside(e){ if(e.target===document.getElementById("moviePopupOverlay")) closeMoviePopup(); }
+document.addEventListener("keydown",e=>{ if(e.key==="Escape"){ closePopup(); closeMoviePopup(); closeCinemaPopup(); } });
+
+/* ══════════════════════════════════════
+   ♡ 찜 / 내 일정
+══════════════════════════════════════ */
+const LS_MOVIE = "wish_movies";   // [{title, poster_url, added_at}]
+const LS_SCHED = "wish_scheds";   // [{key, movie, cinema, screen, start_dt, end_dt, poster_url, added_at}]
+let wishSubMode = "sched";
+
+// 메모리 캐시 — localStorage 매번 읽지 않도록
+let _wishMovieCache = null;
+let _wishSchedCache = null;
+let _wishSchedSet   = null; // 빠른 key 조회용 Set
+
+function loadWishMovies(){
+  if(!_wishMovieCache) try{ _wishMovieCache=JSON.parse(localStorage.getItem(LS_MOVIE)||"[]"); }catch(e){ _wishMovieCache=[]; }
+  return _wishMovieCache;
+}
+function loadWishScheds(){
+  if(!_wishSchedCache) try{ _wishSchedCache=JSON.parse(localStorage.getItem(LS_SCHED)||"[]"); }catch(e){ _wishSchedCache=[]; }
+  return _wishSchedCache;
+}
+function saveWishMovies(arr){ _wishMovieCache=arr; localStorage.setItem(LS_MOVIE, JSON.stringify(arr)); updateWishBadge(); }
+function saveWishScheds(arr){ _wishSchedCache=arr; _wishSchedSet=new Set(arr.map(s=>s.key)); localStorage.setItem(LS_SCHED, JSON.stringify(arr)); updateWishBadge(); }
+
+function isMovieWished(title){ return loadWishMovies().some(m=>m.title===title); }
+function isSchedWished(key){
+  if(!_wishSchedSet){ _wishSchedSet=new Set(loadWishScheds().map(s=>s.key)); }
+  return _wishSchedSet.has(key);
+}
+
+function updateWishBadge(){
+  const sm = loadWishMovies().length;
+  const ss = loadWishScheds().length;
+  const total = sm + ss;
+  document.getElementById("wish-count-badge").textContent = total||"0";
+  document.getElementById("tab-btn-wish").querySelector(".tab-badge").textContent = total||"0";
+  const smEl = document.getElementById("wish-sched-badge");
+  const mvEl = document.getElementById("wish-movie-badge");
+  if(smEl) smEl.textContent = ss;
+  if(mvEl) mvEl.textContent = sm;
+}
+
+function toggleMovieWish(btn, title, posterUrl){
+  let arr = loadWishMovies();
+  const idx = arr.findIndex(m=>m.title===title);
+  if(idx>=0){
+    arr.splice(idx,1);
+    btn.classList.remove("on");
+    btn.textContent="♡";
+    gtag('event','movie_unwish',{movie_title:title});
+  } else {
+    arr.push({title, poster_url:posterUrl, added_at:new Date().toISOString()});
+    btn.classList.add("on");
+    btn.textContent="♥";
+    gtag('event','movie_wish',{movie_title:title});
+  }
+  saveWishMovies(arr);
+}
+
+function toggleSchedWish(key, movie, cinema, screen, startDt, endDt, posterUrl, btn){
+  let arr = loadWishScheds();
+  const idx = arr.findIndex(s=>s.key===key);
+  const adding = idx < 0;
+  if(adding){
+    arr.push({key, movie, cinema, screen, start_dt:startDt, end_dt:endDt, poster_url:posterUrl, added_at:new Date().toISOString()});
+    gtag('event','sched_wish',{movie_title:movie, cinema_name:cinema, start_dt:startDt});
+  } else {
+    arr.splice(idx,1);
+    gtag('event','sched_unwish',{movie_title:movie, cinema_name:cinema, start_dt:startDt});
+  }
+  saveWishScheds(arr);
+  // DOM 즉시 업데이트 — 재렌더 없음
+  // 페이지 내 동일 key를 가진 모든 버튼 동기화 (btn 포함)
+  document.querySelectorAll(`.swb[data-key="${CSS.escape(key)}"]`).forEach(b=>{
+    b.classList.toggle("on", adding);
+    b.textContent = adding ? "⏰" : "➕";
+  });
+  if(btn && !btn.dataset.key){ // data-key 없는 경우 fallback
+    btn.classList.toggle("on", adding);
+    btn.textContent = adding ? "⏰" : "➕";
+  }
+}
+
+function removeMovieWish(title){
+  saveWishMovies(loadWishMovies().filter(m=>m.title!==title));
+  renderWishTab();
+}
+function removeSchedWish(key){
+  saveWishScheds(loadWishScheds().filter(s=>s.key!==key));
+  renderWishTab();
+}
+function clearWishSched(){
+  if(!confirm("상영 스케줄 전체 삭제할까요?")) return;
+  localStorage.removeItem(LS_SCHED);
+  updateWishBadge();
+  renderWishTab();
+}
+function clearWishMovies(){
+  if(!confirm("관심 영화 전체 삭제할까요?")) return;
+  localStorage.removeItem(LS_MOVIE);
+  updateWishBadge();
+  renderWishTab();
+}
+
+function renderWishTab(){
+  updateWishBadge();
+  renderWishScheds(document.getElementById("wish-sched-content"));
+  renderWishMovies(document.getElementById("wish-movie-content"));
+}
+
+function renderWishScheds(el){
+  const arr = loadWishScheds();
+  if(!arr.length){
+    el.innerHTML=`<div class="wish-empty"><div class="wish-empty-icon">🎞️</div>체크 버튼을 눌러 원하는 상영을 모아보세요</div>`;
+    return;
+  }
+  const now = new Date();
+  // 날짜별 그룹
+  const groups={};
+  arr.forEach(s=>{
+    const d=(s.start_dt||"").slice(0,10);
+    if(!groups[d]) groups[d]=[];
+    groups[d].push(s);
+  });
+  const html = Object.keys(groups).sort().map(date=>{
+    const rows = groups[date];
+    const d = new Date(date+"T00:00:00");
+    const dow = DOW_KO[d.getDay()], dowIdx=d.getDay();
+    const label = `${date.slice(5).replace("-","/")} ${renderDowBadge(dow,dowIdx)}`;
+    const rowsHtml = rows.sort((a,b)=>(a.start_dt||"").localeCompare(b.start_dt||"")).map(s=>{
+      const start=(s.start_dt||"").slice(11,16);
+      const end=(s.end_dt||"").slice(11,16);
+      const isPast = new Date(s.start_dt) < now;
+      return `<div class="wish-row${isPast?' past':''}">
+        <div class="wish-row-info">
+          <div class="wish-row-movie">${esc(s.movie)}</div>
+          <div class="wish-row-meta">${esc(s.cinema)}${s.screen?` · ${esc(s.screen)}`:""}</div>
+        </div>
+        <span class="wish-row-time">${start}–${end}</span>
+        <button class="wish-remove" onclick="removeSchedWish('${esc(s.key)}')" title="삭제">✕</button>
+      </div>`;
+    }).join("");
+    return `<div class="wish-date-group">
+      <div class="wish-date-label">${label}<span style="font-size:11px;font-weight:400;color:var(--text-sub);">${rows.length}건</span></div>
+      ${rowsHtml}
+    </div>`;
+  }).join("");
+  el.innerHTML = html;
+}
+
+function renderWishMovies(el){
+  const arr = loadWishMovies();
+  if(!arr.length){
+    el.innerHTML=`<div class="wish-empty"><div class="wish-empty-icon">🎬</div>하트 버튼을 눌러 관심 영화를 모아보세요</div>`;
+    return;
+  }
+  const html = arr.map(m=>{
+    const thumb = m.poster_url
+      ? `<img src="${esc(m.poster_url)}" alt="" loading="lazy" onerror="this.parentNode.textContent='🎬'">`
+      : "🎬";
+    // 현재 상영 횟수
+    const cnt = movieData.filter(r=>r.movie===m.title).length;
+    const upcomingRows = movieData
+      .filter(r=>r.movie===m.title)
+      .sort((a,b)=>(a.start_dt||"").localeCompare(b.start_dt||""))
+      .slice(0,5);
+    const schedHtml = upcomingRows.length
+      ? `<div class="wish-movie-scheds">${upcomingRows.map(r=>{
+          const {mmdd,time,dow}=splitDt(r.start_dt);
+          const {time:endT}=splitDt(r.end_dt);
+          return `<span class="wish-sched-chip">${mmdd}(${dow}) ${time}–${endT} <span style="font-size:10px;color:var(--text-muted);">${esc(r.cinema)}</span></span>`;
+        }).join("")}</div>`
+      : "";
+    return `<div class="wish-movie-row" style="flex-direction:column;align-items:stretch;gap:6px;cursor:default;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="wish-movie-thumb">${thumb}</div>
+        <div class="wish-movie-info">
+          <div class="wish-movie-title">${esc(m.title)}</div>
+          <div class="wish-movie-meta">${cnt?cnt+"회 상영 중":"상영 정보 없음"}</div>
+        </div>
+        <button class="heart-btn on" onclick="removeMovieWish('${esc(m.title)}')" title="찜 해제">♥</button>
+      </div>
+      ${schedHtml}
+    </div>`;
+  }).join("");
+  el.innerHTML = html;
+}
+
+/* ══════════════════════════════════════
+   ② 극장별 탭
+══════════════════════════════════════ */
+function initCinemaTabChips(){
+  fetch("/api/cinemas").then(r=>r.json()).then(names=>{
+    const ordered = [...CINEMA_ORDER.filter(c=>names.includes(c)), ...names.filter(c=>!CINEMA_ORDER.includes(c))];
+    ordered.forEach(n=>{ cinemaChipState[n]=false; }); // 기본 전체 해제
+    const wrap = document.getElementById("cinema-chips-wrap");
+    wrap.innerHTML = ordered.map(n=>{
+      const free = FREE_CINEMAS.includes(n) ? `<span class="chip-free">무료</span>` : "";
+      return `<button class="cinema-chip-btn off" data-name="${esc(n)}" onclick="toggleCinemaChip(this,'${esc(n)}')">${esc(n)}${free}</button>`;
+    }).join("");
+    document.getElementById("cinema-grid-content").innerHTML=`<div class="empty">원하는 극장을 선택해주세요</div>`;
+  }).catch(()=>{});
+}
+
+function toggleCinemaChip(btn, name){
+  cinemaChipState[name] = !cinemaChipState[name];
+  btn.classList.toggle("off", !cinemaChipState[name]);
+  renderCinemaGrid();
+}
+function cinemaChipSelectAll(){ Object.keys(cinemaChipState).forEach(k=>cinemaChipState[k]=true); document.querySelectorAll(".cinema-chip-btn").forEach(b=>b.classList.remove("off")); renderCinemaGrid(); }
+function cinemaChipDeselectAll(){ Object.keys(cinemaChipState).forEach(k=>cinemaChipState[k]=false); document.querySelectorAll(".cinema-chip-btn").forEach(b=>b.classList.add("off")); document.getElementById("cinema-grid-content").innerHTML=`<div class="empty">극장을 선택해주세요</div>`; }
+
+async function loadCinemaTabData(){
+  try{
+    const today = today_kst();
+    const params = new URLSearchParams({date_from:today, date_to: statsCache?.date_max||today});
+    cinemaData = await fetch(`/api/screenings?${params}`).then(r=>r.json());
+    renderCinemaGrid();
+  }catch(e){ document.getElementById("cinema-grid-content").innerHTML=`<div class="empty">데이터를 불러오지 못했습니다</div>`; }
+}
+
+function renderCinemaGrid(){
+  if(!cinemaData.length){ document.getElementById("cinema-grid-content").innerHTML=`<div class="empty">상영 정보가 없습니다</div>`; return; }
+  const groups={};
+  cinemaData.forEach(r=>{ if(!groups[r.cinema]) groups[r.cinema]=[]; groups[r.cinema].push(r); });
+  const ordered=[...CINEMA_ORDER.filter(c=>groups[c]),...Object.keys(groups).filter(c=>!CINEMA_ORDER.includes(c))];
+  const visible=ordered.filter(c=>cinemaChipState[c]!==false);
+  if(!visible.length){ document.getElementById("cinema-grid-content").innerHTML=`<div class="empty">극장을 선택해주세요</div>`; return; }
+
+  const html=visible.map(cinema=>{
+    const rows=groups[cinema];
+    const maxDate=(rows.map(r=>(r.start_dt||"").slice(0,10)).sort()).pop()||"";
+    const maxMmdd=maxDate?maxDate.slice(5).replace("-","/"):"";
+    const isFree=FREE_CINEMAS.includes(cinema);
+    const locBadge=CINEMA_LOC[cinema]?`<span class="chip-loc">${esc(CINEMA_LOC[cinema])}</span>`:"";
+    const metaParts=[`오늘 이후 ${rows.length}건`];
+    if(maxMmdd) metaParts.push(`~${maxMmdd}`);
+    const freeBadge=isFree?`<span class="free-tag">무료</span>`:"";
+    const addrText = cinemaInfoCache[cinema]?.address || "";
+    return `<div class="cinema-group">
+      <div class="cinema-group-header" style="cursor:pointer;" onclick="openCinemaPopup('${esc(cinema)}')">
+        <div class="cinema-group-name">${esc(cinema)}${locBadge}<span style="font-size:10px;font-weight:500;color:var(--text-muted);margin-left:2px;">ℹ︎</span>${freeBadge}</div>
+        <div class="cinema-group-meta">${metaParts.map(p=>`<span>${p}</span>`).join("")}${addrText?`<span style="font-size:11px;color:var(--text-muted);margin-left:4px;">${esc(addrText)}</span>`:""}</div>
+      </div>
+      <div class="cinema-group-rows cinema-rows-2col">
+        ${rows.map(r=>{
+          const {mmdd,time,dow,dowIdx}=splitDt(r.start_dt);
+          const {time:endTime}=splitDt(r.end_dt);
+          const s=stickerHtml(r.program,r.show_type,cinema,r.movie,r.screen||"");
+          const _scrVal = (r.screen||'').trim();
+          const movieHtml=r.movie_url
+            ?`<a href="${esc(r.movie_url)}" target="_blank" onclick="event.stopPropagation()">${esc(r.movie)}</a>`
+            :`<span class="movie-link" style="cursor:pointer;" onclick="event.stopPropagation();openPopup('${esc(r.movie)}','${esc(cinema)}','${esc(r.screen||'')}','')">${esc(r.movie)}</span>`;
+          const schedKey=`${esc(r.movie)}|${esc(cinema)}|${esc(r.screen||"")}|${r.start_dt||""}`;
+          const wished=isSchedWished(schedKey);
+          const _showScreen = !["KU시네마테크","KT&G상상마당시네마","서울아트시네마"].includes(cinema) && _scrVal;
+          const _bookBtn = r.movie_url ? `<a class="book-btn" href="${esc(r.movie_url)}" target="_blank" onclick="event.stopPropagation()">예매 →</a>` : '';
+          return `<div class="c-row${_showScreen?' has-screen':''}${r.movie_url?' has-book':''}">
+            <span class="c-date">${mmdd} ${DOW_KO[dowIdx]}</span>
+            <span class="c-time">${time}–${endTime}</span>
+            <span class="c-movie">${movieHtml}${s}</span>
+            ${_showScreen?`<span class="c-screen">${esc(_scrVal)}</span>`:''}
+            ${_bookBtn}
+            <button class="sched-wish-btn swb${wished?" on":""}" data-key="${schedKey}" title="${wished?'등록 취소':'스케줄 등록'}" onclick="event.stopPropagation();toggleSchedWish('${schedKey}','${esc(r.movie)}','${esc(cinema)}','${esc(r.screen||"")}','${r.start_dt||""}','${r.end_dt||""}','${esc(r.poster_url||"")}',this)">${wished?"⏰":"➕"}</button>
+          </div>`;
+        }).join("")}
+      </div>
+    </div>`;
+  }).join("");
+  document.getElementById("cinema-grid-content").innerHTML=`<div class="cinema-grid">${html}</div>`;
+}
+
+let movieSortMode = "count";
+let movieSortDir  = "desc";
+let movieSearchQ  = "";
+let movieDirectorQ = "";
+let movieRecOnly = false;
+
+
+let movieSearchTabMode = "title"; // title | director
+// setMovieSearchTab — 탭 토글 제거, 두 검색창 동시 사용
+function onMovieSearch(q){
+  movieSearchQ=q;
+  renderMovieGrid(true);
+  if(q.length>=2) gtag('event','movie_search',{search_term:q});
+}
+function toggleMovieRecFilter(btn){
+  movieRecOnly = !movieRecOnly;
+  btn.classList.toggle("active", movieRecOnly);
+  renderMovieGrid(true);
+}
+function onDirectorSearch(q){
+  movieDirectorQ=q.trim();
+  renderMovieGrid(true);
+}
+
+function setMovieSort(btn, mode){
+  const labels = {count:"상영횟수", title:"제목", runtime:"러닝타임"};
+  const defaultDir = {count:"desc", title:"asc", runtime:"desc"};
+  if(movieSortMode === mode){
+    movieSortDir = movieSortDir === "asc" ? "desc" : "asc";
+  } else {
+    movieSortMode = mode;
+    movieSortDir = defaultDir[mode];
+  }
+  // 모든 정렬 버튼(data-sort 있는 것만) 초기화 — ★추천 버튼 제외
+  document.querySelectorAll(".movie-sort-btn[data-sort]").forEach(b=>{
+    const m = b.dataset.sort;
+    const d = defaultDir[m];
+    b.textContent = labels[m] + (d === "asc" ? " ↑" : " ↓");
+    b.classList.remove("active");
+  });
+  btn.classList.add("active");
+  btn.textContent = labels[mode] + (movieSortDir === "asc" ? " ↑" : " ↓");
+  renderMovieGrid();
+}
+
+/* ══════════════════════════════════════
+   ③ 영화별 탭
+══════════════════════════════════════ */
+let movieDirectorMap = {};
+let movie4kSet = new Set();
+let movieDolbySet = new Set(); // {title: director}
+
+async function loadMovieTabData(){
+  try{
+    const today=today_kst();
+    const params=new URLSearchParams({date_from:today, date_to:statsCache?.date_max||today});
+    [movieData] = await Promise.all([
+      fetch(`/api/screenings?${params}`).then(r=>r.json()),
+    ]);
+    // 감독 정보 로드
+    try{
+      const mlist = await fetch("/api/movies").then(r=>r.json());
+      movieDirectorMap = {}; movie4kSet = new Set();
+      mlist.forEach(m=>{ if(m.director) movieDirectorMap[m.title]=m.director; if(m.is_4k) movie4kSet.add(m.title); if(m.is_dolby) movieDolbySet.add(m.title); });
+      // movieData에 director 주입
+      movieData.forEach(m=>{ m.director = movieDirectorMap[m.movie]||""; });
+    }catch(e){}
+    // 추천 목록
+    try{ recData=await fetch("/api/recommended").then(r=>r.json()); }catch(e){ recData=[]; }
+    renderMovieGrid();
+  }catch(e){ document.getElementById("movie-grid-content").innerHTML=`<div class="empty">데이터를 불러오지 못했습니다</div>`; }
+}
+
+const MOVIE_PAGE = 20;
+let movieCurrentPage = 1;
+
+// 필터·정렬 적용된 titles 배열 반환 (공통)
+function getFilteredTitles(){
+  const groups={};
+  movieData.forEach(r=>{
+    if(!groups[r.movie]) groups[r.movie]=[];
+    groups[r.movie].push(r);
+  });
+  const recFilterSet = movieRecOnly ? new Set((recData||[]).map(r=>r.title)) : null;
+  let titles=Object.keys(groups).filter(t=>{
+    if(movieSearchQ && !t.includes(movieSearchQ)) return false;
+    if(movieDirectorQ){
+      const d=(groups[t][0]?.director||"").toLowerCase();
+      if(!d.includes(movieDirectorQ.toLowerCase())) return false;
+    }
+    if(recFilterSet && !recFilterSet.has(t)) return false;
+    return true;
+  });
+  const dir = movieSortDir==="asc" ? 1 : -1;
+  if(movieSortMode==="count")   titles.sort((a,b)=>(groups[a].length-groups[b].length)*dir);
+  else if(movieSortMode==="title") titles.sort((a,b)=>a.localeCompare(b,"ko")*dir);
+  else if(movieSortMode==="runtime") titles.sort((a,b)=>{
+    const ra=groups[a].find(r=>r.runtime)?.runtime||0;
+    const rb=groups[b].find(r=>r.runtime)?.runtime||0;
+    return (ra-rb)*dir;
+  });
+  return {titles, groups};
+}
+
+function renderMovieGrid(resetPage=true){
+  if(!movieData.length){ document.getElementById("movie-grid-content").className=""; document.getElementById("movie-grid-content").innerHTML=`<div class="empty">상영 정보가 없습니다</div>`; return; }
+  if(resetPage) movieCurrentPage = 1;
+  const {titles, groups} = getFilteredTitles();
+  if(!titles.length){ document.getElementById("movie-grid-content").className=""; document.getElementById("movie-grid-content").innerHTML=`<div class="empty">검색 결과가 없습니다</div>`; return; }
+
+  const totalPages = Math.ceil(titles.length / MOVIE_PAGE);
+  const start = (movieCurrentPage-1)*MOVIE_PAGE;
+  const visible = titles.slice(start, start+MOVIE_PAGE);
+  const recSet = new Set((recData||[]).map(r=>r.title));
+  const recMap = {};
+  (recData||[]).forEach(r=>{ if(r.awards) recMap[r.title]=r.awards; });
+
+  const cards = visible.map(title=>{
+    const rows=groups[title];
+    const runtime=rows.find(r=>r.runtime)?.runtime;
+    const posterUrl=rows[0].poster_url||'';
+    const thumb=posterUrl
+      ?`<img data-src="${esc(posterUrl)}" alt="" class="lazy-img" onerror="this.parentNode.textContent='🎬'">`
+      :"🎬";
+    const _encRows=encodeURIComponent(JSON.stringify(rows.map(r=>({cinema:r.cinema,screen:r.screen||'',start_dt:r.start_dt,end_dt:r.end_dt,program:r.program,show_type:r.show_type,movie_url:r.movie_url||'',poster_url:r.poster_url||''}))));
+    const _encPost=encodeURIComponent(posterUrl);
+    const isRec=recSet.has(title);
+    const is4k=movie4kSet.has(title);
+    const isDolby=movieDolbySet.has(title);
+    const hasAward=!!(recMap[title]);
+    const dirText=rows[0]?.director||'';
+    const wished=isMovieWished(title);
+    return `<div class="mv-card${isRec?' has-rec':''}" onclick="onMovieCardClick('${esc(title)}','${_encRows}','${_encPost}')">
+      <div class="mv-poster">${thumb}</div>
+      ${isRec?`<div class="mv-rec-badge">★${hasAward?'🏆':''}</div>`:''}
+      ${!isRec&&hasAward?'<div class="mv-rec-badge">🏆</div>':''}
+      <div class="mv-tag-row">${is4k?'<div class="mv-4k-badge">4K</div>':''}${isDolby?'<div class="mv-dolby-badge">돌비</div>':''}</div>
+      <div class="mv-info">
+        <div class="mv-title-row">
+          <span class="mv-title">${esc(title)}</span>
+          <button class="mv-wish-btn${wished?' on':''}" onclick="event.stopPropagation();toggleMovieWish(this,'${esc(title)}','${esc(posterUrl)}')" title="관심 목록 추가">${wished?'♥':'♡'}</button>
+        </div>
+        <div class="mv-meta">${dirText?esc(dirText)+(runtime?' · ':''):''}${runtime?runtime+'분':''}</div>
+        <div class="mv-count">${rows.length}회 상영</div>
+      </div>
+    </div>`;
+  }).join("");
+
+  // 페이지네이션 바
+  const pagination = totalPages > 1 ? buildMoviePagination(movieCurrentPage, totalPages, titles.length) : "";
+
+  const mgc = document.getElementById("movie-grid-content");
+  mgc.className = "movie-card-grid";
+  mgc.innerHTML = cards + pagination;
+  lazyLoadImages();
+  // 페이지 변경 시 상단으로 스크롤
+  if(!resetPage) document.getElementById("tab-movie").scrollIntoView({behavior:"smooth", block:"start"});
+}
+
+function buildMoviePagination(cur, total, totalItems){
+  // 표시할 페이지 번호 범위 (최대 5개)
+  let start = Math.max(1, cur-2);
+  let end   = Math.min(total, start+4);
+  if(end-start < 4) start = Math.max(1, end-4);
+
+  let btns = '';
+  if(cur > 1) btns += `<button class="pg-btn" onclick="goMoviePage(${cur-1})">‹</button>`;
+  if(start > 1) btns += `<button class="pg-btn" onclick="goMoviePage(1)">1</button>${start>2?'<span class="pg-ellipsis">…</span>':''}`;
+  for(let i=start; i<=end; i++){
+    btns += `<button class="pg-btn${i===cur?' active':''}" onclick="goMoviePage(${i})">${i}</button>`;
+  }
+  if(end < total) btns += `${end<total-1?'<span class="pg-ellipsis">…</span>':''}<button class="pg-btn" onclick="goMoviePage(${total})">${total}</button>`;
+  if(cur < total) btns += `<button class="pg-btn" onclick="goMoviePage(${cur+1})">›</button>`;
+
+  return `<div class="pg-bar" style="grid-column:1/-1;">${btns}<span class="pg-info">${totalItems}편 / ${total}페이지</span></div>`;
+}
+
+function goMoviePage(page){
+  movieCurrentPage = page;
+  renderMovieGrid(false);
+}
+
+// 뷰포트 진입 시 포스터 로드
+function lazyLoadImages(){
+  const imgs = document.querySelectorAll("img.lazy-img[data-src]");
+  if("IntersectionObserver" in window){
+    const obs = new IntersectionObserver((entries)=>{
+      entries.forEach(e=>{
+        if(e.isIntersecting){
+          const img = e.target;
+          img.src = img.dataset.src;
+          img.removeAttribute("data-src");
+          img.classList.remove("lazy-img");
+          obs.unobserve(img);
+        }
+      });
+    },{rootMargin:"100px"});
+    imgs.forEach(img=>obs.observe(img));
+  } else {
+    // 폴백: 그냥 다 로드
+    imgs.forEach(img=>{ img.src=img.dataset.src; img.removeAttribute("data-src"); });
+  }
+}
+
+
+async function goToMovieTab(title){
+  // 영화별 탭으로 이동 + 해당 영화 검색 + 자동 펼침
+  await switchTab("movie");
+  // 검색창에 제목 입력
+  const input = document.getElementById("movieSearchInput");
+  if(input){ input.value = title; movieSearchQ = title; }
+  // 정렬 초기화 (제목순으로 찾기 쉽게)
+  movieSortMode = "count";
+  document.querySelectorAll(".movie-sort-btn").forEach(b=>b.classList.toggle("active", b.dataset.sort==="count"));
+  renderMovieGrid();
+  // 해당 영화 그룹 자동 펼침 (렌더 후 약간 딜레이)
+  setTimeout(()=>{
+    const headers = document.querySelectorAll(".movie-group-header");
+    headers.forEach(h=>{
+      if(h.querySelector(".movie-group-title")?.textContent?.includes(title)){
+        const rows = h.nextElementSibling;
+        if(rows && !rows.classList.contains("open")) rows.classList.add("open");
+        h.scrollIntoView({behavior:"smooth", block:"center"});
+      }
+    });
+  }, 100);
+}
+
+function filterMovieGroups(q){ movieSearchQ=q; renderMovieGrid(); }
+function toggleMovieRows(hdr){ hdr.nextElementSibling.classList.toggle("open"); }
+
+/* ══════════════════════════════════════
+   ④ 상세 조회
+══════════════════════════════════════ */
+
+async function refreshData(){
+  const btn=document.getElementById("refreshBtn");
+  btn.textContent="↻ 갱신 중…";
+  await loadStats();
+  await loadExploreData();
+  if(document.getElementById("tab-cinema").style.display!=="none") { cinemaData=[]; await loadCinemaTabData(); }
+  if(document.getElementById("tab-movie").style.display!=="none")  { movieData=[];  await loadMovieTabData(); }
+  btn.textContent="↻ 새로고침";
+}
+
+window.addEventListener("scroll",()=>{
+  const b=document.getElementById("scrollTopBtn");
+  if(b) b.classList.toggle("visible",window.scrollY>200);
+});
+
+init();
+</script>
+</body>
+</html>
