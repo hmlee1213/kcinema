@@ -841,12 +841,15 @@ def api_movie_detail_get():
     cur.execute("SELECT * FROM movies WHERE title=%s", (title,))
     row = cur.fetchone()
     result = dict(row) if row else {}
-    # recommended: is_rec, comment만 (awards는 movies에서 직접)
-    cur.execute("SELECT is_rec, comment FROM recommended WHERE title=%s AND is_rec=TRUE", (title,))
+    # recommended: is_rec, comment + awards 폴백 (movies.awards 없으면 recommended에서)
+    cur.execute("SELECT is_rec, comment, awards FROM recommended WHERE title=%s", (title,))
     rec = cur.fetchone()
     if rec:
         result["comment"] = rec["comment"] or ""
-        result["is_rec"]  = True
+        result["is_rec"]  = bool(rec["is_rec"])
+        # movies.awards가 비어있으면 recommended.awards 폴백
+        if not result.get("awards"):
+            result["awards"] = rec["awards"] or ""
     else:
         result["is_rec"]  = False
         result["comment"] = ""

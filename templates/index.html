@@ -1738,7 +1738,7 @@ async function openCinemaPopup(name){
   if(d.description) html += `<p style="font-size:13px;color:#333;margin:10px 0 8px;line-height:1.6;">${esc(d.description)}</p>`;
   // 요금표
   let pt = {};
-  try{ pt = typeof d.price_table === "string" ? JSON.parse(d.price_table) : (d.price_table||{}); }catch(e){}
+  try{ if(typeof d.price_table === "string"){ pt = JSON.parse(d.price_table||"{}"); } else if(d.price_table && typeof d.price_table === "object"){ pt = d.price_table; } }catch(e){ pt={}; }
   const hasPriceTable = pt.weekday_normal || pt.weekday_matinee || pt.weekend_normal || pt.weekend_matinee;
   if(hasPriceTable){
     html += `<table style="width:100%;border-collapse:collapse;font-size:12px;margin:10px 0;">
@@ -2030,7 +2030,7 @@ function renderCinemaGrid(){
     return `<div class="cinema-group">
       <div class="cinema-group-header" style="cursor:pointer;" onclick="openCinemaPopup('${esc(cinema)}')">
         <div class="cgr-top">
-          <div class="cinema-group-name">${esc(cinema)}${locBadge}<span style="font-size:10px;font-weight:500;color:var(--text-muted);margin-left:2px;">ℹ︎</span>${freeBadge}</div>
+          <div class="cinema-group-name">${esc(cinema)}${locBadge}${freeBadge}</div>
           <span style="font-size:11px;color:var(--text-muted);margin-left:6px;">${rows.length}건${maxMmdd?` ~${maxMmdd}`:""}</span>
           <div class="cinema-group-meta cgr-meta-pc" style="flex:1;display:flex;align-items:center;gap:8px;">
             <span style="flex:1;"></span>
@@ -2039,7 +2039,7 @@ function renderCinemaGrid(){
           </div>
         </div>
         <div class="cgr-meta-mobile" style="display:none;flex-direction:column;gap:2px;padding:0 12px 7px;">
-          ${addrText||srcBadge?`<div style="display:flex;align-items:center;gap:8px;">${addrText?`<span style="font-size:11px;color:var(--text-muted);flex:1;text-align:left;">${esc(addrText)}</span>`:"<span style='flex:1;'></span>"} <span style="margin-left:auto;flex-shrink:0;">${srcBadge}</span></div>`:""}
+          <div style="display:flex;align-items:center;width:100%;">${addrText?`<span style="font-size:11px;color:var(--text-muted);flex:1;">${esc(addrText)}</span>`:"<span style='flex:1;'></span>"}${srcBadge}</div>
         </div>
       </div>
       <div class="cinema-group-rows cinema-rows-2col">
