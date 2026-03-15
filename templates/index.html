@@ -1528,19 +1528,87 @@ function popupSlotHtml(r, title, posterUrl, extraLabel='', cinemaSticker='', ext
 
 
 function openMoviePopupFromExplore(movie, posterUrl, cinema){
+  // 탐색 팝업(popupOverlay) 직접 사용 — 날짜별 슬롯만 렌더링
   const rows = exploreData
     .filter(r => r.movie === movie && (!cinema || r.cinema === cinema))
-    .map(r => ({
-      cinema: r.cinema, screen: r.screen||'',
-      start_dt: r.start_dt, end_dt: r.end_dt,
-      program: r.program, show_type: r.show_type,
-      movie_url: r.movie_url||'', poster_url: r.poster_url||''
-    }));
-  const url = posterUrl || (rows[0]?.poster_url || '');
-  moviePopupSort = 'date';
-  const _sb2 = document.getElementById('mpSortBar');
-  if(_sb2) _sb2.style.display = 'none';
-  openMoviePopup(movie, rows, url);
+    .sort((a,b)=>(a.start_dt||'').localeCompare(b.start_dt||''));
+
+  const url = posterUrl || rows[0]?.poster_url || '';
+
+  // 포스터/제목 초기화
+  document.getElementById("popupTitle").textContent = movie;
+  document.getElementById("popupRecBadge").style.display = "none";
+  if(document.getElementById("popupAwardsInline")) document.getElementById("popupAwardsInline").style.display = "none";
+  document.getElementById("popupPoster").innerHTML = url
+    ? `<img src="${esc(url)}" style="width:100%;height:100%;object-fit:cover" onerror="this.parentNode.innerHTML='🎬'">`
+    : "🎬";
+  document.getElementById("popupMeta").textContent = "";
+  document.getElementById("popupSynopsisWrap").style.display = "none";
+  document.getElementById("popupSynopsisMore").style.display = "none";
+  document.getElementById("popupSynopsisLess").style.display = "none";
+  document.getElementById("popupAwards").style.display = "none";
+
+  // 날짜별 그룹핑
+  const byDate = {};
+  rows.forEach(r => {
+    const {mmdd, dow} = splitDt(r.start_dt);
+    const dk = mmdd+(dow?`(${dow})`:'');
+    if(!byDate[dk]) byDate[dk] = [];
+    byDate[dk].push(r);
+  });
+  let gIdx = 0;
+  const html = Object.entries(byDate).map(([dateLabel, rs]) => {
+    const gid = 'epg-'+(gIdx++);
+    const slots = rs.map(r => {
+      const {time:stm} = splitDt(r.start_dt);
+      const end = (r.end_dt||'').slice(11,16);
+      const s = stickerHtml(r.program, r.show_type, r.cinema, movie, r.screen||'');
+      const scr = r.screen ? ` · ${normalizeScreen(r.cinema, r.screen)}` : '';
+      const schedKey = `${esc(movie)}|${esc(r.cinema)}|${esc(r.screen||'')}|${r.start_dt||''}`;
+      const wished = isSchedWished(schedKey);
+      const bookBtn = r.movie_url ? `<a class="book-btn" href="${esc(r.movie_url)}" target="_blank" onclick="event.stopPropagation()">예매 →</a>` : '';
+      return `<div class="popup-sched-slot${wished?' wished':''}" style="display:flex;align-items:center;gap:8px;border-top:1px solid ${wished?'var(--green)':'var(--border)'};padding:6px 4px;background:${wished?'#EEF5E8':'transparent'};">
+        <span style="font-size:13px;font-weight:700;color:var(--text);">${stm}</span>
+        <span style="font-size:11px;color:var(--text-muted);">–${end}</span>
+        <span style="font-size:11px;color:var(--text-muted);">${esc(r.cinema)}${esc(scr)}</span>
+        ${s}${bookBtn}
+        <button class="sched-wish-btn swb${wished?' on':''}" data-key="${schedKey}" onclick="event.stopPropagation();toggleSchedWish('${schedKey}','${esc(movie)}','${esc(r.cinema)}','${esc(r.screen||'')}','${r.start_dt||''}','${r.end_dt||''}','${esc(url)}',this)" style="margin-left:auto;">${wished?'⏰':'➕'}</button>
+      </div>`;
+    }).join('');
+    return `<div style="border-bottom:1px solid var(--border);">
+      <div onclick="toggleMpGroup('${gid}')" style="display:flex;align-items:center;gap:6px;padding:8px 4px;cursor:pointer;user-select:none;">
+        <span style="font-size:12px;font-weight:700;color:var(--text);">${esc(dateLabel)}</span>
+        <span style="font-size:10px;color:var(--text-muted);">${rs.length}회</span>
+        <span id="${gid}-icon" style="margin-left:auto;font-size:11px;color:var(--text-muted);">▾</span>
+      </div>
+      <div id="${gid}" style="display:flex;flex-direction:column;gap:4px;padding-bottom:8px;">${slots}</div>
+    </div>`;
+  }).join('');
+
+  document.getElementById("popupSchedules").innerHTML = html || '<div style="color:var(--text-muted);font-size:12px;padding:8px 0;">상영 정보 없음</div>';
+
+  // 영화 정보 비동기 로드
+  fetch(`/api/movie-detail?title=${encodeURIComponent(movie)}`)
+    .then(r=>r.json()).then(d=>{
+      if(!d||!d.title) return;
+      if(d.poster_url) document.getElementById("popupPoster").innerHTML=`<img src="${esc(d.poster_url)}" style="width:100%;height:100%;object-fit:cover" onerror="this.parentNode.innerHTML='🎬'">`;
+      const parts=[]; if(d.director) parts.push(d.director); if(d.year) parts.push(d.year+"년"); if(d.runtime) parts.push(d.runtime+"분");
+      document.getElementById("popupMeta").textContent = parts.join(" · ");
+      const isRec=(recData||[]).some(r=>r.title===movie);
+      document.getElementById("popupRecBadge").style.display = isRec?"inline":"none";
+      const awHtml=awardsHtml(d.awards||"");
+      if(awHtml){document.getElementById("popupAwards").innerHTML=awHtml;document.getElementById("popupAwards").style.display="block";}
+      if(d.synopsis){
+        const synEl=document.getElementById("popupSynopsis");
+        synEl.textContent=d.synopsis; synEl.style.display="-webkit-box"; synEl.style.overflow="hidden";
+        synEl.style.webkitLineClamp="3"; synEl.style["-webkit-box-orient"]="vertical";
+        document.getElementById("popupSynopsisWrap").style.display="block";
+        requestAnimationFrame(()=>{document.getElementById("popupSynopsisMore").style.display=synEl.scrollHeight>synEl.clientHeight+2?"inline":"none";});
+      }
+    }).catch(()=>{});
+
+  document.getElementById("popupOverlay").classList.add("open");
+  document.body.style.overflow="hidden";
 }
 function openMoviePopup(title, rows, posterUrl){
   moviePopupTitle = title;
