@@ -484,7 +484,7 @@ def api_screenings():
 @app.route("/api/movies")
 def api_movies():
     conn = get_db(); cur = conn.cursor()
-    cur.execute("SELECT title, director, synopsis, poster_url, is_4k, is_dolby FROM movies WHERE poster_url != '' ORDER BY title")
+    cur.execute("SELECT title, director, synopsis, poster_url, is_4k, is_dolby, awards FROM movies ORDER BY title")
     rows = [dict(r) for r in cur.fetchall()]
     cur.close(); release_db(conn)
     return jsonify(rows)

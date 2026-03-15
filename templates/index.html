@@ -870,6 +870,7 @@ function cinema4kSupportBadge(cinema){
 let cinemaData = [];
 let movieData  = [];
 let recData    = [];
+let movieAwardMap = {};
 let cinemaChipState = {};
 let statsCache = null;
 
@@ -890,7 +891,7 @@ async function init(){
   try{
     const mlist = await fetch("/api/movies").then(r=>r.json());
     movieDirectorMap = {}; movie4kSet = new Set();
-    mlist.forEach(m=>{ if(m.director) movieDirectorMap[m.title]=m.director; if(m.is_4k) movie4kSet.add(m.title); if(m.is_dolby) movieDolbySet.add(m.title); });
+    mlist.forEach(m=>{ if(m.director) movieDirectorMap[m.title]=m.director; if(m.is_4k) movie4kSet.add(m.title); if(m.is_dolby) movieDolbySet.add(m.title); if(m.awards) movieAwardMap[m.title]=m.awards; });
   }catch(e){}
   await loadExploreData();
   updateWishBadge();
@@ -1008,9 +1009,7 @@ function renderExploreCards(){
   const maxLen = Math.max(...cards.map(c=>c.movie.length));
   const cardW = Math.max(180, Math.min(288, 70+24+maxLen*14));
   const recSet = new Set((recData||[]).map(r=>r.title));
-  const exploreAwardMap = {};
-  (recData||[]).forEach(r=>{ if(r.awards) exploreAwardMap[r.title]=r.awards; });
-  const exploreRecMap = {}; (recData||[]).forEach(r=>{ if(r.awards) exploreRecMap[r.title]=r.awards; });
+  const exploreAwardMap = movieAwardMap;
 
   const html = cards.map(g=>{
     const isFree = FREE_CINEMAS.includes(g.cinema);
@@ -1351,7 +1350,7 @@ function openPopup(movie, cinema, screen, movieUrl){
       // 추천 배지
       const isMovieRec = (recData||[]).some(r=>r.title===movie);
       const recBadgeEl = document.getElementById("popupRecBadge");
-      recBadgeEl.textContent = isMovieRec && (recData||[]).find(r=>r.title===movie)?.awards ? "★🏆" : "★";
+      recBadgeEl.textContent = isMovieRec && movieAwardMap[movie] ? "★🏆" : "★";
       recBadgeEl.style.display = isMovieRec ? "inline" : "none";
       // 수상
       const awHtml = awardsHtml(d.awards||"");
@@ -1941,7 +1940,7 @@ function renderWishMovies(el){
     return;
   }
   const recSet = new Set((recData||[]).map(r=>r.title));
-  const recMap = {}; (recData||[]).forEach(r=>{ if(r.awards) recMap[r.title]=r.awards; });
+  const recMap = movieAwardMap;
   const html = arr.map(m=>{
     const posterUrl = m.poster_url || "";
     const thumb = posterUrl
@@ -2132,7 +2131,7 @@ async function loadMovieTabData(){
     try{
       const mlist = await fetch("/api/movies").then(r=>r.json());
       movieDirectorMap = {}; movie4kSet = new Set();
-      mlist.forEach(m=>{ if(m.director) movieDirectorMap[m.title]=m.director; if(m.is_4k) movie4kSet.add(m.title); if(m.is_dolby) movieDolbySet.add(m.title); });
+      mlist.forEach(m=>{ if(m.director) movieDirectorMap[m.title]=m.director; if(m.is_4k) movie4kSet.add(m.title); if(m.is_dolby) movieDolbySet.add(m.title); if(m.awards) movieAwardMap[m.title]=m.awards; });
       // movieData에 director 주입
       movieData.forEach(m=>{ m.director = movieDirectorMap[m.movie]||""; });
     }catch(e){}
@@ -2183,11 +2182,9 @@ function renderMovieGrid(resetPage=true){
   const start = (movieCurrentPage-1)*MOVIE_PAGE;
   const visible = titles.slice(start, start+MOVIE_PAGE);
   const recSet = new Set((recData||[]).map(r=>r.title));
-  const exploreAwardMap = {};
-  (recData||[]).forEach(r=>{ if(r.awards) exploreAwardMap[r.title]=r.awards; });
-  const exploreRecMap = {}; (recData||[]).forEach(r=>{ if(r.awards) exploreRecMap[r.title]=r.awards; });
+  const exploreAwardMap = movieAwardMap;
   const recMap = {};
-  (recData||[]).forEach(r=>{ if(r.awards) recMap[r.title]=r.awards; });
+
 
   const cards = visible.map(title=>{
     const rows=groups[title];
