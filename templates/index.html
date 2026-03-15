@@ -909,7 +909,8 @@ function getExploreParams(){
   const todayDow = new Date(ty,tm-1,td).getDay(); // 0=일,6=토
   const fmt = d => { const y=d.getFullYear(),mo=String(d.getMonth()+1).padStart(2,"0"),da=String(d.getDate()).padStart(2,"0"); return `${y}-${mo}-${da}`; };
   // 월~금(1~5): 이번 주 토요일 / 토(6)·일(0): 다음 주 토요일
-  const daysToSat = todayDow >= 1 && todayDow <= 5 ? (6 - todayDow) : (7 - todayDow + 6) % 7 + 7;
+  // 월~금: 이번 주 토 / 토: 다음 주 토(+7) / 일: 다음 주 토(+6, 일→토=6일)
+  const daysToSat = todayDow === 6 ? 7 : (6 - todayDow);
   const sat = new Date(ty, tm-1, td + daysToSat);
   const sun = new Date(ty, tm-1, td + daysToSat + 1);
 
@@ -924,9 +925,11 @@ function getExploreParams(){
     const tt = document.getElementById("exploreTimeTo").value || "23";
     return {dateFrom:sd, dateTo:sd, timeFrom:tf+":00", timeTo:tt+":59"};
   }
+  // 내일
+  const tomorrow = new Date(ty, tm-1, td+1);
   // 빠른선택
   let dateFrom = todayStr, dateTo = todayStr;
-  if(exploreMode==="tomorrow"){ const tm=new Date(t); tm.setDate(t.getDate()+1); dateFrom=dateTo=fmt(tm); }
+  if(exploreMode==="tomorrow"){ dateFrom=dateTo=fmt(tomorrow); }
   else if(exploreMode==="saturday"){ dateFrom=dateTo=fmt(sat); }
   else if(exploreMode==="sunday")  { dateFrom=dateTo=fmt(sun); }
   return {dateFrom, dateTo, timeFrom:"00:00", timeTo:"23:59"};
@@ -1282,7 +1285,8 @@ function openPopup(movie, cinema, screen, movieUrl){
 
   // 상영 일정 (즉시)
   const sc = screen ? ` · ${screen}` : "";
-  const rows = exploreData.filter(r=>r.movie===movie && r.cinema===cinema && (r.screen||"")===screen);
+  const _pool = exploreData.length ? exploreData : cinemaData;
+  const rows = _pool.filter(r=>r.movie===movie && r.cinema===cinema && (r.screen||"")===screen);
   document.getElementById("popupSchedules").innerHTML = rows.length
     ? rows.map(r=>{
         const {mmdd,time}=splitDt(r.start_dt), end=(r.end_dt||"").slice(11,16);
@@ -1919,10 +1923,10 @@ function renderCinemaGrid(){
     return `<div class="cinema-group">
       <div class="cinema-group-header" style="cursor:pointer;" onclick="openCinemaPopup('${esc(cinema)}')">
         <div class="cgr-top">
-          <div class="cinema-group-name">${esc(cinema)}${locBadge}<span style="font-size:10px;font-weight:500;color:var(--text-muted);margin-left:2px;">ℹ︎</span>${freeBadge}</div>
+          <div class="cinema-group-name">${esc(cinema)}${locBadge}<span style="font-size:10px;font-weight:500;color:var(--text-muted);margin-left:2px;">ℹ︎</span>${freeBadge}${countBadge}</div>
           <div class="cinema-group-meta cgr-meta-pc" style="flex:1;display:flex;align-items:center;gap:8px;">
-            ${countBadge}
-            ${addrText?`<span style="font-size:11px;color:var(--text-muted);">${esc(addrText)}</span>`:""}
+            <span style="flex:1;"></span>
+            ${addrText?`<span style="font-size:11px;color:var(--text-muted);text-align:right;">${esc(addrText)}</span>`:""}
             ${srcBadge}
           </div>
         </div>
