@@ -366,7 +366,7 @@ tr:hover td{background:#FAFAF8;}
 .ex-cinema-chip:hover{border-color:var(--text);color:var(--text);}
 .ex-cinema-chip.active{background:var(--green);border-color:var(--green);color:#fff;}
 .ex-cinema-chip.active .free-badge{color:rgba(255,255,255,.8);}
-.explore-cinema-chips{display:grid;grid-template-columns:repeat(2,1fr);gap:5px;}
+.explore-cinema-chips{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:5px;}
 .free-badge{font-size:9px;font-weight:700;color:var(--green);margin-left:3px;}
 .result-header-row{display:flex;align-items:center;gap:14px;margin-bottom:16px;flex-wrap:wrap;}
 
@@ -1537,12 +1537,9 @@ function openMoviePopupFromExplore(movie, posterUrl, cinema){
       movie_url: r.movie_url||'', poster_url: r.poster_url||''
     }));
   const url = posterUrl || (rows[0]?.poster_url || '');
-  // 탐색 팝업은 날짜순만, 정렬 버튼 숨김
   moviePopupSort = 'date';
-  const mpDate2 = document.getElementById('mpSortDate');
-  const mpCinema2 = document.getElementById('mpSortCinema');
-  if(mpDate2) mpDate2.style.display = 'none';
-  if(mpCinema2) mpCinema2.style.display = 'none';
+  const _sb2 = document.getElementById('mpSortBar');
+  if(_sb2) _sb2.style.display = 'none';
   openMoviePopup(movie, rows, url);
 }
 function openMoviePopup(title, rows, posterUrl){
