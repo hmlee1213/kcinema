@@ -678,7 +678,7 @@ tr:hover td{background:#FAFAF8;}
       <div class="popup-poster" id="popupPoster">🎬</div>
       <div class="popup-info">
         <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-          <div class="popup-title" id="popupTitle" style="margin-bottom:0;"></div>
+          <div class="popup-title" id="popupTitle" style="margin-bottom:0;flex:1;min-width:0;"></div>
           <span id="popupRecBadge" style="display:none;font-size:13px;color:#c0861a;font-weight:700;">★ 추천</span>
         </div>
         <div class="popup-meta" id="popupMeta" style="margin-top:3px;font-size:12px;color:var(--text-muted);"></div>
@@ -688,10 +688,11 @@ tr:hover td{background:#FAFAF8;}
           <button id="popupSynopsisMore" onclick="expandSynopsis()" style="font-size:11px;color:var(--green);background:none;border:none;cursor:pointer;padding:2px 0;font-family:inherit;font-weight:600;display:none;">더보기 ▾</button>
           <button id="popupSynopsisLess" onclick="collapseSynopsis()" style="font-size:11px;color:var(--green);background:none;border:none;cursor:pointer;padding:2px 0;font-family:inherit;font-weight:600;display:none;">접기 ▴</button>
         </div>
-        <div class="popup-schedules" style="margin-top:10px;">
-          <div id="popupSchedules"></div>
-        </div>
       </div>
+    </div>
+    <div style="border-top:1px solid var(--border);margin-top:12px;"></div>
+    <div style="padding:8px 18px 12px;">
+      <div id="popupSchedules"></div>
     </div>
   </div>
 </div>
@@ -703,13 +704,9 @@ tr:hover td{background:#FAFAF8;}
     <div class="popup-top">
       <div class="popup-poster" id="moviePopupPoster">🎬</div>
       <div class="popup-info">
-        <div style="display:flex;align-items:flex-start;gap:6px;">
-          <div style="flex:1;min-width:0;">
-            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-              <div class="popup-title" id="moviePopupTitle" style="margin-bottom:0;"></div>
-              <div id="moviePopupTypeTags" style="display:flex;gap:4px;flex-shrink:0;"></div>
-            </div>
-          </div>
+        <div style="display:flex;align-items:flex-start;gap:6px;padding-right:28px;">
+          <div class="popup-title" id="moviePopupTitle" style="margin-bottom:0;flex:1;min-width:0;"></div>
+          <div id="moviePopupTypeTags" style="display:flex;gap:4px;flex-shrink:0;align-items:center;"></div>
           <div id="moviePopupMeta" style="flex-shrink:0;"></div>
         </div>
         <div id="moviePopupDetailMeta" style="font-size:11px;color:var(--text-muted);margin-top:5px;line-height:1.6;"></div>
@@ -1239,13 +1236,17 @@ function openPopup(movie, cinema, screen, movieUrl){
         const cinemaLine = cinema+(screen?` · ${screen}`:"");
         const isMobile = window.innerWidth <= 600;
         const dateLabel = isMobile ? `${sdow2.mobileDate||mmdd}` : mmdd;
-        return `<div class="sched-row" style="display:flex;flex-direction:column;gap:2px;padding:7px 0;border-bottom:1px solid var(--border);">
-          <div style="display:flex;align-items:center;gap:8px;">
-            <span style="font-size:12px;font-weight:700;color:var(--text);white-space:nowrap;min-width:60px;">${isMobile?`${parseInt((r.start_dt||'').slice(5,7))}월 ${parseInt((r.start_dt||'').slice(8,10))}일`:mmdd} <span style="font-size:11px;font-weight:500;color:var(--text-muted);">${sdow2||""}</span></span>
-            <span style="font-size:12px;font-weight:700;color:var(--text);white-space:nowrap;">${time}–${end}${s}</span>
-            <span style="display:flex;align-items:center;gap:4px;margin-left:auto;">${bookBtn}<button class="sched-wish-btn swb${wished?" on":""}" data-key="${schedKey}" onclick="toggleSchedWish('${schedKey}','${esc(movie)}','${esc(cinema)}','${esc(screen||"")}','${r.start_dt||""}','${r.end_dt||""}','${esc(r.poster_url||"")}',this)">${wished?"⏰":"➕"}</button></span>
+        const dateTxt = isMobile ? `${parseInt((r.start_dt||'').slice(5,7))}월 ${parseInt((r.start_dt||'').slice(8,10))}일` : mmdd;
+        return `<div class="sched-row" style="padding:7px 0;border-bottom:1px solid var(--border);">
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span style="font-size:12px;font-weight:700;color:var(--text);white-space:nowrap;">${dateTxt} <span style="font-size:11px;font-weight:500;color:var(--text-muted);">${sdow2||""}</span></span>
+            <span style="font-size:13px;font-weight:700;color:var(--text);white-space:nowrap;">${time}–${end}</span>
+            ${s}
           </div>
-          <div style="font-size:11px;color:var(--text-muted);padding-left:2px;">${esc(cinemaLine)}</div>
+          <div style="display:flex;align-items:center;gap:6px;margin-top:3px;">
+            <span style="font-size:11px;color:var(--text-muted);flex:1;">${esc(cinemaLine)}</span>
+            ${bookBtn}<button class="sched-wish-btn swb${wished?" on":""}" data-key="${schedKey}" onclick="toggleSchedWish('${schedKey}','${esc(movie)}','${esc(cinema)}','${esc(screen||"")}','${r.start_dt||""}','${r.end_dt||""}','${esc(r.poster_url||"")}',this)">${wished?"⏰":"➕"}</button>
+          </div>
         </div>`;
       }).join("")
     : "";
@@ -1501,9 +1502,9 @@ function openMoviePopup(title, rows, posterUrl){
     .then(d=>{
       if(!d || !d.title) return;
       const dirPart = d.director || "";
-      const runtimePart = d.runtime ? `${d.runtime}분` : "";
       const yearPart = d.year ? `${d.year}년` : "";
-      const metaParts = [dirPart, runtimePart, yearPart].filter(Boolean);
+      const runtimePart = d.runtime ? `${d.runtime}분` : "";
+      const metaParts = [dirPart, yearPart, runtimePart].filter(Boolean);
       document.getElementById("moviePopupDetailMeta").textContent = metaParts.join(" · ");
       // 제목 옆 유형 태그 (4K / 필름 / 돌비)
       const typeTags = [];
