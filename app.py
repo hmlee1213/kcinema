@@ -212,6 +212,7 @@ def ensure_db():
     cur.execute("ALTER TABLE movies ADD COLUMN IF NOT EXISTS is_4k BOOLEAN DEFAULT FALSE")
     cur.execute("ALTER TABLE movies ADD COLUMN IF NOT EXISTS is_dolby BOOLEAN DEFAULT FALSE")
     cur.execute("ALTER TABLE movies ADD COLUMN IF NOT EXISTS director_en TEXT DEFAULT ''")
+    cur.execute("ALTER TABLE movies ADD COLUMN IF NOT EXISTS awards TEXT DEFAULT ''")
     cur.execute("""
         CREATE TABLE IF NOT EXISTS posters (
             title TEXT PRIMARY KEY,
@@ -840,13 +841,15 @@ def api_movie_detail_get():
     cur.execute("SELECT * FROM movies WHERE title=%s", (title,))
     row = cur.fetchone()
     result = dict(row) if row else {}
-    # recommended 테이블에서 awards, comment, is_rec 합치기
-    cur.execute("SELECT awards, comment, is_rec FROM recommended WHERE title=%s", (title,))
+    # recommended: is_rec, comment만 (awards는 movies에서 직접)
+    cur.execute("SELECT is_rec, comment FROM recommended WHERE title=%s AND is_rec=TRUE", (title,))
     rec = cur.fetchone()
     if rec:
-        result["awards"]  = rec["awards"]  or ""
         result["comment"] = rec["comment"] or ""
-        result["is_rec"]  = bool(rec["is_rec"])
+        result["is_rec"]  = True
+    else:
+        result["is_rec"]  = False
+        result["comment"] = ""
     cur.close(); release_db(conn)
     return jsonify(result)
 
@@ -861,6 +864,7 @@ def api_movie_detail_post():
     poster   = (d.get("poster_url") or "").strip()
     director = (d.get("director") or "").strip()
     synopsis = (d.get("synopsis") or "").strip()
+    awards   = (d.get("awards") or "").strip()
     year     = int(d["year"]) if d.get("year") else None
     is_4k      = bool(d.get("is_4k", False))
     is_dolby   = bool(d.get("is_dolby", False))
@@ -868,8 +872,8 @@ def api_movie_detail_post():
     director_en= (d.get("director_en") or "").strip()
     conn = get_db(); cur = conn.cursor()
     cur.execute("""
-        INSERT INTO movies (title, title_en, poster_url, director, director_en, synopsis, year, is_4k, is_dolby, updated_at)
-        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,NOW())
+        INSERT INTO movies (title, title_en, poster_url, director, director_en, synopsis, year, is_4k, is_dolby, awards, updated_at)
+        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,NOW())
         ON CONFLICT (title) DO UPDATE SET
             title_en   =EXCLUDED.title_en,
             poster_url =EXCLUDED.poster_url,
@@ -879,8 +883,9 @@ def api_movie_detail_post():
             year       =EXCLUDED.year,
             is_4k      =EXCLUDED.is_4k,
             is_dolby   =EXCLUDED.is_dolby,
+            awards     =EXCLUDED.awards,
             updated_at =NOW()
-    """, (title, title_en, poster, director, director_en, synopsis, year, is_4k, is_dolby))
+    """, (title, title_en, poster, director, director_en, synopsis, year, is_4k, is_dolby, awards))
     conn.commit(); cur.close(); release_db(conn)
     return jsonify({"ok": True})
 
@@ -1653,27 +1658,21 @@ async function saveMovie(){
   const isDolby   =document.getElementById("epIsDolby").checked;
   const titleEn   =document.getElementById("epTitleEn").value.trim();
   const directorEn=document.getElementById("epDirectorEn").value.trim();
-  // 1) 기본 정보 저장
+  // 1) 기본 정보 + 수상 저장 (awards는 movies 테이블)
   const r1=await fetch("/api/movie-detail",{
     method:"POST",headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({title,title_en:titleEn,poster_url:poster,director,director_en:directorEn,year:year||null,synopsis,is_4k:is4k,is_dolby:isDolby})
+    body:JSON.stringify({title,title_en:titleEn,poster_url:poster,director,director_en:directorEn,year:year||null,synopsis,is_4k:is4k,is_dolby:isDolby,awards})
   });
 
-  // 2) 추천 저장 or 해제
+  // 2) 추천/코멘트만 recommended (awards와 완전 독립)
   if(isRec){
     await fetch("/api/recommended",{
       method:"POST",headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({title,is_rec:true,comment,awards})
+      body:JSON.stringify({title,is_rec:true,comment,awards:""})
     });
   } else if(selCard?.dataset.recId){
-    // 추천 해제 (awards는 서버에서 보존)
+    // 추천 해제 — recommended만, awards(movies)는 무관
     await fetch(`/api/recommended/${selCard.dataset.recId}`,{method:"DELETE"});
-  } else if(awards && !selCard?.dataset.recId){
-    // 추천 없이 수상만 있는 경우 — recommended에 is_rec=false로 저장
-    await fetch("/api/recommended",{
-      method:"POST",headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({title,is_rec:false,comment:"",awards})
-    });
   }
 
   if(r1.ok){
