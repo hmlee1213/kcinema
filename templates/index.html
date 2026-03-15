@@ -220,7 +220,7 @@ header{background:var(--text);color:#fff;padding:0 24px;position:sticky;top:0;z-
 .movie-sort-btn.active{background:var(--text);border-color:var(--text);color:#fff;}
 /* 관리자 추천 배지 */
 .rec-badge{display:inline-flex;align-items:center;font-size:11px;font-weight:800;color:#B45309;flex-shrink:0;letter-spacing:-.01em;}
-.movie-card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:8px;}
+.movie-card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:8px;}
 .mv-card{border:1.5px solid var(--border);border-radius:8px;padding:0;cursor:pointer;transition:border-color .12s,box-shadow .12s;background:var(--surface);position:relative;overflow:hidden;display:flex;flex-direction:column;}
 .mv-card:hover{border-color:#2D5A1B;box-shadow:0 2px 8px rgba(0,0,0,.08);}
 .mv-card.has-rec{border-color:#F59E0B;}
@@ -367,6 +367,7 @@ tr:hover td{background:#FAFAF8;}
 .ex-cinema-chip.active{background:var(--green);border-color:var(--green);color:#fff;}
 .ex-cinema-chip.active .free-badge{color:rgba(255,255,255,.8);}
 .explore-cinema-chips{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:5px;width:100%;}
+.explore-cinema-chips .ex-cinema-chip{min-width:0;overflow:hidden;text-overflow:ellipsis;text-align:center;}
 .free-badge{font-size:9px;font-weight:700;color:var(--green);margin-left:3px;}
 .result-header-row{display:flex;align-items:center;gap:14px;margin-bottom:16px;flex-wrap:wrap;}
 
@@ -500,6 +501,7 @@ tr:hover td{background:#FAFAF8;}
       <div class="stat-item"><span class="stat-label">영화</span><strong id="statMovies">—</strong></div>
     </div>
     <button class="header-refresh" id="refreshBtn" onclick="refreshData()">↻ 새로고침</button>
+    <button class="header-refresh" onclick="openSiteInfo()" style="margin-left:4px;">ℹ 정보</button>
   </div>
 </header>
 
@@ -579,7 +581,7 @@ tr:hover td{background:#FAFAF8;}
           <div class="cond-sep"></div>
           <button class="ex-chip" id="cinemaDirectBtn" onclick="toggleCinemaDirect()">직접 선택</button>
         </div>
-        <div class="cond-sub" id="cinemaDirectSub">
+        <div class="cond-sub" id="cinemaDirectSub" style="display:none;padding:8px 0 0;">
           <div id="explorecinemaChips" class="explore-cinema-chips"></div>
         </div>
       </div>
@@ -1120,7 +1122,7 @@ function setExploreArea(btn, area){
   if(area !== "all"){
     exploreDirectOpen = true;
     document.getElementById("cinemaDirectBtn").classList.add("active");
-    document.getElementById("cinemaDirectSub").classList.add("open");
+    document.getElementById("cinemaDirectSub").style.display = "block";
   }
   loadExploreData();
 }
@@ -1128,7 +1130,7 @@ function setExploreArea(btn, area){
 function toggleCinemaDirect(){
   exploreDirectOpen = !exploreDirectOpen;
   document.getElementById("cinemaDirectBtn").classList.toggle("active", exploreDirectOpen);
-  document.getElementById("cinemaDirectSub").classList.toggle("open", exploreDirectOpen);
+  document.getElementById("cinemaDirectSub").style.display = exploreDirectOpen ? "block" : "none";
 }
 
 function toggleExploreCinema(btn, name){
@@ -2312,6 +2314,32 @@ window.addEventListener("scroll",()=>{
 });
 
 init();
+
+let _siteIntroCache = null;
+async function openSiteInfo(){
+  if(!_siteIntroCache){
+    const d = await fetch("/api/meta/site_intro").then(r=>r.json()).catch(()=>({value:""}));
+    _siteIntroCache = d.value || "소개글이 없습니다.\n어드민에서 입력해주세요.";
+  }
+  document.getElementById("siteInfoContent").textContent = _siteIntroCache;
+  document.getElementById("siteInfoOverlay").classList.add("open");
+  document.body.style.overflow="hidden";
+}
+function closeSiteInfo(){
+  document.getElementById("siteInfoOverlay").classList.remove("open");
+  document.body.style.overflow="";
+}
 </script>
+
+<!-- 사이트 정보 팝업 -->
+<div class="popup-overlay" id="siteInfoOverlay" onclick="if(event.target===this)closeSiteInfo()">
+  <div class="popup" onclick="event.stopPropagation()" style="max-width:480px;">
+    <button class="popup-close" onclick="closeSiteInfo()">✕</button>
+    <div style="padding:24px 22px 20px;">
+      <div style="font-family:'DM Serif Display',serif;font-size:20px;margin-bottom:14px;">오늘 뭐 볼까?</div>
+      <div id="siteInfoContent" style="font-size:13px;color:var(--text-muted);line-height:1.8;white-space:pre-wrap;"></div>
+    </div>
+  </div>
+</div>
 </body>
 </html>

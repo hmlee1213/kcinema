@@ -6,7 +6,6 @@ import requests
 from bs4 import BeautifulSoup
 import psycopg2
 from psycopg2.extras import RealDictCursor
-from psycopg2.pool import ThreadedConnectionPool
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger(__name__)
@@ -81,36 +80,9 @@ CINEMAS = [
 DTRYX_CGID = "FE8EF4D2-F22D-4802-A39A-D58F23A29C1E"
 
 # ── DB ───────────────────────────────────────────────
-_pool = None
-_pool_lock = threading.Lock()
-
-def get_pool():
-    global _pool
-    if _pool is None:
-        with _pool_lock:
-            if _pool is None:
-                _pool = ThreadedConnectionPool(
-                    minconn=1, maxconn=10,
-                    dsn=DATABASE_URL,
-                    cursor_factory=RealDictCursor
-                )
-    return _pool
-
 def get_db():
-    try:
-        conn = get_pool().getconn()
-        conn.autocommit = False
-        return conn
-    except Exception:
-        # 풀 연결 실패 시 직접 연결 fallback
-        return psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
-
-def release_db(conn):
-    try:
-        get_pool().putconn(conn)
-    except Exception:
-        try: release_db(conn)
-        except: pass
+    conn = psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
+    return conn
 
 def ensure_db():
     conn = get_db()
@@ -244,7 +216,7 @@ def save_to_db(rows):
         INSERT INTO meta (key, value) VALUES ('last_updated', %s)
         ON CONFLICT (key) DO UPDATE SET value=EXCLUDED.value
     """, (datetime.now().isoformat(),))
-    conn.commit(); cur.close(); release_db(conn)
+    conn.commit(); cur.close(); conn.close()
 
 # ── 공통 함수 (getdb.py 원본) ─────────────────────────
 def make_datetime(date_obj, time_str):
@@ -477,7 +449,7 @@ def api_screenings():
     sql += " ORDER BY s.start_dt ASC"
     cur.execute(sql, params)
     rows = [dict(r) for r in cur.fetchall()]
-    cur.close(); release_db(conn)
+    cur.close(); conn.close()
     return jsonify(rows)
 
 @app.route("/api/movies")
@@ -485,7 +457,7 @@ def api_movies():
     conn = get_db(); cur = conn.cursor()
     cur.execute("SELECT title, director, synopsis, poster_url, is_4k, is_dolby FROM movies WHERE poster_url != '' ORDER BY title")
     rows = [dict(r) for r in cur.fetchall()]
-    cur.close(); release_db(conn)
+    cur.close(); conn.close()
     return jsonify(rows)
 
 @app.route("/api/recommended", methods=["GET"])
@@ -493,7 +465,7 @@ def api_recommended_get():
     conn = get_db(); cur = conn.cursor()
     cur.execute("SELECT id, title, is_rec, comment, awards, created_at FROM recommended WHERE is_rec=TRUE ORDER BY created_at DESC")
     rows = [dict(r) for r in cur.fetchall()]
-    cur.close(); release_db(conn)
+    cur.close(); conn.close()
     return jsonify(rows)
 
 @app.route("/api/recommended", methods=["POST"])
@@ -514,7 +486,7 @@ def api_recommended_post():
         ON CONFLICT (title) DO UPDATE SET
             is_rec=EXCLUDED.is_rec, comment=EXCLUDED.comment, awards=EXCLUDED.awards
     """, (title, is_rec, comment, awards))
-    conn.commit(); cur.close(); release_db(conn)
+    conn.commit(); cur.close(); conn.close()
     return jsonify({"ok": True})
 
 @app.route("/api/recommended/<int:rid>", methods=["DELETE"])
@@ -522,9 +494,8 @@ def api_recommended_delete(rid):
     if not session.get("admin"):
         return jsonify({"error": "unauthorized"}), 401
     conn = get_db(); cur = conn.cursor()
-    # 레코드 삭제 대신 is_rec=FALSE (awards 보존)
-    cur.execute("UPDATE recommended SET is_rec=FALSE WHERE id=%s", (rid,))
-    conn.commit(); cur.close(); release_db(conn)
+    cur.execute("DELETE FROM recommended WHERE id=%s", (rid,))
+    conn.commit(); cur.close(); conn.close()
     return jsonify({"ok": True})
 
 @app.route("/api/cinemas")
@@ -532,7 +503,7 @@ def api_cinemas():
     conn = get_db(); cur = conn.cursor()
     cur.execute("SELECT DISTINCT cinema FROM screenings")
     names = [r["cinema"] for r in cur.fetchall()]
-    cur.close(); release_db(conn)
+    cur.close(); conn.close()
     ordered = [c for c in CINEMA_ORDER if c in names] + [c for c in names if c not in CINEMA_ORDER]
     return jsonify(ordered)
 
@@ -545,29 +516,11 @@ def api_stats():
     cur.execute("SELECT value FROM meta WHERE key='last_updated'"); lu = cur.fetchone()
     cur.execute("SELECT MIN(start_dt::date) AS mn, MAX(start_dt::date) AS mx FROM screenings WHERE start_dt IS NOT NULL")
     dr = cur.fetchone()
-    cur.close(); release_db(conn)
+    cur.close(); conn.close()
     return jsonify({"total": total, "cinemas": cc, "movies": mc,
                     "last_updated": lu["value"] if lu else None,
                     "date_min": str(dr["mn"]) if dr and dr["mn"] else None,
                     "date_max": str(dr["mx"]) if dr and dr["mx"] else None})
-
-@app.route("/api/meta/<key>")
-def api_meta_get(key):
-    conn = get_db(); cur = conn.cursor()
-    cur.execute("SELECT value FROM meta WHERE key=%s", (key,))
-    row = cur.fetchone()
-    cur.close(); release_db(conn)
-    return jsonify({"key": key, "value": row["value"] if row else ""})
-
-@app.route("/api/meta/<key>", methods=["POST"])
-def api_meta_set(key):
-    if not session.get("admin"):
-        return jsonify({"error": "unauthorized"}), 401
-    value = request.get_json().get("value", "")
-    conn = get_db(); cur = conn.cursor()
-    cur.execute("INSERT INTO meta (key, value) VALUES (%s,%s) ON CONFLICT (key) DO UPDATE SET value=EXCLUDED.value", (key, value))
-    conn.commit(); cur.close(); release_db(conn)
-    return jsonify({"ok": True})
 
 @app.route("/api/cinema/<name>")
 def api_cinema_detail(name):
@@ -585,7 +538,7 @@ def api_cinema_detail(name):
         (name,)
     )
     dr = cur.fetchone()
-    cur.close(); release_db(conn)
+    cur.close(); conn.close()
     return jsonify({
         "cinema": cinema,
         "screenings": screenings,
@@ -597,7 +550,7 @@ def api_cinemas_all():
     conn = get_db(); cur = conn.cursor()
     cur.execute("SELECT * FROM cinemas ORDER BY name")
     rows = [dict(r) for r in cur.fetchall()]
-    cur.close(); release_db(conn)
+    cur.close(); conn.close()
     return jsonify(rows)
 
 @app.route("/cinema/<name>")
@@ -697,7 +650,7 @@ def export_excel():
         ws3.column_dimensions[col].width = w
     ws3.freeze_panes = "A2"
 
-    cur.close(); release_db(conn)
+    cur.close(); conn.close()
     from datetime import date as _date
     today = _date.today().isoformat()
     buf = io.BytesIO(); wb.save(buf); buf.seek(0)
@@ -712,7 +665,7 @@ def initial_crawl_if_empty():
     try:
         conn = get_db(); cur = conn.cursor()
         cur.execute("SELECT COUNT(*) AS c FROM screenings")
-        count = cur.fetchone()["c"]; cur.close(); release_db(conn)
+        count = cur.fetchone()["c"]; cur.close(); conn.close()
         if count == 0:
             log.info("DB 비어있음 → 최초 수집 시작 (백그라운드)")
             threading.Thread(target=run_crawl, daemon=True).start()
@@ -761,7 +714,7 @@ def api_events():
     conn = get_db(); cur = conn.cursor()
     cur.execute("SELECT * FROM events WHERE event_date >= CURRENT_DATE ORDER BY event_date, start_time")
     rows = [dict(r) for r in cur.fetchall()]
-    cur.close(); release_db(conn)
+    cur.close(); conn.close()
     return jsonify(rows)
 
 @app.route("/api/events", methods=["POST"])
@@ -777,7 +730,7 @@ def api_events_post():
           d.get("end_time",""), d.get("description",""), bool(d.get("is_free")), d.get("url",""),
           d.get("participants",""), d.get("event_type","")))
     new_id = cur.fetchone()["id"]
-    conn.commit(); cur.close(); release_db(conn)
+    conn.commit(); cur.close(); conn.close()
     return jsonify({"ok": True, "id": new_id})
 
 @app.route("/api/events/<int:eid>", methods=["DELETE"])
@@ -786,7 +739,7 @@ def api_events_delete(eid):
         return jsonify({"error": "unauthorized"}), 401
     conn = get_db(); cur = conn.cursor()
     cur.execute("DELETE FROM events WHERE id=%s", (eid,))
-    conn.commit(); cur.close(); release_db(conn)
+    conn.commit(); cur.close(); conn.close()
     return jsonify({"ok": True})
 
 
@@ -816,7 +769,7 @@ def api_upload_poster():
         VALUES (%s, %s, NOW())
         ON CONFLICT (title) DO UPDATE SET poster_url=EXCLUDED.poster_url, updated_at=NOW()
     """, (title, poster_url))
-    conn.commit(); cur.close(); release_db(conn)
+    conn.commit(); cur.close(); conn.close()
     return jsonify({"ok": True, "poster_url": poster_url})
 
 @app.route("/api/poster/<path:title>")
@@ -824,7 +777,7 @@ def api_poster_serve(title):
     conn = get_db(); cur = conn.cursor()
     cur.execute("SELECT data, mime FROM posters WHERE title=%s", (title,))
     row = cur.fetchone()
-    cur.close(); release_db(conn)
+    cur.close(); conn.close()
     if not row:
         return "", 404
     from flask import Response
@@ -847,7 +800,7 @@ def api_movie_detail_get():
         result["awards"]  = rec["awards"]  or ""
         result["comment"] = rec["comment"] or ""
         result["is_rec"]  = bool(rec["is_rec"])
-    cur.close(); release_db(conn)
+    cur.close(); conn.close()
     return jsonify(result)
 
 @app.route("/api/movie-detail", methods=["POST"])
@@ -881,7 +834,7 @@ def api_movie_detail_post():
             is_dolby   =EXCLUDED.is_dolby,
             updated_at =NOW()
     """, (title, title_en, poster, director, director_en, synopsis, year, is_4k, is_dolby))
-    conn.commit(); cur.close(); release_db(conn)
+    conn.commit(); cur.close(); conn.close()
     return jsonify({"ok": True})
 
 @app.route("/api/movie-info")
@@ -902,7 +855,7 @@ def api_movie_info():
             rows[r["title"]] = dict(r)
         else:
             rows[r["title"]].update({k: r[k] for k in ["is_rec","comment","awards"]})
-    cur.close(); release_db(conn)
+    cur.close(); conn.close()
     return jsonify(rows)
 
 @app.route("/admin/dashboard")
@@ -938,7 +891,7 @@ def admin_dashboard():
     screening_movies = [dict(r) for r in cur.fetchall()]
     cur.execute("SELECT * FROM events ORDER BY event_date DESC, start_time")
     events = [dict(r) for r in cur.fetchall()]
-    cur.close(); release_db(conn)
+    cur.close(); conn.close()
     return render_template_string(ADMIN_DASHBOARD_TEMPLATE,
         cinemas=cinemas, movies=movies,
         screening_movies=screening_movies, events=events)
@@ -971,7 +924,7 @@ def admin_cinema_save():
               "discount":        d.get("pt_discount",""),
           }),
           d.get("is_free","") == "on", d.get("note","")))
-    conn.commit(); cur.close(); release_db(conn)
+    conn.commit(); cur.close(); conn.close()
     return redirect(url_for("admin_dashboard") + "#cinemas")
 
 @app.route("/admin/movie/save", methods=["POST"])
@@ -992,7 +945,7 @@ def admin_movie_save():
           int(d["runtime"]) if d.get("runtime") else None,
           d.get("synopsis",""), d.get("poster_url",""), d.get("kobis_url",""),
           d.get("kofa_url",""), d.get("note",""), d.get("is_4k","") == "on"))
-    conn.commit(); cur.close(); release_db(conn)
+    conn.commit(); cur.close(); conn.close()
     return redirect(url_for("admin_dashboard") + "#movies")
 
 @app.route("/admin/movie/delete/<int:mid>", methods=["POST"])
@@ -1000,7 +953,7 @@ def admin_movie_delete(mid):
     if not session.get("admin"): return redirect(url_for("admin"))
     conn = get_db(); cur = conn.cursor()
     cur.execute("DELETE FROM movies WHERE id = %s", (mid,))
-    conn.commit(); cur.close(); release_db(conn)
+    conn.commit(); cur.close(); conn.close()
     return redirect(url_for("admin_dashboard") + "#movies")
 
 # ── 시작 ─────────────────────────────────────────────
@@ -1010,7 +963,7 @@ def initial_crawl_if_empty():
     try:
         conn = get_db(); cur = conn.cursor()
         cur.execute("SELECT COUNT(*) AS c FROM screenings")
-        count = cur.fetchone()["c"]; cur.close(); release_db(conn)
+        count = cur.fetchone()["c"]; cur.close(); conn.close()
         if count == 0:
             log.info("DB 비어있음 → 최초 수집 시작 (백그라운드)")
             threading.Thread(target=run_crawl, daemon=True).start()
@@ -1183,7 +1136,6 @@ a{color:#2D5A1B;text-decoration:none}
   <button class="tab active" onclick="switchTab('movies')">🎞 영화 관리</button>
   <button class="tab" onclick="switchTab('events')">🎭 특별상영</button>
   <button class="tab" onclick="switchTab('cinemas')">🎬 극장 관리</button>
-  <button class="tab" onclick="switchTab('siteinfo')">📝 사이트 정보</button>
 </div>
 
 <div class="main">
@@ -1497,28 +1449,10 @@ a{color:#2D5A1B;text-decoration:none}
   </div>
 </div>
 
-<!-- ══════════════════════════════════════
-     📝 사이트 정보
-══════════════════════════════════════ -->
-<div id="tab-siteinfo" class="section">
-  <div class="panel">
-    <div class="panel-title">📝 사이트 소개글</div>
-    <div class="ep-grid ep-1" style="max-width:600px;">
-      <div class="fg"><label class="lbl">소개글 <span style="font-weight:400;color:#888">(헤더 정보 버튼 클릭 시 표시)</span></label>
-        <textarea id="siteIntroText" rows="8" placeholder="서울 독립극장 12곳의 상영 일정을 한눈에&#10;&#10;출처: 각 극장 및 예매 사이트&#10;문의: ..."></textarea>
-      </div>
-    </div>
-    <div class="save-bar">
-      <button class="btn btn-primary" onclick="saveSiteIntro()">저장</button>
-      <span class="msg" id="siteIntroMsg"></span>
-    </div>
-  </div>
-</div>
-
 </div><!-- /main -->
 
 <script>
-const TABS = ["movies","events","cinemas","siteinfo"];
+const TABS = ["movies","events","cinemas"];
 function switchTab(name){
   document.querySelectorAll(".tab").forEach((t,i)=>t.classList.toggle("active",TABS[i]===name));
   document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
@@ -1666,13 +1600,12 @@ async function saveMovie(){
       body:JSON.stringify({title,is_rec:true,comment,awards})
     });
   } else if(selCard?.dataset.recId){
-    // 추천 해제 (awards는 서버에서 보존)
     await fetch(`/api/recommended/${selCard.dataset.recId}`,{method:"DELETE"});
-  } else if(awards && !selCard?.dataset.recId){
-    // 추천 없이 수상만 있는 경우 — recommended에 is_rec=false로 저장
+  } else if(awards){
+    // 추천 없이 수상만
     await fetch("/api/recommended",{
       method:"POST",headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({title,is_rec:false,comment:"",awards})
+      body:JSON.stringify({title,stars:0,comment:"",awards})
     });
   }
 
@@ -1715,25 +1648,6 @@ async function deleteRec(){
 }
 
 // ── 특별상영 ──────────────────────────
-// ── 사이트 정보 ──────────────────────
-async function loadSiteIntro(){
-  const res = await fetch("/api/meta/site_intro");
-  const d = await res.json();
-  document.getElementById("siteIntroText").value = d.value || "";
-}
-async function saveSiteIntro(){
-  const value = document.getElementById("siteIntroText").value.trim();
-  const res = await fetch("/api/meta/site_intro",{
-    method:"POST", headers:{"Content-Type":"application/json"},
-    body: JSON.stringify({value})
-  });
-  const msg = document.getElementById("siteIntroMsg");
-  if(res.ok){ msg.textContent="✓ 저장됐어요"; msg.className="msg"; setTimeout(()=>msg.textContent="",3000); }
-  else { msg.textContent="❌ 저장 실패"; msg.className="msg err"; }
-}
-// 탭 전환 시 사이트정보 탭 로드
-const _origSwitchTab = typeof switchTab !== "undefined" ? switchTab : null;
-
 async function saveEvent(){
   const title=document.getElementById("evTitle").value.trim();
   const cinema=document.getElementById("evCinema").value;
