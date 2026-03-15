@@ -1116,8 +1116,8 @@ function setExploreArea(btn, area){
   const cinemas = EXPLORE_AREAS[area].cinemas;
   exploreSelectedCinemas = new Set(cinemas);
   // 극장 칩 상태 업데이트
-  document.querySelectorAll(".ex-cinema-chip").forEach(b=>{
-    b.classList.toggle("active", cinemas.includes(b.dataset.cinema));
+  document.querySelectorAll(".cinema-chip-btn[data-cinema]").forEach(b=>{
+    b.classList.toggle("off", !cinemas.includes(b.dataset.cinema));
   });
   if(area !== "all"){
     exploreDirectOpen = true;
@@ -1134,8 +1134,8 @@ function toggleCinemaDirect(){
 }
 
 function toggleExploreCinema(btn, name){
-  btn.classList.toggle("active");
-  if(btn.classList.contains("active")) exploreSelectedCinemas.add(name);
+  btn.classList.toggle("off");
+  if(!btn.classList.contains("off")) exploreSelectedCinemas.add(name);
   else exploreSelectedCinemas.delete(name);
   // 권역 칩 해제
   document.querySelectorAll(".ex-chip[data-area]").forEach(b=>b.classList.remove("active"));
@@ -1145,10 +1145,9 @@ function toggleExploreCinema(btn, name){
 function initExploreCinemaChips(){
   const wrap = document.getElementById("explorecinemaChips");
   const sorted = [...EXPLORE_AREAS.all.cinemas].sort((a,b)=>a.localeCompare(b,"ko"));
-  wrap.style.cssText = "display:grid;grid-template-columns:repeat(2,auto);gap:5px;";
   wrap.innerHTML = sorted.map(c=>{
     const isFree = FREE_CINEMAS.includes(c);
-    return `<button class="ex-cinema-chip active" data-cinema="${c}" onclick="toggleExploreCinema(this,'${c}')">${c}${isFree?`<span class="free-badge">무료</span>`:""}`;
+    return `<button class="cinema-chip-btn off" data-cinema="${c}" onclick="toggleExploreCinema(this,'${c}')">${c}${isFree?`<span class="chip-free">무료</span>`:""}</button>`;
   }).join("");
 }
 
