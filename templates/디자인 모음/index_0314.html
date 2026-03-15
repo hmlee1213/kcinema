@@ -120,18 +120,18 @@ header{background:var(--text);color:#fff;padding:0 24px;position:sticky;top:0;z-
 /* ══════════════════════════════════
    팝업
 ══════════════════════════════════ */
-.popup-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;}
+.popup-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:center;justify-content:center;padding:20px;}
 .popup-overlay.open{display:flex;}
 .popup-sort-btn{font-size:11px;font-weight:600;font-family:inherit;padding:4px 12px;border-radius:5px;border:1.5px solid var(--border);background:var(--surface);color:var(--text-muted);cursor:pointer;transition:all .12s;}
 .popup-sort-btn.active{background:var(--text);border-color:var(--text);color:#fff;}
-.popup{background:var(--surface);border-radius:14px;width:100%;max-width:460px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2);position:relative;animation:popIn .16s ease;}
+.popup{background:var(--surface);border-radius:14px;width:100%;max-width:460px;box-shadow:0 20px 60px rgba(0,0,0,.2);overflow:hidden;position:relative;animation:popIn .16s ease;}
 @keyframes popIn{from{opacity:0;transform:scale(.95);}to{opacity:1;transform:scale(1);}}
 .popup-close{position:absolute;top:12px;right:14px;width:26px;height:26px;border-radius:50%;border:none;background:var(--surface2);color:var(--text-muted);font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:1;}
 .popup-close:hover{background:var(--text);color:#fff;}
 .popup-top{display:flex;gap:16px;padding:18px 18px 0;align-items:flex-start;}
 .popup-poster{width:110px;height:154px;border-radius:8px;flex-shrink:0;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:36px;overflow:hidden;}
 .popup-poster img{width:100%;height:100%;object-fit:cover;}
-.popup-info{flex:1;min-width:0;padding-right:20px;padding-bottom:16px;}
+.popup-info{flex:1;min-width:0;padding-right:20px;padding-bottom:16px;overflow-y:auto;max-height:72vh;}
 .popup-title{font-size:15px;font-weight:800;line-height:1.3;margin-bottom:7px;}
 .popup-meta{font-size:12px;color:var(--text-muted);line-height:2.}
 .popup-meta span{color:var(--text);font-weight:600;}
@@ -189,7 +189,7 @@ header{background:var(--text);color:#fff;padding:0 24px;position:sticky;top:0;z-
 .c-screen{font-size:11px;font-weight:700;color:var(--text-muted);white-space:nowrap;text-align:center;width:36px;}
 .c-row:last-child{border-bottom:none;}
 .c-date{font-weight:600;color:var(--text);white-space:nowrap;}
-.c-time{font-weight:600;color:var(--text);white-space:nowrap;font-size:13px;}
+.c-time{font-weight:600;color:var(--text);white-space:nowrap;}
 .c-movie{font-weight:600;display:flex;align-items:flex-start;gap:4px;flex-wrap:wrap;word-break:keep-all;}
 .c-movie a{color:var(--text);text-decoration:none;border-bottom:1.5px solid var(--green);word-break:keep-all;}
 .c-movie a:hover{color:var(--green);}
@@ -197,10 +197,6 @@ header{background:var(--text);color:#fff;padding:0 24px;position:sticky;top:0;z-
 /* ══════════════════════════════════
    ③ 영화별
 ══════════════════════════════════ */
-.mv-ctrl-wrap{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;}
-.mv-ctrl-row1{display:flex;gap:6px;align-items:center;}
-.mv-ctrl-row1 .ex-search{flex:1;min-width:0;max-width:none;}
-.mv-ctrl-row2{display:flex;gap:5px;flex-wrap:wrap;align-items:center;}
 .movie-search-bar{position:relative;margin-bottom:14px;}
 .movie-search-bar input{width:100%;max-width:320px;padding:8px 12px 8px 32px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;color:var(--text);outline:none;background:var(--surface);}
 .movie-search-bar input:focus{border-color:var(--green);}
@@ -208,9 +204,6 @@ header{background:var(--text);color:#fff;padding:0 24px;position:sticky;top:0;z-
 .movie-search-tab{font-size:13px;font-weight:600;font-family:inherit;padding:7px 16px;border:none;background:none;color:var(--text-muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1.5px;transition:all .12s;}
 .movie-search-tab.active{color:var(--green);border-bottom-color:var(--green);}
 /* 영화별 정렬 버튼 */
-.mv-ctrl-wrap{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;}
-.mv-ctrl-row1{display:flex;gap:6px;}
-.mv-ctrl-row2{display:flex;gap:5px;flex-wrap:wrap;}
 .movie-sort-btn{font-size:11px;font-weight:600;font-family:inherit;padding:5px 12px;border-radius:6px;border:1.5px solid var(--border);background:var(--surface);color:var(--text-muted);cursor:pointer;transition:all .12s;white-space:nowrap;}
 .movie-sort-btn:hover{border-color:var(--text);color:var(--text);}
 .movie-sort-btn.active{background:var(--text);border-color:var(--text);color:#fff;}
@@ -455,8 +448,8 @@ tr:hover td{background:#FAFAF8;}
   .cinema-rows-2col .c-row:nth-child(odd){border-right:none;}
   .cinema-rows-2col .c-row:nth-last-child(-n+2){border-bottom:1px solid var(--surface2);}
   .cinema-rows-2col .c-row:last-child{border-bottom:none;}
-  .c-row{grid-template-columns:58px 86px 1fr 20px;}
-  .c-row.has-screen{grid-template-columns:56px 28px 80px 1fr 20px;}
+  .c-row{grid-template-columns:64px 94px 1fr 22px;}
+  .c-row.has-screen{grid-template-columns:64px 94px 1fr 38px 22px;}
   .m-row{grid-template-columns:1fr 60px 96px;}
   .cards-grid{grid-template-columns:1fr;}
   .main{padding:16px 14px 40px;}
@@ -473,8 +466,8 @@ tr:hover td{background:#FAFAF8;}
   .tab{padding:10px 12px;font-size:12px;}
   .day-tabs{gap:4px;}
   .day-tab{padding:4px 10px;font-size:11px;}
-  .c-row{grid-template-columns:52px 80px 1fr 18px;}
-  .c-row.has-screen{grid-template-columns:50px 26px 74px 1fr 18px;}
+  .c-row{grid-template-columns:58px 86px 1fr 22px;}
+  .c-row.has-screen{grid-template-columns:58px 86px 1fr 34px 22px;}
 }
 </style>
 </head>
@@ -612,17 +605,15 @@ tr:hover td{background:#FAFAF8;}
 
   <!-- ③ 영화별 -->
   <div id="tab-movie" style="display:none;">
-    <div class="mv-ctrl-wrap">
-      <div class="mv-ctrl-row1">
-        <input class="ex-search" type="text" id="movieSearchInput" placeholder="영화명…" oninput="onMovieSearch(this.value)" style="flex:1;min-width:0;">
-        <input class="ex-search" type="text" id="movieDirectorInput" placeholder="감독…" oninput="onDirectorSearch(this.value)" style="flex:1;min-width:0;">
-      </div>
-      <div class="mv-ctrl-row2">
-        <button class="movie-sort-btn" id="movieRecFilterBtn" onclick="toggleMovieRecFilter(this)">★ 추천</button>
-        <button class="movie-sort-btn active" data-sort="count" data-dir="desc" onclick="setMovieSort(this,'count')">횟수 ↓</button>
-        <button class="movie-sort-btn" data-sort="title" data-dir="asc" onclick="setMovieSort(this,'title')">제목 ↑</button>
-        <button class="movie-sort-btn" data-sort="runtime" data-dir="desc" onclick="setMovieSort(this,'runtime')">러닝타임 ↓</button>
-      </div>
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:14px;flex-wrap:wrap;">
+      <button class="movie-sort-btn" id="movieRecFilterBtn" onclick="toggleMovieRecFilter(this)" title="추천 영화만 보기" style="flex-shrink:0;">★ 추천</button>
+      <span style="width:1px;height:14px;background:var(--border);flex-shrink:0;"></span>
+      <input class="ex-search" type="text" id="movieSearchInput" placeholder="영화명…" oninput="onMovieSearch(this.value)" style="flex:1;min-width:70px;max-width:180px;">
+      <input class="ex-search" type="text" id="movieDirectorInput" placeholder="감독…" oninput="onDirectorSearch(this.value)" style="flex:1;min-width:70px;max-width:140px;">
+      <span style="width:1px;height:14px;background:var(--border);flex-shrink:0;"></span>
+      <button class="movie-sort-btn active" data-sort="count" data-dir="desc" onclick="setMovieSort(this,'count')">상영횟수 ↓</button>
+      <button class="movie-sort-btn" data-sort="title" data-dir="asc" onclick="setMovieSort(this,'title')">제목 ↑</button>
+      <button class="movie-sort-btn" data-sort="runtime" data-dir="desc" onclick="setMovieSort(this,'runtime')">러닝타임 ↓</button>
     </div>
     <div id="movie-grid-content"><div class="loading"><div class="spinner"></div>로딩 중…</div></div>
   </div>
@@ -658,11 +649,7 @@ tr:hover td{background:#FAFAF8;}
     <div class="popup-top">
       <div class="popup-poster" id="popupPoster">🎬</div>
       <div class="popup-info">
-        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-          <div class="popup-title" id="popupTitle" style="margin-bottom:0;"></div>
-          <span id="popupRecBadge" style="display:none;font-size:13px;color:#c0861a;font-weight:700;">★ 추천</span>
-          <button id="popupShareBtn" onclick="sharePopup()" title="이 화면 공유" style="font-size:13px;background:none;border:1px solid var(--border);border-radius:5px;padding:2px 8px;cursor:pointer;color:var(--text-muted);margin-left:auto;">공유</button>
-        </div>
+        <div class="popup-title" id="popupTitle"></div>
         <div class="popup-meta" id="popupMeta" style="margin-top:3px;font-size:12px;color:var(--text-muted);"></div>
         <div id="popupAwards" style="display:none;margin-top:6px;"></div>
         <div id="popupSynopsisWrap" style="margin-top:8px;display:none;">
@@ -699,15 +686,17 @@ tr:hover td{background:#FAFAF8;}
     </div>
     <div class="popup-divider"></div>
     <!-- 정렬 토글 -->
-    <div style="display:flex;align-items:center;gap:5px;padding:8px 18px 0;border-bottom:1px solid var(--border);">
+    <div style="display:flex;gap:5px;padding:8px 18px 0;border-bottom:1px solid var(--border);">
       <button class="popup-sort-btn active" id="mpSortDate" onclick="setMoviePopupSort('date')">날짜순</button>
       <button class="popup-sort-btn" id="mpSortCinema" onclick="setMoviePopupSort('cinema')">극장별</button>
-      <div id="moviePopupNav" style="margin-left:auto;display:none;gap:4px;">
-        <button onclick="document.getElementById('moviePopupSchedules').scrollTop=0" style="font-size:10px;background:none;border:1px solid var(--border);border-radius:4px;padding:2px 7px;cursor:pointer;color:var(--text-muted);">↑</button>
-        <button onclick="document.getElementById('moviePopupSchedules').scrollTop=99999" style="font-size:10px;background:none;border:1px solid var(--border);border-radius:4px;padding:2px 7px;cursor:pointer;color:var(--text-muted);">↓</button>
+    </div>
+    <div style="position:relative;">
+      <div class="popup-schedules" id="moviePopupSchedules" style="max-height:52vh;overflow-y:auto;" id="moviePopupSchedules"></div>
+      <div id="moviePopupNav" style="display:none;position:sticky;bottom:0;display:flex;justify-content:flex-end;gap:6px;padding:6px 18px;background:var(--surface);border-top:1px solid var(--border);">
+        <button onclick="document.getElementById('moviePopupSchedules').scrollTop=0" style="font-size:11px;background:none;border:1px solid var(--border);border-radius:5px;padding:2px 8px;cursor:pointer;color:var(--text);">↑ 맨위</button>
+        <button onclick="document.getElementById('moviePopupSchedules').scrollTop=9999" style="font-size:11px;background:none;border:1px solid var(--border);border-radius:5px;padding:2px 8px;cursor:pointer;color:var(--text);">↓ 맨아래</button>
       </div>
     </div>
-    <div class="popup-schedules" id="moviePopupSchedules" style="max-height:48vh;overflow-y:auto;"></div>
   </div>
 </div>
 
@@ -962,9 +951,6 @@ function renderExploreCards(){
   const maxLen = Math.max(...cards.map(c=>c.movie.length));
   const cardW = Math.max(225, Math.min(360, 70+24+maxLen*14));
   const recSet = new Set((recData||[]).map(r=>r.title));
-  const exploreAwardMap = {};
-  (recData||[]).forEach(r=>{ if(r.awards) exploreAwardMap[r.title]=r.awards; });
-  const exploreRecMap = {}; (recData||[]).forEach(r=>{ if(r.awards) exploreRecMap[r.title]=r.awards; });
 
   const html = cards.map(g=>{
     const isFree = FREE_CINEMAS.includes(g.cinema);
@@ -990,7 +976,7 @@ function renderExploreCards(){
       <div class="qc-poster">${posterHtml}</div>
       <div class="qc-body">
         <div class="qc-title" style="display:flex;align-items:flex-start;gap:4px;">
-          <span style="flex:1;min-width:0;">${titleHtml}${recSet&&recSet.has(g.movie)?`<span class="rec-badge" style="margin-left:4px;">★${exploreAwardMap[g.movie]?'🏆':''}</span>`:''}</span>
+          <span style="flex:1;min-width:0;">${titleHtml}${recSet&&recSet.has(g.movie)?'<span class="rec-badge" style="margin-left:4px;">★</span>':''}</span>
           <button class="heart-btn${isMovieWished(g.movie)?" on":""}" onclick="event.stopPropagation();toggleMovieWish(this,'${esc(g.movie)}','${esc(g.poster_url||"")}')" title="관심 목록 추가">${isMovieWished(g.movie)?"♥":"♡"}</button>
         </div>
         <div class="qc-venue">${venueHtml}</div>
@@ -1178,8 +1164,6 @@ async function switchTab(name){
 function openPopup(movie, cinema, screen, movieUrl){
   trackCinemaClick(cinema);
   document.getElementById("popupTitle").textContent = movie;
-  document.getElementById("popupRecBadge").style.display = "none";
-  document.getElementById("popupRecBadge").style.display="none";
   document.getElementById("popupPoster").innerHTML = "🎬";
   document.getElementById("popupMeta").textContent = "";
   document.getElementById("popupSynopsisWrap").style.display = "none";
@@ -1197,15 +1181,10 @@ function openPopup(movie, cinema, screen, movieUrl){
         const schedKey=`${esc(movie)}|${esc(cinema)}|${esc(screen||"")}|${r.start_dt||""}`;
         const wished=isSchedWished(schedKey);
         const bookBtn=r.movie_url?`<a class="book-btn" href="${esc(r.movie_url)}" target="_blank" onclick="event.stopPropagation()">예매 →</a>`:'';
-        const {dow:sdow2} = splitDt(r.start_dt);
-        const cinemaLine = cinema+(screen?` · ${screen}`:"");
-        return `<div class="sched-row" style="display:flex;flex-direction:column;gap:3px;padding:7px 0;border-bottom:1px solid var(--border);">
-          <div style="display:flex;align-items:center;gap:6px;">
-            <span style="font-size:12px;font-weight:700;color:var(--text);min-width:44px;padding-left:4px;">${mmdd}<span style="font-size:11px;font-weight:600;color:var(--text-muted);margin-left:3px;">${sdow2||""}</span></span>
-            <span class="sched-time-chip">${time} – ${end}</span>${s}${bookBtn}
-            <button class="sched-wish-btn swb${wished?" on":""}" data-key="${schedKey}" style="margin-left:auto;" onclick="toggleSchedWish('${schedKey}','${esc(movie)}','${esc(cinema)}','${esc(screen||"")}','${r.start_dt||""}','${r.end_dt||""}','${esc(r.poster_url||"")}',this)">${wished?"⏰":"➕"}</button>
-          </div>
-          <div style="font-size:11px;color:var(--text-muted);padding-left:2px;">${esc(cinemaLine)}</div>
+        return `<div class="sched-row" style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);">
+          <span style="font-size:12px;font-weight:600;color:var(--text-muted);min-width:44px;">${mmdd}</span>
+          <span class="sched-time-chip">${time} – ${end}</span>${s}${bookBtn}
+          <button class="sched-wish-btn swb${wished?" on":""}" data-key="${schedKey}" style="margin-left:auto;" onclick="toggleSchedWish('${schedKey}','${esc(movie)}','${esc(cinema)}','${esc(screen||"")}','${r.start_dt||""}','${r.end_dt||""}','${esc(r.poster_url||"")}',this)">${wished?"⏰":"➕"}</button>
         </div>`;
       }).join("")
     : "";
@@ -1221,15 +1200,7 @@ function openPopup(movie, cinema, screen, movieUrl){
       const rt = rows[0]?.runtime || d.runtime;
       if(rt) parts.push(rt+"분");
       document.getElementById("popupMeta").textContent = parts.join(" · ");
-      // 추천 배지
-      const isRec2 = (recData||[]).some(r=>r.title===movie);
-      document.getElementById("popupRecBadge").style.display = isRec2 ? "inline" : "none";
-      // 추천 배지
-      const isMovieRec = (recData||[]).some(r=>r.title===movie);
-      const recBadgeEl = document.getElementById("popupRecBadge");
-      recBadgeEl.textContent = isMovieRec && (recData||[]).find(r=>r.title===movie)?.awards ? "★🏆" : "★";
-      recBadgeEl.style.display = isMovieRec ? "inline" : "none";
-      // 수상
+      // 수상 + 4K
       const awHtml = awardsHtml(d.awards||"");
       const awEl = document.getElementById("popupAwards");
       if(awHtml){ awEl.innerHTML=awHtml; awEl.style.display="block"; }
@@ -1257,20 +1228,6 @@ function openPopup(movie, cinema, screen, movieUrl){
   document.body.style.overflow="hidden";
 }
 
-
-function sharePopup(){
-  const title = document.getElementById("popupTitle").textContent;
-  const rows = document.getElementById("popupSchedules").querySelectorAll(".sched-row");
-  const lines = [title, ""];
-  rows.forEach(r=>{
-    const txt = r.textContent.replace(/\s+/g," ").trim();
-    if(txt) lines.push(txt);
-  });
-  const text = lines.join("\n");
-  if(navigator.share){ navigator.share({title, text}).catch(()=>{}); }
-  else if(navigator.clipboard){ navigator.clipboard.writeText(text).then(()=>alert("클립보드에 복사됐어요.")); }
-  else { alert(text); }
-}
 function expandSynopsis(){
   const el = document.getElementById("popupSynopsis");
   el.style.display = "block";
@@ -1922,9 +1879,6 @@ function renderMovieGrid(resetPage=true){
   const start = (movieCurrentPage-1)*MOVIE_PAGE;
   const visible = titles.slice(start, start+MOVIE_PAGE);
   const recSet = new Set((recData||[]).map(r=>r.title));
-  const exploreAwardMap = {};
-  (recData||[]).forEach(r=>{ if(r.awards) exploreAwardMap[r.title]=r.awards; });
-  const exploreRecMap = {}; (recData||[]).forEach(r=>{ if(r.awards) exploreRecMap[r.title]=r.awards; });
   const recMap = {};
   (recData||[]).forEach(r=>{ if(r.awards) recMap[r.title]=r.awards; });
 
