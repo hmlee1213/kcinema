@@ -909,10 +909,11 @@ function getExploreParams(){
   const todayDow = new Date(ty,tm-1,td).getDay(); // 0=일,6=토
   const fmt = d => { const y=d.getFullYear(),mo=String(d.getMonth()+1).padStart(2,"0"),da=String(d.getDate()).padStart(2,"0"); return `${y}-${mo}-${da}`; };
   // 월~금(1~5): 이번 주 토요일 / 토(6)·일(0): 다음 주 토요일
-  // 월~금: 이번 주 토 / 토: 다음 주 토(+7) / 일: 다음 주 토(+6, 일→토=6일)
+  // 토: 다음 주 토(+7) / 일: 다음 주 토(+6) / 월~금: 이번 주 토
   const daysToSat = todayDow === 6 ? 7 : (6 - todayDow);
   const sat = new Date(ty, tm-1, td + daysToSat);
-  const sun = new Date(ty, tm-1, td + daysToSat + 1);
+  // 일요일이면 일 버튼 = 오늘, 아니면 sat+1
+  const sun = todayDow === 0 ? new Date(ty, tm-1, td) : new Date(ty, tm-1, td + daysToSat + 1);
 
   if(exploreMode === "range"){
     const df = document.getElementById("exploreDateFrom").value || todayStr;
@@ -964,12 +965,12 @@ function updateExploreHeader(dateFrom, dateTo, timeFrom, timeTo){
 
 function renderExploreCards(){
   const el = document.getElementById("explore-content");
-  // 영화+극장+화면 기준 그룹핑 (빠른조회 방식)
+  // 영화+극장 단위 그룹핑 (상영관 통합)
   const groups = {};
   exploreData.forEach(r=>{
-    const key = `${r.movie}||${r.cinema}||${r.screen||""}`;
+    const key = `${r.movie}||${r.cinema}`;
     if(!groups[key]){ groups[key]={...r, times:[]}; }
-    groups[key].times.push({start:(r.start_dt||"").slice(11,16), end:(r.end_dt||"").slice(11,16), start_dt:r.start_dt, end_dt:r.end_dt, program:r.program, show_type:r.show_type, movie_url:r.movie_url||""});
+    groups[key].times.push({start:(r.start_dt||"").slice(11,16), end:(r.end_dt||"").slice(11,16), start_dt:r.start_dt, end_dt:r.end_dt, program:r.program, show_type:r.show_type, movie_url:r.movie_url||"", screen:r.screen||""});
   });
   let cards = Object.values(groups);
   if(exploreSearchQ) cards = cards.filter(c=>c.movie.includes(exploreSearchQ));
@@ -998,35 +999,35 @@ function renderExploreCards(){
     const posterHtml = g.poster_url
       ? `<img src="${esc(g.poster_url)}" alt="" loading="lazy" onerror="this.parentNode.textContent='🎬'">`
       : "🎬";
-    const venueHtml = g.screen
-      ? `<div class="venue-dot${isFree?" free":""}"></div><span>${esc(g.cinema)}</span><span class="venue-sep">·</span><span>${esc(g.screen)}</span>`
-      : `<div class="venue-dot${isFree?" free":""}"></div><span>${esc(g.cinema)}</span>${isFree?`<span class="chip-free" style="font-size:10px;font-weight:700;color:var(--green);margin-left:3px;">무료</span>`:""}`;
+    const venueHtml = `<div class="venue-dot${isFree?" free":""}"></div><span>${esc(g.cinema)}</span>${isFree?`<span class="chip-free" style="font-size:10px;font-weight:700;color:var(--green);margin-left:3px;">무료</span>`:""}`;
     const {dateFrom:_df, dateTo:_dt} = getExploreParams();
     const isRange = _df !== _dt;
-    const RANGE_MAX = 3;
-    const shownTimes = isRange ? g.times.slice(0, RANGE_MAX) : g.times;
-    const hiddenCount = isRange ? Math.max(0, g.times.length - RANGE_MAX) : 0;
+    const CARD_MAX = 3;
+    const shownTimes = g.times.slice(0, CARD_MAX);
+    const hiddenCount = Math.max(0, g.times.length - CARD_MAX);
     const timesHtml = shownTimes.map(t=>{
-      const s = stickerHtml(t.program, t.show_type, g.cinema, g.movie, g.screen||"");
-      const schedKey = `${esc(g.movie)}|${esc(g.cinema)}|${esc(g.screen||"")}|${t.start_dt||""}`;
+      const scr = t.screen || "";
+      const s = stickerHtml(t.program, t.show_type, g.cinema, g.movie, scr);
+      const schedKey = `${esc(g.movie)}|${esc(g.cinema)}|${esc(scr)}|${t.start_dt||""}`;
       const wished = isSchedWished(schedKey);
       const {mmdd, dow} = splitDt(t.start_dt);
       const dateDowHtml = isRange
-        ? `<span style="font-size:10px;font-weight:600;color:var(--text-muted);white-space:nowrap;margin-right:3px;">${mmdd}(${dow})</span>`
+        ? `<span style="font-size:10px;font-weight:600;color:var(--text-muted);white-space:nowrap;margin-right:2px;">${mmdd}(${dow})</span>`
         : '';
-      return `<div class="time-chip${wished?" wished":""}" style="display:grid;grid-template-columns:${isRange?'auto ':''} auto 68px auto;align-items:center;gap:0 3px;cursor:pointer;" onclick="event.stopPropagation();">
+      const scrTag = scr ? `<span style="font-size:10px;font-weight:600;color:var(--text-muted);background:var(--surface2);border-radius:3px;padding:0 4px;white-space:nowrap;">${esc(normalizeScreen(g.cinema, scr))}</span>` : '';
+      return `<div class="time-chip${wished?" wished":""}" style="display:flex;align-items:center;gap:3px;flex-wrap:nowrap;cursor:pointer;" onclick="event.stopPropagation();">
         ${dateDowHtml}<span style="white-space:nowrap;">${t.start}<span class="time-dash">-</span>${t.end}</span>
-        <span style="display:flex;align-items:center;gap:2px;">${s}</span>
-        <button class="sched-wish-btn swb${wished?" on":""}" data-key="${schedKey}" onclick="event.stopPropagation();toggleSchedWish('${schedKey}','${esc(g.movie)}','${esc(g.cinema)}','${esc(g.screen||"")}','${t.start_dt||""}','${t.end_dt||""}','${esc(g.poster_url||"")}',this)">${wished?"⏰":"➕"}</button>
+        <span style="display:flex;align-items:center;gap:2px;">${s}${scrTag}</span>
+        <button class="sched-wish-btn swb${wished?" on":""}" data-key="${schedKey}" onclick="event.stopPropagation();toggleSchedWish('${schedKey}','${esc(g.movie)}','${esc(g.cinema)}','${esc(scr)}','${t.start_dt||""}','${t.end_dt||""}','${esc(g.poster_url||"")}',this)">${wished?"⏰":"➕"}</button>
       </div>`;
     }).join("");
     const moreBtn = hiddenCount > 0
-      ? `<button onclick="event.stopPropagation();onMovieCardClickByTitle('${esc(g.movie)}')" style="font-size:11px;font-weight:700;font-family:inherit;color:var(--green);background:none;border:1px solid var(--green);border-radius:5px;padding:2px 9px;cursor:pointer;margin-top:2px;">+${hiddenCount}건 더보기</button>`
+      ? `<button onclick="event.stopPropagation();openMoviePopupFromExplore('${esc(g.movie)}','${esc(g.poster_url||"")}')" style="font-size:11px;font-weight:700;font-family:inherit;color:var(--green);background:none;border:1px solid var(--green);border-radius:5px;padding:2px 9px;cursor:pointer;margin-top:2px;">+${hiddenCount}건 더보기</button>`
       : '';
     const titleHtml = g.movie_url
       ? `<a href="${esc(g.movie_url)}" target="_blank" onclick="event.stopPropagation()">${esc(g.movie)}</a>`
       : esc(g.movie);
-    return `<div class="quick-card" onclick="openPopup('${esc(g.movie)}','${esc(g.cinema)}','${esc(g.screen||"")}','${esc(g.movie_url||"")}')">
+    return `<div class="quick-card" onclick="onMovieCardClickByTitle('${esc(g.movie)}')">
       <div class="qc-poster">${posterHtml}</div>
       <div class="qc-body">
         <div class="qc-title" style="display:flex;align-items:flex-start;gap:4px;">
@@ -1522,6 +1523,20 @@ function popupSlotHtml(r, title, posterUrl, extraLabel='', cinemaSticker='', ext
   </div>`;
 }
 
+
+function openMoviePopupFromExplore(movie, posterUrl){
+  // exploreData에서 즉시 rows 조합 — fetch 없음
+  const rows = exploreData
+    .filter(r => r.movie === movie)
+    .map(r => ({
+      cinema: r.cinema, screen: r.screen||'',
+      start_dt: r.start_dt, end_dt: r.end_dt,
+      program: r.program, show_type: r.show_type,
+      movie_url: r.movie_url||'', poster_url: r.poster_url||''
+    }));
+  const url = posterUrl || (rows[0]?.poster_url || '');
+  openMoviePopup(movie, rows, url);
+}
 function openMoviePopup(title, rows, posterUrl){
   moviePopupTitle = title;
   moviePopupRows = rows;
