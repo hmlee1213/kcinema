@@ -37,7 +37,7 @@ body{font-family:'Pretendard',sans-serif;background:var(--bg);color:var(--text);
 /* ── 헤더 ── */
 header{background:var(--text);color:#fff;padding:0 24px;position:sticky;top:0;z-index:100;box-shadow:0 1px 4px rgba(0,0,0,.2);}
 .header-inner{max-width:1280px;margin:0 auto;display:flex;align-items:center;gap:16px;height:52px;}
-.logo{font-family:'DM Serif Display',serif;font-size:18px;font-weight:400;letter-spacing:.01em;color:#fff;white-space:nowrap;flex-shrink:0;}
+.logo{font-family:'Pretendard',sans-serif;font-size:18px;font-weight:700;letter-spacing:-.01em;color:#fff;white-space:nowrap;flex-shrink:0;}
 .header-stats{display:flex;gap:16px;margin-left:auto;font-size:11px;color:rgba(255,255,255,.7);}
 .header-stats strong{color:#fff;font-weight:700;}
 .stat-item{display:flex;flex-direction:column;align-items:center;gap:1px;line-height:1.2;}
@@ -98,7 +98,7 @@ header{background:var(--text);color:#fff;padding:0 24px;position:sticky;top:0;z-
 /* ══════════════════════════════════
    ① 빠른 조회
 ══════════════════════════════════ */
-.quick-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:10px;}
+.quick-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(216px,1fr));gap:10px;}
 .quick-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);cursor:pointer;transition:all .18s;display:flex;flex-direction:row;overflow:hidden;align-items:stretch;}
 .quick-card:hover{box-shadow:var(--shadow-md);transform:translateY(-2px);}
 .qc-poster{width:70px;flex-shrink:0;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:24px;overflow:hidden;align-self:stretch;}
@@ -220,14 +220,14 @@ header{background:var(--text);color:#fff;padding:0 24px;position:sticky;top:0;z-
 .movie-sort-btn.active{background:var(--text);border-color:var(--text);color:#fff;}
 /* 관리자 추천 배지 */
 .rec-badge{display:inline-flex;align-items:center;font-size:11px;font-weight:800;color:#B45309;flex-shrink:0;letter-spacing:-.01em;}
-.movie-card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:8px;}
+.movie-card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:9px;margin-bottom:8px;}
 .mv-card{border:1.5px solid var(--border);border-radius:8px;padding:0;cursor:pointer;transition:border-color .12s,box-shadow .12s;background:var(--surface);position:relative;overflow:hidden;display:flex;flex-direction:column;}
 .mv-card:hover{border-color:#2D5A1B;box-shadow:0 2px 8px rgba(0,0,0,.08);}
 .mv-card.has-rec{border-color:#F59E0B;}
-.mv-poster{width:100%;aspect-ratio:3/4;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:28px;overflow:hidden;flex-shrink:0;}
-.mv-poster img{width:100%;height:100%;object-fit:cover;}
-.mv-info{padding:7px 8px 9px;flex:1;display:flex;flex-direction:column;gap:3px;}
-.mv-title{font-size:15px;font-weight:800;line-height:1.3;color:var(--text);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
+.mv-poster{width:100%;aspect-ratio:3/4;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:28px;overflow:hidden;flex-shrink:0;border-radius:0;}
+.mv-poster img{width:100%;height:100%;object-fit:cover;display:block;}
+.mv-info{padding:6px 7px 8px;flex:1;display:flex;flex-direction:column;gap:3px;}
+.mv-title{font-size:13px;font-weight:800;line-height:1.3;color:var(--text);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
 .mv-meta{font-size:13px;color:var(--text-muted);line-height:1.4;margin-top:2px;}
 .mv-count{font-size:10px;font-weight:700;background:var(--surface2);color:var(--text-muted);padding:1px 5px;border-radius:4px;display:inline-block;margin-top:2px;}
 .mv-rec-badge{position:absolute;top:4px;right:4px;font-size:10px;font-weight:800;color:#B45309;background:rgba(255,255,255,.9);border-radius:3px;padding:0 3px;line-height:1.6;}
@@ -438,7 +438,7 @@ tr:hover td{background:#FAFAF8;}
   .rec-grid{grid-template-columns:repeat(2,1fr);gap:10px;}
   .quick-grid{grid-template-columns:repeat(2,1fr) !important;}
   .popup-info{padding-right:10px;}
-  .qc-poster{width:58px;}
+  /* qc-poster mobile width: 세로형에서 100%로 오버라이드됨 */
   .qc-title{font-size:14px;}
   .time-chip{font-size:14px;}
   .time-dash{font-size:14px;}
@@ -488,6 +488,18 @@ tr:hover td{background:#FAFAF8;}
   .date-label-btn{display:none;}
   .date-hidden-input{position:static !important;opacity:1 !important;width:auto !important;height:auto !important;pointer-events:auto !important;}
 }
+
+@media(max-width:600px){
+  .hbtn-text{display:none;}
+  .hbtn-icon{font-size:16px;}
+  .header-refresh{padding:5px 9px;}
+}
+
+@media(max-width:700px){
+  .quick-card{flex-direction:column;}
+  .qc-poster{width:100%;height:auto;aspect-ratio:3/4;align-self:auto;}
+  .qc-body{padding:8px 10px 10px;}
+}
 </style>
 </head>
 <body>
@@ -500,8 +512,8 @@ tr:hover td{background:#FAFAF8;}
       <div class="stat-item"><span class="stat-label">상영</span><strong id="statTotal">—</strong></div>
       <div class="stat-item"><span class="stat-label">영화</span><strong id="statMovies">—</strong></div>
     </div>
-    <button class="header-refresh" id="refreshBtn" onclick="refreshData()">↻ 새로고침</button>
-    <button class="header-refresh" onclick="openSiteInfo()" style="margin-left:4px;">ℹ 정보</button>
+    <button class="header-refresh" id="refreshBtn" onclick="refreshData()"><span class="hbtn-icon">↻</span><span class="hbtn-text"> 새로고침</span></button>
+    <button class="header-refresh" onclick="openSiteInfo()" style="margin-left:4px;"><span class="hbtn-icon">ℹ</span><span class="hbtn-text"> 정보</span></button>
   </div>
 </header>
 
@@ -994,7 +1006,7 @@ function renderExploreCards(){
   if(!cards.length){ el.innerHTML=`<div class="empty">조건에 맞는 상영이 없습니다</div>`; return; }
 
   const maxLen = Math.max(...cards.map(c=>c.movie.length));
-  const cardW = Math.max(225, Math.min(360, 70+24+maxLen*14));
+  const cardW = Math.max(180, Math.min(288, 70+24+maxLen*14));
   const recSet = new Set((recData||[]).map(r=>r.title));
   const exploreAwardMap = {};
   (recData||[]).forEach(r=>{ if(r.awards) exploreAwardMap[r.title]=r.awards; });
@@ -2018,7 +2030,8 @@ function renderCinemaGrid(){
     return `<div class="cinema-group">
       <div class="cinema-group-header" style="cursor:pointer;" onclick="openCinemaPopup('${esc(cinema)}')">
         <div class="cgr-top">
-          <div class="cinema-group-name">${esc(cinema)}${locBadge}<span style="font-size:10px;font-weight:500;color:var(--text-muted);margin-left:2px;">ℹ︎</span>${freeBadge}${countBadge}</div>
+          <div class="cinema-group-name">${esc(cinema)}${locBadge}<span style="font-size:10px;font-weight:500;color:var(--text-muted);margin-left:2px;">ℹ︎</span>${freeBadge}</div>
+          <span style="font-size:11px;color:var(--text-muted);margin-left:6px;">${rows.length}건${maxMmdd?` ~${maxMmdd}`:""}</span>
           <div class="cinema-group-meta cgr-meta-pc" style="flex:1;display:flex;align-items:center;gap:8px;">
             <span style="flex:1;"></span>
             ${addrText?`<span style="font-size:11px;color:var(--text-muted);text-align:right;">${esc(addrText)}</span>`:""}
@@ -2026,11 +2039,7 @@ function renderCinemaGrid(){
           </div>
         </div>
         <div class="cgr-meta-mobile" style="display:none;flex-direction:column;gap:2px;padding:0 12px 7px;">
-          <div style="display:flex;align-items:center;gap:8px;">
-            ${countBadge}
-            ${srcBadge}
-          </div>
-          ${addrText?`<div style="font-size:11px;color:var(--text-muted);">${esc(addrText)}</div>`:""}
+          ${addrText||srcBadge?`<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">${addrText?`<span style="font-size:11px;color:var(--text-muted);flex:1;">${esc(addrText)}</span>`:""} ${srcBadge}</div>`:""}
         </div>
       </div>
       <div class="cinema-group-rows cinema-rows-2col">
@@ -2338,7 +2347,7 @@ function closeSiteInfo(){
       <div style="font-family:'DM Serif Display',serif;font-size:20px;margin-bottom:14px;">오늘 뭐 볼까?</div>
       <div id="siteInfoContent" style="font-size:13px;color:var(--text-muted);line-height:1.8;white-space:pre-wrap;"></div>
       <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);">
-        <a href="https://forms.gle/3cEJhSfRv7Kc5c9L7" target="_blank" style="font-size:13px;font-weight:600;color:var(--green);text-decoration:none;">📝 의견 보내기 →</a>
+        <a href="https://forms.gle/3cEJhSfRv7Kc5c9L7" target="_blank" style="font-size:13px;font-weight:600;color:var(--green);text-decoration:none;">📝 개선 의견 보내기 →</a>
       </div>
     </div>
   </div>
