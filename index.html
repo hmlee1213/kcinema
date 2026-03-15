@@ -167,7 +167,8 @@ header{background:var(--text);color:#fff;padding:0 24px;position:sticky;top:0;z-
 .cinema-group-meta span{white-space:nowrap;}
 
 .cgr-top{display:flex;align-items:center;gap:10px;width:100%;}
-.cgr-meta-mobile{display:none;}
+.cgr-meta-pc{display:flex;}
+.cgr-meta-mobile{display:none !important;}
 
 .cinema-group-name{font-size:13px;font-weight:700;flex:1;display:flex;align-items:center;gap:6px;}
 .cinema-group-meta{font-size:12px;color:var(--text-muted);display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
@@ -448,8 +449,8 @@ tr:hover td{background:#FAFAF8;}
   .cinema-group-header{flex-direction:column;align-items:flex-start;gap:3px;padding:9px 12px;}
   .cgr-top{gap:6px;}
   .cinema-group-name{font-size:13px;}
-  .cgr-meta-pc{display:none;}
-  .cgr-meta-mobile{display:flex;gap:10px;font-size:11px;color:var(--text-muted);flex-wrap:wrap;}
+  .cgr-meta-pc{display:none !important;}
+  .cgr-meta-mobile{display:flex !important;gap:10px;font-size:11px;color:var(--text-muted);flex-wrap:wrap;}
   .movie-grid{grid-template-columns:repeat(2,1fr);}
   .cinema-rows-2col{grid-template-columns:1fr;}
   .cinema-rows-2col .c-row:nth-child(odd){border-right:none;}
@@ -668,12 +669,13 @@ tr:hover td{background:#FAFAF8;}
     <div class="popup-top">
       <div class="popup-poster" id="popupPoster">🎬</div>
       <div class="popup-info">
-        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-          <div class="popup-title" id="popupTitle" style="margin-bottom:0;flex:1;min-width:0;"></div>
-          <span id="popupRecBadge" style="display:none;font-size:13px;color:#c0861a;font-weight:700;">★ 추천</span>
+        <div style="display:flex;align-items:center;gap:5px;flex-wrap:nowrap;padding-right:28px;">
+          <div class="popup-title" id="popupTitle" style="margin-bottom:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px;"></div>
+          <span id="popupRecBadge" style="display:none;font-size:11px;color:#c0861a;font-weight:700;flex-shrink:0;">★추천</span>
+          <div id="popupAwardsInline" style="display:none;flex-shrink:0;"></div>
         </div>
         <div class="popup-meta" id="popupMeta" style="margin-top:3px;font-size:12px;color:var(--text-muted);"></div>
-        <div id="popupAwards" style="display:none;margin-top:6px;"></div>
+        <div id="popupAwards" style="display:none;"></div>
         <div id="popupSynopsisWrap" style="margin-top:8px;display:none;">
           <div id="popupSynopsis" style="font-size:12px;color:var(--text-sub);line-height:1.6;overflow:hidden;"></div>
           <button id="popupSynopsisMore" onclick="expandSynopsis()" style="font-size:11px;color:var(--green);background:none;border:none;cursor:pointer;padding:2px 0;font-family:inherit;font-weight:600;display:none;">더보기 ▾</button>
@@ -695,10 +697,10 @@ tr:hover td{background:#FAFAF8;}
     <div class="popup-top">
       <div class="popup-poster" id="moviePopupPoster">🎬</div>
       <div class="popup-info">
-        <div style="display:flex;align-items:flex-start;gap:6px;padding-right:28px;">
-          <div class="popup-title" id="moviePopupTitle" style="margin-bottom:0;flex:1;min-width:0;"></div>
-          <div id="moviePopupTypeTags" style="display:flex;gap:4px;flex-shrink:0;align-items:center;"></div>
-          <div id="moviePopupMeta" style="flex-shrink:0;"></div>
+        <div style="display:flex;align-items:center;gap:5px;flex-wrap:nowrap;padding-right:28px;">
+          <div class="popup-title" id="moviePopupTitle" style="margin-bottom:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:240px;"></div>
+          <div id="moviePopupTypeTags" style="display:flex;gap:3px;flex-shrink:0;align-items:center;"></div>
+          <div id="moviePopupMeta" style="flex-shrink:0;margin-left:2px;"></div>
         </div>
         <div id="moviePopupDetailMeta" style="font-size:11px;color:var(--text-muted);margin-top:5px;line-height:1.6;"></div>
         <div id="moviePopupSynopsis" style="font-size:11px;color:var(--text-muted);margin-top:6px;line-height:1.6;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;"></div>
@@ -1854,7 +1856,7 @@ function renderCinemaGrid(){
     const src = rows[0]?.source || "";
     const srcInfo = SOURCE_MAP[src];
     const srcBadge = srcInfo
-      ? `<a href="${srcInfo.url}" target="_blank" onclick="event.stopPropagation()" style="font-size:10px;font-weight:600;color:var(--text-muted);background:var(--surface2);border-radius:3px;padding:1px 5px;text-decoration:none;white-space:nowrap;">${srcInfo.label}</a>`
+      ? `<a href="${srcInfo.url}" target="_blank" onclick="event.stopPropagation()" style="font-size:11px;font-weight:600;color:var(--text-muted);text-decoration:none;white-space:nowrap;margin-left:auto;">예매처 →</a>`
       : "";
     const countBadge = `<span style="font-size:11px;color:var(--text-muted);">${rows.length}건${maxMmdd?` ~${maxMmdd}`:""}</span>`;
     return `<div class="cinema-group">
