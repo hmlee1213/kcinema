@@ -366,7 +366,7 @@ tr:hover td{background:#FAFAF8;}
 .ex-cinema-chip:hover{border-color:var(--text);color:var(--text);}
 .ex-cinema-chip.active{background:var(--green);border-color:var(--green);color:#fff;}
 .ex-cinema-chip.active .free-badge{color:rgba(255,255,255,.8);}
-.explore-cinema-chips{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:5px;}
+.explore-cinema-chips{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:5px;width:100%;}
 .free-badge{font-size:9px;font-weight:700;color:var(--green);margin-left:3px;}
 .result-header-row{display:flex;align-items:center;gap:14px;margin-bottom:16px;flex-wrap:wrap;}
 
@@ -714,10 +714,10 @@ tr:hover td{background:#FAFAF8;}
     </div>
     <div class="popup-divider"></div>
     <!-- 정렬 토글 -->
-    <div id="mpSortBar" style="display:flex;align-items:center;gap:5px;padding:8px 18px 0;border-bottom:1px solid var(--border);">
-      <button class="popup-sort-btn active" id="mpSortDate" onclick="setMoviePopupSort('date')" style="display:none;">날짜순</button>
-      <button class="popup-sort-btn" id="mpSortCinema" onclick="setMoviePopupSort('cinema')" style="display:none;">극장별</button>
-      <div id="moviePopupNav" style="margin-left:auto;display:none;flex-direction:row;gap:4px;align-items:center;">
+    <div id="mpSortBar" style="display:flex;align-items:center;gap:5px;padding:6px 18px;border-bottom:1px solid var(--border);min-height:36px;">
+      <button class="popup-sort-btn active" id="mpSortDate" onclick="setMoviePopupSort('date')">날짜순</button>
+      <button class="popup-sort-btn" id="mpSortCinema" onclick="setMoviePopupSort('cinema')">극장별</button>
+      <div id="moviePopupNav" style="display:none;flex-direction:row;gap:4px;align-items:center;margin-left:auto;">
         <button onclick="document.getElementById('moviePopupSchedules').scrollTop=0" style="font-size:12px;font-weight:600;font-family:inherit;background:none;border:1px solid var(--border);border-radius:5px;padding:3px 10px;cursor:pointer;color:var(--text-muted);">위로</button>
         <button onclick="document.getElementById('moviePopupSchedules').scrollTop=99999" style="font-size:12px;font-weight:600;font-family:inherit;background:none;border:1px solid var(--border);border-radius:5px;padding:3px 10px;cursor:pointer;color:var(--text-muted);">아래로</button>
       </div>
@@ -1632,12 +1632,8 @@ function openMoviePopup(title, rows, posterUrl){
     </button>`;
 
   // 정렬 버튼 초기화
-  const mpDate = document.getElementById('mpSortDate');
-  const mpCinema = document.getElementById('mpSortCinema');
-  if(mpDate) { mpDate.style.display=''; mpDate.classList.add('active'); }
-  if(mpCinema) { mpCinema.style.display=''; mpCinema.classList.remove('active'); }
   moviePopupSort = 'date';
-  const _sb = document.getElementById('mpSortBar'); if(_sb) _sb.style.display = '';
+  const _sb = document.getElementById('mpSortBar'); if(_sb) _sb.style.display = 'flex';
 
   // 상세 메타 초기화
   document.getElementById("moviePopupDetailMeta").textContent = "";
