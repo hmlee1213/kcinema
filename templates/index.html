@@ -484,7 +484,7 @@ tr:hover td{background:#FAFAF8;}
 }
 @media(min-width:601px){
   .date-label-btn{display:none;}
-  .date-hidden-input{position:static;opacity:1;width:auto;height:auto;pointer-events:auto;}
+  .date-hidden-input{position:static !important;opacity:1 !important;width:auto !important;height:auto !important;pointer-events:auto !important;}
 }
 </style>
 </head>
@@ -534,10 +534,7 @@ tr:hover td{background:#FAFAF8;}
         </div>
         <!-- 직접 설정 패널 -->
         <div class="cond-sub open" id="directSub" style="flex-wrap:nowrap;align-items:center;overflow-x:auto;scrollbar-width:none;">
-          <label class="date-label-btn" onclick="document.getElementById('exploreDate').showPicker?document.getElementById('exploreDate').showPicker():document.getElementById('exploreDate').click()">
-            <span id="exploreDateLabel">날짜 선택</span> ▾
-            <input class="ex-date date-hidden-input" type="date" id="exploreDate" onchange="updateDateLabel('exploreDate','exploreDateLabel');loadExploreData()">
-          </label>
+          <label class="date-label-btn" for="exploreDate" style="flex-shrink:0;"><span id="exploreDateLabel">날짜 선택</span> ▾</label><input class="ex-date date-hidden-input" type="date" id="exploreDate" onchange="updateDateLabel('exploreDate','exploreDateLabel');loadExploreData()" style="flex-shrink:0;">
           <div class="cond-sep" style="flex-shrink:0;"></div>
           <select class="ex-select" id="exploreTimeFrom" onchange="onTimeSelectChange()" style="flex-shrink:0;">
             <option value="00">00시~</option><option value="09">09시~</option>
@@ -561,15 +558,9 @@ tr:hover td{background:#FAFAF8;}
         </div>
         <!-- 기간 선택 패널 -->
         <div class="cond-sub" id="rangeSub" style="flex-wrap:nowrap;align-items:center;overflow-x:auto;scrollbar-width:none;">
-          <label class="date-label-btn" onclick="document.getElementById('exploreDateFrom').showPicker?document.getElementById('exploreDateFrom').showPicker():document.getElementById('exploreDateFrom').click()">
-            <span id="exploreDateFromLabel">시작일</span> ▾
-            <input class="ex-date date-hidden-input" type="date" id="exploreDateFrom" onchange="updateDateLabel('exploreDateFrom','exploreDateFromLabel');loadExploreData()">
-          </label>
+          <label class="date-label-btn" for="exploreDateFrom" style="flex-shrink:0;"><span id="exploreDateFromLabel">시작일</span> ▾</label><input class="ex-date date-hidden-input" type="date" id="exploreDateFrom" onchange="updateDateLabel('exploreDateFrom','exploreDateFromLabel');loadExploreData()" style="flex-shrink:0;">
           <span style="color:var(--text-sub);font-size:12px;padding:0 4px;flex-shrink:0;">~</span>
-          <label class="date-label-btn" onclick="document.getElementById('exploreDateTo').showPicker?document.getElementById('exploreDateTo').showPicker():document.getElementById('exploreDateTo').click()">
-            <span id="exploreDateToLabel">종료일</span> ▾
-            <input class="ex-date date-hidden-input" type="date" id="exploreDateTo" onchange="updateDateLabel('exploreDateTo','exploreDateToLabel');loadExploreData()">
-          </label>
+          <label class="date-label-btn" for="exploreDateTo" style="flex-shrink:0;"><span id="exploreDateToLabel">종료일</span> ▾</label><input class="ex-date date-hidden-input" type="date" id="exploreDateTo" onchange="updateDateLabel('exploreDateTo','exploreDateToLabel');loadExploreData()" style="flex-shrink:0;">
         </div>
       </div>
 
@@ -754,6 +745,14 @@ const CINEMA_ORDER = [
   "서울아트시네마","씨네큐브","아리랑시네센터","아트나인","아트하우스모모","에무시네마",
   "서울영화센터","한국영상자료원"
 ];
+const SOURCE_MAP = {
+  dtryx:    {label:"디트릭스",      url:"https://www.dtryx.com/main.do"},
+  moviee:   {label:"무비애",        url:"https://moviee.co.kr/"},
+  seoulart: {label:"서울아트시네마", url:"https://www.cinematheque.seoul.kr/"},
+  kofa:     {label:"시네마테크KOFA", url:"https://www.koreafilm.or.kr/cinematheque/schedule#none"},
+};
+// 극장별 source 매핑 (첫 row의 source 기준)
+
 const CINEMA_LOC = {
   "KT&G상상마당시네마":"홍대","KU시네마테크":"건대","더숲아트시네마":"노원",
   "라이카시네마":"연희동","서울아트시네마":"서대문","씨네큐브":"광화문",
@@ -1655,18 +1654,23 @@ function updateWishBadge(){
 function toggleMovieWish(btn, title, posterUrl){
   let arr = loadWishMovies();
   const idx = arr.findIndex(m=>m.title===title);
-  if(idx>=0){
-    arr.splice(idx,1);
-    btn.classList.remove("on");
-    btn.textContent="♡";
-    gtag('event','movie_unwish',{movie_title:title});
-  } else {
+  const adding = idx < 0;
+  if(adding){
     arr.push({title, poster_url:posterUrl, added_at:new Date().toISOString()});
-    btn.classList.add("on");
-    btn.textContent="♥";
     gtag('event','movie_wish',{movie_title:title});
+  } else {
+    arr.splice(idx,1);
+    gtag('event','movie_unwish',{movie_title:title});
   }
   saveWishMovies(arr);
+  // 같은 title의 모든 하트 버튼 동기화 (카드 + 팝업)
+  document.querySelectorAll(".heart-btn, .mv-wish-btn").forEach(b=>{
+    const onclickAttr = b.getAttribute("onclick")||"";
+    if(onclickAttr.includes(`'${title.replace(/'/g,"\'")}'`) || onclickAttr.includes(`"${title}"`)){
+      b.classList.toggle("on", adding);
+      b.textContent = adding ? "♥" : "♡";
+    }
+  });
 }
 
 function toggleSchedWish(key, movie, cinema, screen, startDt, endDt, posterUrl, btn){
@@ -1845,17 +1849,21 @@ function renderCinemaGrid(){
     const maxMmdd=maxDate?maxDate.slice(5).replace("-","/"):"";
     const isFree=FREE_CINEMAS.includes(cinema);
     const locBadge=CINEMA_LOC[cinema]?`<span class="chip-loc">${esc(CINEMA_LOC[cinema])}</span>`:"";
-    const metaParts=[`오늘 이후 ${rows.length}건`];
-    if(maxMmdd) metaParts.push(`~${maxMmdd}`);
     const freeBadge=isFree?`<span class="free-tag">무료</span>`:"";
     const addrText = cinemaInfoCache[cinema]?.address || "";
+    const src = rows[0]?.source || "";
+    const srcInfo = SOURCE_MAP[src];
+    const srcBadge = srcInfo
+      ? `<a href="${srcInfo.url}" target="_blank" onclick="event.stopPropagation()" style="font-size:10px;font-weight:600;color:var(--text-muted);background:var(--surface2);border-radius:3px;padding:1px 5px;text-decoration:none;white-space:nowrap;">${srcInfo.label}</a>`
+      : "";
+    const countBadge = `<span style="font-size:11px;color:var(--text-muted);">${rows.length}건${maxMmdd?` ~${maxMmdd}`:""}</span>`;
     return `<div class="cinema-group">
       <div class="cinema-group-header" style="cursor:pointer;" onclick="openCinemaPopup('${esc(cinema)}')">
         <div class="cgr-top">
           <div class="cinema-group-name">${esc(cinema)}${locBadge}<span style="font-size:10px;font-weight:500;color:var(--text-muted);margin-left:2px;">ℹ︎</span>${freeBadge}</div>
-          <div class="cinema-group-meta cgr-meta-pc">${metaParts.map(p=>`<span>${p}</span>`).join("")}${addrText?`<span style="font-size:11px;color:var(--text-muted);">${esc(addrText)}</span>`:""}</div>
+          <div class="cinema-group-meta cgr-meta-pc">${countBadge}${srcBadge}${addrText?`<span style="font-size:11px;color:var(--text-muted);">${esc(addrText)}</span>`:""}</div>
         </div>
-        <div class="cinema-group-meta cgr-meta-mobile">${metaParts.map(p=>`<span>${p}</span>`).join("")}${addrText?`<span>${esc(addrText)}</span>`:""}</div>
+        <div class="cinema-group-meta cgr-meta-mobile">${countBadge}${srcBadge}${addrText?`<span>${esc(addrText)}</span>`:""}</div>
       </div>
       <div class="cinema-group-rows cinema-rows-2col">
         ${rows.map(r=>{
