@@ -675,12 +675,12 @@ tr:hover td{background:#FAFAF8;}
           <div id="popupAwardsInline" style="display:none;flex-shrink:0;"></div>
         </div>
         <div class="popup-meta" id="popupMeta" style="margin-top:3px;font-size:12px;color:var(--text-muted);"></div>
-        <div id="popupAwards" style="display:none;"></div>
         <div id="popupSynopsisWrap" style="margin-top:8px;display:none;">
           <div id="popupSynopsis" style="font-size:12px;color:var(--text-sub);line-height:1.6;overflow:hidden;"></div>
           <button id="popupSynopsisMore" onclick="expandSynopsis()" style="font-size:11px;color:var(--green);background:none;border:none;cursor:pointer;padding:2px 0;font-family:inherit;font-weight:600;display:none;">더보기 ▾</button>
           <button id="popupSynopsisLess" onclick="collapseSynopsis()" style="font-size:11px;color:var(--green);background:none;border:none;cursor:pointer;padding:2px 0;font-family:inherit;font-weight:600;display:none;">접기 ▴</button>
         </div>
+        <div id="popupAwards" style="display:none;margin-top:6px;"></div>
       </div>
     </div>
     <div style="border-top:1px solid var(--border);margin-top:12px;"></div>
@@ -903,13 +903,15 @@ let exploreSortMode = "time";
 let exploreSortDir = "asc";
 
 function getExploreParams(){
-  const now = new Date();
-  const kst = d => { const x=new Date(d); x.setHours(x.getHours()+9); return x.toISOString().slice(0,10); };
-  const todayStr = kst(now);
-  const t = new Date(now.getTime() + 9*3600000);
-  const sat = new Date(t); sat.setDate(t.getDate() + ((6-t.getDay()+7)%7 || 7));
-  const sun = new Date(sat); sun.setDate(sat.getDate()+1);
-  const fmt = d => d.toISOString().slice(0,10);
+  const todayStr = today_kst();
+  // KST 날짜 파싱으로 요일 계산 (UTC 오류 없음)
+  const [ty,tm,td] = todayStr.split("-").map(Number);
+  const todayDow = new Date(ty,tm-1,td).getDay(); // 0=일,6=토
+  const fmt = d => { const y=d.getFullYear(),mo=String(d.getMonth()+1).padStart(2,"0"),da=String(d.getDate()).padStart(2,"0"); return `${y}-${mo}-${da}`; };
+  // 월~금(1~5): 이번 주 토요일 / 토(6)·일(0): 다음 주 토요일
+  const daysToSat = todayDow >= 1 && todayDow <= 5 ? (6 - todayDow) : (7 - todayDow + 6) % 7 + 7;
+  const sat = new Date(ty, tm-1, td + daysToSat);
+  const sun = new Date(ty, tm-1, td + daysToSat + 1);
 
   if(exploreMode === "range"){
     const df = document.getElementById("exploreDateFrom").value || todayStr;
@@ -1211,6 +1213,61 @@ async function switchTab(name){
 /* ══════════════════════════════════════
    팝업
 ══════════════════════════════════════ */
+
+function openMovieInfoPopup(movie, posterUrl, cinema){
+  document.getElementById("popupTitle").textContent = movie;
+  document.getElementById("popupRecBadge").style.display = "none";
+  if(document.getElementById("popupAwardsInline")) document.getElementById("popupAwardsInline").style.display = "none";
+  document.getElementById("popupPoster").innerHTML = posterUrl
+    ? `<img src="${esc(posterUrl)}" style="width:100%;height:100%;object-fit:cover" onerror="this.parentNode.innerHTML='🎬'">`
+    : "🎬";
+  document.getElementById("popupMeta").textContent = "";
+  document.getElementById("popupSynopsisWrap").style.display = "none";
+  document.getElementById("popupSynopsisMore").style.display = "none";
+  document.getElementById("popupSynopsisLess").style.display = "none";
+  document.getElementById("popupAwards").style.display = "none";
+
+  // 하단: 관심영화 버튼만
+  const wished = isMovieWished(movie);
+  document.getElementById("popupSchedules").innerHTML =
+    `<div style="padding:8px 0;">
+      <button class="heart-btn${wished?' on':''}" onclick="toggleMovieWish(this,'${esc(movie)}','${esc(posterUrl||'')}')" style="font-size:14px;font-family:inherit;display:flex;align-items:center;gap:6px;padding:6px 0;">
+        <span>${wished?'♥':'♡'}</span><span style="font-size:13px;font-weight:600;color:var(--text);">관심영화 ${wished?'해제':'추가'}</span>
+      </button>
+    </div>`;
+
+  // 영화 정보 비동기 로드
+  fetch(`/api/movie-detail?title=${encodeURIComponent(movie)}`)
+    .then(r=>r.json()).then(d=>{
+      if(!d||!d.title) return;
+      if(d.poster_url) document.getElementById("popupPoster").innerHTML=`<img src="${esc(d.poster_url)}" style="width:100%;height:100%;object-fit:cover" onerror="this.parentNode.innerHTML='🎬'">`;
+      const parts=[];
+      if(d.director) parts.push(d.director);
+      if(d.year) parts.push(d.year+"년");
+      if(d.runtime) parts.push(d.runtime+"분");
+      document.getElementById("popupMeta").textContent = parts.join(" · ");
+      const awHtml = awardsHtml(d.awards||"");
+      if(awHtml){ document.getElementById("popupAwards").innerHTML=awHtml; document.getElementById("popupAwards").style.display="block"; }
+      if(d.synopsis){
+        const synEl = document.getElementById("popupSynopsis");
+        synEl.textContent = d.synopsis;
+        synEl.style.display = "-webkit-box";
+        synEl.style.overflow = "hidden";
+        synEl.style.webkitLineClamp = "3";
+        synEl.style["-webkit-box-orient"] = "vertical";
+        document.getElementById("popupSynopsisWrap").style.display = "block";
+        requestAnimationFrame(()=>{
+          document.getElementById("popupSynopsisMore").style.display =
+            synEl.scrollHeight > synEl.clientHeight+2 ? "inline" : "none";
+        });
+      }
+      const isRec = (recData||[]).some(r=>r.title===movie);
+      document.getElementById("popupRecBadge").style.display = isRec ? "inline" : "none";
+    }).catch(()=>{});
+
+  document.getElementById("popupOverlay").classList.add("open");
+  document.body.style.overflow="hidden";
+}
 function openPopup(movie, cinema, screen, movieUrl){
   trackCinemaClick(cinema);
   document.getElementById("popupTitle").textContent = movie;
@@ -1772,36 +1829,36 @@ function renderWishMovies(el){
     el.innerHTML=`<div class="wish-empty"><div class="wish-empty-icon">🎬</div>하트 버튼을 눌러 관심 영화를 모아보세요</div>`;
     return;
   }
+  const recSet = new Set((recData||[]).map(r=>r.title));
+  const recMap = {}; (recData||[]).forEach(r=>{ if(r.awards) recMap[r.title]=r.awards; });
   const html = arr.map(m=>{
-    const thumb = m.poster_url
-      ? `<img src="${esc(m.poster_url)}" alt="" loading="lazy" onerror="this.parentNode.textContent='🎬'">`
+    const posterUrl = m.poster_url || "";
+    const thumb = posterUrl
+      ? `<img data-src="${esc(posterUrl)}" alt="" class="lazy-img" onerror="this.parentNode.textContent='🎬'">`
       : "🎬";
-    // 현재 상영 횟수
-    const cnt = movieData.filter(r=>r.movie===m.title).length;
-    const upcomingRows = movieData
-      .filter(r=>r.movie===m.title)
-      .sort((a,b)=>(a.start_dt||"").localeCompare(b.start_dt||""))
-      .slice(0,5);
-    const schedHtml = upcomingRows.length
-      ? `<div class="wish-movie-scheds">${upcomingRows.map(r=>{
-          const {mmdd,time,dow}=splitDt(r.start_dt);
-          const {time:endT}=splitDt(r.end_dt);
-          return `<span class="wish-sched-chip">${mmdd}(${dow}) ${time}–${endT} <span style="font-size:10px;color:var(--text-muted);">${esc(r.cinema)}</span></span>`;
-        }).join("")}</div>`
-      : "";
-    return `<div class="wish-movie-row" style="flex-direction:column;align-items:stretch;gap:6px;cursor:default;">
-      <div style="display:flex;align-items:center;gap:10px;">
-        <div class="wish-movie-thumb">${thumb}</div>
-        <div class="wish-movie-info">
-          <div class="wish-movie-title">${esc(m.title)}</div>
-          <div class="wish-movie-meta">${cnt?cnt+"회 상영 중":"상영 정보 없음"}</div>
+    const rows = movieData.filter(r=>r.movie===m.title);
+    const runtime = rows.find(r=>r.runtime)?.runtime;
+    const dirText = movieDirectorMap[m.title] || "";
+    const isRec = recSet.has(m.title);
+    const hasAward = !!(recMap[m.title]);
+    const is4k = movie4kSet.has(m.title);
+    const isDolby = movieDolbySet.has(m.title);
+    return `<div class="mv-card has-rec" onclick="onMovieCardClickByTitle('${esc(m.title)}')" style="border-color:var(--border);">
+      <div class="mv-poster">${thumb}</div>
+      ${isRec?`<div class="mv-rec-badge">★${hasAward?'🏆':''}</div>`:''}
+      <div class="mv-tag-row">${is4k?'<div class="mv-4k-badge">4K</div>':''}${isDolby?'<div class="mv-dolby-badge">돌비</div>':''}</div>
+      <div class="mv-info">
+        <div class="mv-title-row">
+          <span class="mv-title">${esc(m.title)}</span>
+          <button class="mv-wish-btn on" onclick="event.stopPropagation();toggleMovieWish(this,'${esc(m.title)}','${esc(posterUrl)}')" title="찜 해제">♥</button>
         </div>
-        <button class="heart-btn on" onclick="removeMovieWish('${esc(m.title)}')" title="찜 해제">♥</button>
+        <div class="mv-meta">${dirText?esc(dirText)+(runtime?' · ':''):''}${runtime?runtime+'분':''}</div>
+        <div class="mv-count">${rows.length?rows.length+'회 상영':'상영 없음'}</div>
       </div>
-      ${schedHtml}
     </div>`;
   }).join("");
-  el.innerHTML = html;
+  el.innerHTML = `<div class="movie-card-grid">${html}</div>`;
+  lazyLoadImages();
 }
 
 /* ══════════════════════════════════════
@@ -1863,9 +1920,19 @@ function renderCinemaGrid(){
       <div class="cinema-group-header" style="cursor:pointer;" onclick="openCinemaPopup('${esc(cinema)}')">
         <div class="cgr-top">
           <div class="cinema-group-name">${esc(cinema)}${locBadge}<span style="font-size:10px;font-weight:500;color:var(--text-muted);margin-left:2px;">ℹ︎</span>${freeBadge}</div>
-          <div class="cinema-group-meta cgr-meta-pc">${countBadge}${srcBadge}${addrText?`<span style="font-size:11px;color:var(--text-muted);">${esc(addrText)}</span>`:""}</div>
+          <div class="cinema-group-meta cgr-meta-pc" style="flex:1;display:flex;align-items:center;gap:8px;">
+            ${countBadge}
+            ${addrText?`<span style="font-size:11px;color:var(--text-muted);">${esc(addrText)}</span>`:""}
+            ${srcBadge}
+          </div>
         </div>
-        <div class="cinema-group-meta cgr-meta-mobile">${countBadge}${srcBadge}${addrText?`<span>${esc(addrText)}</span>`:""}</div>
+        <div class="cgr-meta-mobile" style="display:none;flex-direction:column;gap:2px;padding:0 12px 7px;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            ${countBadge}
+            ${srcBadge}
+          </div>
+          ${addrText?`<div style="font-size:11px;color:var(--text-muted);">${esc(addrText)}</div>`:""}
+        </div>
       </div>
       <div class="cinema-group-rows cinema-rows-2col">
         ${rows.map(r=>{
@@ -1875,7 +1942,7 @@ function renderCinemaGrid(){
           const _scrVal = normalizeScreen(cinema, (r.screen||'').trim());
           const movieHtml=r.movie_url
             ?`<a href="${esc(r.movie_url)}" target="_blank" onclick="event.stopPropagation()">${esc(r.movie)}</a>`
-            :`<span class="movie-link" style="cursor:pointer;" onclick="event.stopPropagation();openPopup('${esc(r.movie)}','${esc(cinema)}','${esc(r.screen||'')}','')">${esc(r.movie)}</span>`;
+            :`<span class="movie-link" style="cursor:pointer;" onclick="event.stopPropagation();openPopup('${esc(r.movie)}','${esc(cinema)}','${esc(r.screen||"")}','')">${esc(r.movie)}</span>`;
           const schedKey=`${esc(r.movie)}|${esc(cinema)}|${esc(r.screen||"")}|${r.start_dt||""}`;
           const wished=isSchedWished(schedKey);
           const _showScreen = !["KU시네마테크","KT&G상상마당시네마","서울아트시네마"].includes(cinema) && _scrVal;
