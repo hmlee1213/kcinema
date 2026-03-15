@@ -710,7 +710,7 @@ tr:hover td{background:#FAFAF8;}
     </div>
     <div class="popup-divider"></div>
     <!-- 정렬 토글 -->
-    <div style="display:flex;align-items:center;gap:5px;padding:8px 18px 0;border-bottom:1px solid var(--border);">
+    <div id="mpSortBar" style="display:flex;align-items:center;gap:5px;padding:8px 18px 0;border-bottom:1px solid var(--border);">
       <button class="popup-sort-btn active" id="mpSortDate" onclick="setMoviePopupSort('date')">날짜순</button>
       <button class="popup-sort-btn" id="mpSortCinema" onclick="setMoviePopupSort('cinema')">극장별</button>
       <div id="moviePopupNav" style="margin-left:auto;display:none;gap:4px;">
@@ -1016,18 +1016,21 @@ function renderExploreCards(){
         : '';
       const scrTag = scr ? `<span style="font-size:10px;font-weight:600;color:var(--text-muted);background:var(--surface2);border-radius:3px;padding:0 4px;white-space:nowrap;">${esc(normalizeScreen(g.cinema, scr))}</span>` : '';
       return `<div class="time-chip${wished?" wished":""}" style="display:flex;align-items:center;gap:3px;flex-wrap:nowrap;cursor:pointer;" onclick="event.stopPropagation();">
-        ${dateDowHtml}<span style="white-space:nowrap;">${t.start}<span class="time-dash">-</span>${t.end}</span>
-        <span style="display:flex;align-items:center;gap:2px;">${s}${scrTag}</span>
+        ${dateDowHtml}${scrTag}<span style="white-space:nowrap;">${t.start}<span class="time-dash">-</span>${t.end}</span>
+        <span style="display:flex;align-items:center;gap:2px;">${s}</span>
         <button class="sched-wish-btn swb${wished?" on":""}" data-key="${schedKey}" onclick="event.stopPropagation();toggleSchedWish('${schedKey}','${esc(g.movie)}','${esc(g.cinema)}','${esc(scr)}','${t.start_dt||""}','${t.end_dt||""}','${esc(g.poster_url||"")}',this)">${wished?"⏰":"➕"}</button>
       </div>`;
     }).join("");
+    const _cardClick = (exploreMode==='direct')
+      ? `openPopup('${esc(g.movie)}','${esc(g.cinema)}','${esc(g.screen||"")}','${esc(g.movie_url||"")}')`
+      : `openMoviePopupFromExplore('${esc(g.movie)}','${esc(g.poster_url||"")}')`;
     const moreBtn = hiddenCount > 0
-      ? `<button onclick="event.stopPropagation();openMoviePopupFromExplore('${esc(g.movie)}','${esc(g.poster_url||"")}')" style="font-size:11px;font-weight:700;font-family:inherit;color:var(--green);background:none;border:1px solid var(--green);border-radius:5px;padding:2px 9px;cursor:pointer;margin-top:2px;">+${hiddenCount}건 더보기</button>`
+      ? `<button onclick="event.stopPropagation();${_cardClick}" style="font-size:11px;font-weight:700;font-family:inherit;color:var(--green);background:none;border:1px solid var(--green);border-radius:5px;padding:2px 9px;cursor:pointer;margin-top:2px;">+${hiddenCount}건 더보기</button>`
       : '';
     const titleHtml = g.movie_url
       ? `<a href="${esc(g.movie_url)}" target="_blank" onclick="event.stopPropagation()">${esc(g.movie)}</a>`
       : esc(g.movie);
-    return `<div class="quick-card" onclick="onMovieCardClickByTitle('${esc(g.movie)}')">
+    return `<div class="quick-card" onclick="${_cardClick}">
       <div class="qc-poster">${posterHtml}</div>
       <div class="qc-body">
         <div class="qc-title" style="display:flex;align-items:flex-start;gap:4px;">
@@ -1525,7 +1528,6 @@ function popupSlotHtml(r, title, posterUrl, extraLabel='', cinemaSticker='', ext
 
 
 function openMoviePopupFromExplore(movie, posterUrl){
-  // exploreData에서 즉시 rows 조합 — fetch 없음
   const rows = exploreData
     .filter(r => r.movie === movie)
     .map(r => ({
@@ -1535,6 +1537,10 @@ function openMoviePopupFromExplore(movie, posterUrl){
       movie_url: r.movie_url||'', poster_url: r.poster_url||''
     }));
   const url = posterUrl || (rows[0]?.poster_url || '');
+  // 단일 날짜 빠른선택(오늘/내일/토/일)은 정렬 버튼 숨김
+  const hideSort = ['today','tomorrow','saturday','sunday'].includes(exploreMode);
+  const sortBar = document.getElementById('mpSortBar');
+  if(sortBar) sortBar.style.display = hideSort ? 'none' : '';
   openMoviePopup(movie, rows, url);
 }
 function openMoviePopup(title, rows, posterUrl){
@@ -1555,6 +1561,7 @@ function openMoviePopup(title, rows, posterUrl){
   document.getElementById('mpSortDate').classList.add('active');
   document.getElementById('mpSortCinema').classList.remove('active');
   moviePopupSort = 'date';
+  const _sb = document.getElementById('mpSortBar'); if(_sb) _sb.style.display = '';
 
   // 상세 메타 초기화
   document.getElementById("moviePopupDetailMeta").textContent = "";
