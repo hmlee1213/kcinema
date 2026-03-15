@@ -1314,7 +1314,7 @@ function openPopup(movie, cinema, screen, movieUrl){
         const s=stickerHtml(r.program,r.show_type,cinema,movie,screen);
         const schedKey=`${esc(movie)}|${esc(cinema)}|${esc(screen||"")}|${r.start_dt||""}`;
         const wished=isSchedWished(schedKey);
-        const bookBtn=r.movie_url?`<a class="book-btn" href="${esc(r.movie_url)}" target="_blank" onclick="event.stopPropagation()">예매 →</a>`:'';
+        const bookBtn=r.movie_url&&!FREE_CINEMAS.includes(cinema)?`<a class="book-btn" href="${esc(r.movie_url)}" target="_blank" onclick="event.stopPropagation()">예매 →</a>`:'';
         const {dow:sdow2} = splitDt(r.start_dt);
         const cinemaLine = cinema+(screen?` · ${screen}`:"");
         const isMobile = window.innerWidth <= 600;
@@ -1533,7 +1533,7 @@ function popupSlotHtml(r, title, posterUrl, extraLabel='', cinemaSticker='', ext
   const extra = extraLabel
     ? `<span style="font-size:11px;color:var(--text);margin-left:4px;">${extraIsHtml ? extraLabel : esc(extraLabel)}</span>`
     : '';
-  const bookBtn2 = r.movie_url ? `<a class="book-btn" href="${esc(r.movie_url)}" target="_blank" onclick="event.stopPropagation()">예매 →</a>` : '';
+  const bookBtn2 = r.movie_url && !FREE_CINEMAS.includes(r.cinema) ? `<a class="book-btn" href="${esc(r.movie_url)}" target="_blank" onclick="event.stopPropagation()">예매 →</a>` : '';
   return `<div class="popup-sched-slot${wished?' wished':''}" style="display:flex;align-items:center;gap:8px;border-top:1px solid ${wished?'var(--green)':'var(--border)'};padding:6px 4px;background:${wished?'#EEF5E8':'transparent'};">
     <span style="font-size:13px;font-weight:700;color:var(--text);">${stm}</span>
     <span style="font-size:11px;color:var(--text-muted);">–${end}</span>
@@ -1583,7 +1583,7 @@ function openMoviePopupFromExplore(movie, posterUrl, cinema){
       const scr = r.screen ? ` · ${normalizeScreen(r.cinema, r.screen)}` : '';
       const schedKey = `${esc(movie)}|${esc(r.cinema)}|${esc(r.screen||'')}|${r.start_dt||''}`;
       const wished = isSchedWished(schedKey);
-      const bookBtn = r.movie_url ? `<a class="book-btn" href="${esc(r.movie_url)}" target="_blank" onclick="event.stopPropagation()">예매 →</a>` : '';
+      const bookBtn = r.movie_url && !FREE_CINEMAS.includes(r.cinema) ? `<a class="book-btn" href="${esc(r.movie_url)}" target="_blank" onclick="event.stopPropagation()">예매 →</a>` : '';
       return `<div class="popup-sched-slot${wished?' wished':''}" style="display:flex;align-items:center;gap:8px;border-top:1px solid ${wished?'var(--green)':'var(--border)'};padding:6px 4px;background:${wished?'#EEF5E8':'transparent'};">
         <span style="font-size:13px;font-weight:700;color:var(--text);">${stm}</span>
         <span style="font-size:11px;color:var(--text-muted);">–${end}</span>
@@ -2039,7 +2039,7 @@ function renderCinemaGrid(){
           </div>
         </div>
         <div class="cgr-meta-mobile" style="display:none;flex-direction:column;gap:2px;padding:0 12px 7px;">
-          ${addrText||srcBadge?`<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">${addrText?`<span style="font-size:11px;color:var(--text-muted);flex:1;">${esc(addrText)}</span>`:""} ${srcBadge}</div>`:""}
+          ${addrText||srcBadge?`<div style="display:flex;align-items:center;gap:8px;">${addrText?`<span style="font-size:11px;color:var(--text-muted);flex:1;text-align:left;">${esc(addrText)}</span>`:"<span style='flex:1;'></span>"} <span style="margin-left:auto;flex-shrink:0;">${srcBadge}</span></div>`:""}
         </div>
       </div>
       <div class="cinema-group-rows cinema-rows-2col">
@@ -2054,13 +2054,12 @@ function renderCinemaGrid(){
           const schedKey=`${esc(r.movie)}|${esc(cinema)}|${esc(r.screen||"")}|${r.start_dt||""}`;
           const wished=isSchedWished(schedKey);
           const _showScreen = !["KU시네마테크","KT&G상상마당시네마","서울아트시네마"].includes(cinema) && _scrVal;
-          const _bookBtn = r.movie_url ? `<a class="book-btn" href="${esc(r.movie_url)}" target="_blank" onclick="event.stopPropagation()">예매 →</a>` : '';
-          return `<div class="c-row${_showScreen?' has-screen':''}${r.movie_url?' has-book':''}">
+
+          return `<div class="c-row${_showScreen?' has-screen':''}">
             <span class="c-date">${mmdd} ${DOW_KO[dowIdx]}</span>
             ${_showScreen?`<span class="c-screen">${esc(_scrVal)}</span>`:''}
             <span class="c-time">${time}–${endTime}</span>
             <span class="c-movie">${movieHtml}${s}</span>
-            ${_bookBtn}
             <button class="sched-wish-btn swb${wished?" on":""}" data-key="${schedKey}" title="${wished?'등록 취소':'스케줄 등록'}" onclick="event.stopPropagation();toggleSchedWish('${schedKey}','${esc(r.movie)}','${esc(cinema)}','${esc(r.screen||"")}','${r.start_dt||""}','${r.end_dt||""}','${esc(r.poster_url||"")}',this)">${wished?"⏰":"➕"}</button>
           </div>`;
         }).join("")}
