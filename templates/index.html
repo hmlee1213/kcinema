@@ -684,7 +684,11 @@ tr:hover td{background:#FAFAF8;}
       </div>
     </div>
     <div style="border-top:1px solid var(--border);margin-top:12px;"></div>
-    <div style="padding:8px 18px 12px;">
+    <div id="explorePopupNav" style="display:none;align-items:center;justify-content:flex-end;gap:4px;padding:5px 18px 0;border-bottom:1px solid var(--border);">
+      <button onclick="document.getElementById('explorePopupScroll').scrollTop=0" style="font-size:12px;font-weight:600;font-family:inherit;background:none;border:1px solid var(--border);border-radius:5px;padding:3px 10px;cursor:pointer;color:var(--text-muted);">위로</button>
+      <button onclick="document.getElementById('explorePopupScroll').scrollTop=99999" style="font-size:12px;font-weight:600;font-family:inherit;background:none;border:1px solid var(--border);border-radius:5px;padding:3px 10px;cursor:pointer;color:var(--text-muted);">아래로</button>
+    </div>
+    <div id="explorePopupScroll" style="max-height:52vh;overflow-y:auto;padding:8px 18px 12px;">
       <div id="popupSchedules"></div>
     </div>
   </div>
@@ -1586,6 +1590,9 @@ function openMoviePopupFromExplore(movie, posterUrl, cinema){
   }).join('');
 
   document.getElementById("popupSchedules").innerHTML = html || '<div style="color:var(--text-muted);font-size:12px;padding:8px 0;">상영 정보 없음</div>';
+  // 기간 모드일 때만 위로/아래로 표시
+  const _nav = document.getElementById('explorePopupNav');
+  if(_nav) _nav.style.display = (exploreMode === 'range' && rows.length >= 8) ? 'flex' : 'none';
 
   // 영화 정보 비동기 로드
   fetch(`/api/movie-detail?title=${encodeURIComponent(movie)}`)
