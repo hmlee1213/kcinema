@@ -79,7 +79,7 @@ header{background:var(--text);color:#fff;padding:0 24px;position:sticky;top:0;z-
 .sticker-4k{background:#0033cc;color:#fff;}
 .sticker-dolby{background:#ff6633;color:#fff;}
 .sticker-film{background:#cc0066;color:#fff;}
-.sticker-morning{background:#333333;color:#fff;}
+.sticker-morning{background:#7a8a9a;color:#fff;}
 .sticker-4k-supported{background:#e8f0fe;color:#1a56db;border:1px solid #a4c2f4;}
 .award-tag{display:inline-block;font-size:10px;font-weight:700;background:#fffbea;color:#92400e;border:1px solid #fcd34d;padding:2px 7px;border-radius:4px;margin:2px 3px 2px 0;white-space:nowrap;}
 .award-wrap{display:flex;flex-wrap:wrap;align-items:center;gap:0;}
@@ -141,7 +141,7 @@ header{background:var(--text);color:#fff;padding:0 24px;position:sticky;top:0;z-
 .sched-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px;flex-wrap:wrap;}
 .sched-row:last-child{border-bottom:none;}
 .sched-cinema{font-weight:600;flex:1;}
-.sched-time-chip{background:var(--chip-bg);color:#fff;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600;white-space:nowrap;}
+.sched-time-chip{background:none;color:var(--text);font-size:12px;font-weight:700;white-space:nowrap;padding:0;}
 
 /* ══════════════════════════════════
    ② 극장별
@@ -191,7 +191,7 @@ header{background:var(--text);color:#fff;padding:0 24px;position:sticky;top:0;z-
 .c-date{font-weight:600;color:var(--text);white-space:nowrap;}
 .c-time{font-weight:600;color:var(--text);white-space:nowrap;font-size:13px;}
 .c-movie{font-weight:600;display:flex;align-items:flex-start;gap:4px;flex-wrap:wrap;word-break:keep-all;}
-.c-movie a{color:var(--text);text-decoration:none;border-bottom:1.5px solid var(--green);word-break:keep-all;}
+.c-movie a{color:var(--text);text-decoration:none;border-bottom:none;word-break:keep-all;}
 .c-movie a:hover{color:var(--green);}
 
 /* ══════════════════════════════════
@@ -432,10 +432,7 @@ tr:hover td{background:#FAFAF8;}
   .cinema-chips-wrap{grid-template-columns:repeat(2,1fr);}
   .rec-grid{grid-template-columns:repeat(2,1fr);gap:10px;}
   .quick-grid{grid-template-columns:repeat(2,1fr) !important;}
-  .popup-top{flex-direction:column;align-items:center;}
-  .popup-poster{width:120px;height:168px;}
-  .popup-info{width:100%;padding-right:0;max-height:none;}
-  .popup-info .popup-schedules{max-height:50vh;overflow-y:auto;}
+  .popup-info{padding-right:10px;}
   .qc-poster{width:58px;}
   .qc-title{font-size:14px;}
   .time-chip{font-size:14px;}
@@ -661,7 +658,6 @@ tr:hover td{background:#FAFAF8;}
         <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
           <div class="popup-title" id="popupTitle" style="margin-bottom:0;"></div>
           <span id="popupRecBadge" style="display:none;font-size:13px;color:#c0861a;font-weight:700;">★ 추천</span>
-          <button id="popupShareBtn" onclick="sharePopup()" title="이 화면 공유" style="font-size:13px;background:none;border:1px solid var(--border);border-radius:5px;padding:2px 8px;cursor:pointer;color:var(--text-muted);margin-left:auto;">공유</button>
         </div>
         <div class="popup-meta" id="popupMeta" style="margin-top:3px;font-size:12px;color:var(--text-muted);"></div>
         <div id="popupAwards" style="display:none;margin-top:6px;"></div>
@@ -978,9 +974,10 @@ function renderExploreCards(){
       const s = stickerHtml(t.program, t.show_type, g.cinema, g.movie, g.screen||"");
       const schedKey = `${esc(g.movie)}|${esc(g.cinema)}|${esc(g.screen||"")}|${t.start_dt||""}`;
       const wished = isSchedWished(schedKey);
-      return `<div class="time-chip${wished?" wished":""}" style="display:flex;align-items:center;gap:3px;cursor:pointer;"
-        onclick="event.stopPropagation();">
-        ${t.start}<span class="time-dash">-</span>${t.end}${s}<button class="sched-wish-btn swb${wished?" on":""}" data-key="${schedKey}" onclick="event.stopPropagation();toggleSchedWish('${schedKey}','${esc(g.movie)}','${esc(g.cinema)}','${esc(g.screen||"")}','${t.start_dt||""}','${t.end_dt||""}','${esc(g.poster_url||"")}',this)">${wished?"⏰":"➕"}</button>
+      return `<div class="time-chip${wished?" wished":""}" style="display:grid;grid-template-columns:auto 68px auto;align-items:center;gap:0 3px;cursor:pointer;" onclick="event.stopPropagation();">
+        <span style="white-space:nowrap;">${t.start}<span class="time-dash">-</span>${t.end}</span>
+        <span style="display:flex;align-items:center;gap:2px;">${s}</span>
+        <button class="sched-wish-btn swb${wished?" on":""}" data-key="${schedKey}" onclick="event.stopPropagation();toggleSchedWish('${schedKey}','${esc(g.movie)}','${esc(g.cinema)}','${esc(g.screen||"")}','${t.start_dt||""}','${t.end_dt||""}','${esc(g.poster_url||"")}',this)">${wished?"⏰":"➕"}</button>
       </div>`;
     }).join("");
     const titleHtml = g.movie_url
@@ -1199,8 +1196,8 @@ function openPopup(movie, cinema, screen, movieUrl){
         const bookBtn=r.movie_url?`<a class="book-btn" href="${esc(r.movie_url)}" target="_blank" onclick="event.stopPropagation()">예매 →</a>`:'';
         const {dow:sdow2} = splitDt(r.start_dt);
         const cinemaLine = cinema+(screen?` · ${screen}`:"");
-        return `<div class="sched-row" style="display:grid;grid-template-columns:80px 90px 1fr auto;align-items:center;gap:6px;padding:7px 4px;border-bottom:1px solid var(--border);">
-          <span style="font-size:12px;font-weight:700;color:var(--text);">${mmdd} <span style="font-size:11px;font-weight:500;color:var(--text-muted);">${sdow2||""}</span></span>
+        return `<div class="sched-row" style="display:grid;grid-template-columns:max-content max-content 1fr auto;align-items:center;gap:0 10px;padding:6px 0;border-bottom:1px solid var(--border);">
+          <span style="font-size:12px;font-weight:700;color:var(--text);white-space:nowrap;">${mmdd} <span style="font-size:11px;font-weight:500;color:var(--text-muted);">${sdow2||""}</span></span>
           <span class="sched-time-chip" style="white-space:nowrap;">${time}–${end}${s}</span>
           <span style="font-size:11px;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(cinemaLine)}</span>
           <span style="display:flex;align-items:center;gap:4px;justify-content:flex-end;">${bookBtn}<button class="sched-wish-btn swb${wished?" on":""}" data-key="${schedKey}" onclick="toggleSchedWish('${schedKey}','${esc(movie)}','${esc(cinema)}','${esc(screen||"")}','${r.start_dt||""}','${r.end_dt||""}','${esc(r.poster_url||"")}',this)">${wished?"⏰":"➕"}</button></span>
@@ -1255,20 +1252,6 @@ function openPopup(movie, cinema, screen, movieUrl){
   document.body.style.overflow="hidden";
 }
 
-
-function sharePopup(){
-  const title = document.getElementById("popupTitle").textContent;
-  const rows = document.getElementById("popupSchedules").querySelectorAll(".sched-row");
-  const lines = [title, ""];
-  rows.forEach(r=>{
-    const txt = r.textContent.replace(/\s+/g," ").trim();
-    if(txt) lines.push(txt);
-  });
-  const text = lines.join("\n");
-  if(navigator.share){ navigator.share({title, text}).catch(()=>{}); }
-  else if(navigator.clipboard){ navigator.clipboard.writeText(text).then(()=>alert("클립보드에 복사됐어요.")); }
-  else { alert(text); }
-}
 function expandSynopsis(){
   const el = document.getElementById("popupSynopsis");
   el.style.display = "block";
@@ -1365,7 +1348,7 @@ function renderMoviePopupSchedules(){
         return popupSlotHtml(r, title, posterUrl, cinemaLabelHtml, '', true);
       }).join('');
       return `<div style="padding:10px 0;border-bottom:1px solid var(--border);">
-        <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:7px;">${esc(dateLabel)}</div>
+        <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:7px;padding-left:4px;">${esc(dateLabel)}</div>
         <div style="display:flex;flex-direction:column;gap:6px;">${slots}</div>
       </div>`;
     }).join('');
@@ -1388,7 +1371,7 @@ function popupSlotHtml(r, title, posterUrl, extraLabel='', cinemaSticker='', ext
     ? `<span style="font-size:11px;color:var(--text);margin-left:4px;">${extraIsHtml ? extraLabel : esc(extraLabel)}</span>`
     : '';
   const bookBtn2 = r.movie_url ? `<a class="book-btn" href="${esc(r.movie_url)}" target="_blank" onclick="event.stopPropagation()">예매 →</a>` : '';
-  return `<div class="popup-sched-slot${wished?' wished':''}" style="display:flex;align-items:center;gap:8px;border:1.5px solid ${wished?'var(--green)':'var(--border)'};border-radius:7px;padding:7px 10px;background:${wished?'#EEF5E8':'var(--surface)'};">
+  return `<div class="popup-sched-slot${wished?' wished':''}" style="display:flex;align-items:center;gap:8px;border-top:1px solid ${wished?'var(--green)':'var(--border)'};padding:6px 4px;background:${wished?'#EEF5E8':'transparent'};">
     <span style="font-size:13px;font-weight:700;color:var(--text);">${stm}</span>
     <span style="font-size:11px;color:var(--text-muted);">–${end}</span>
     ${cinemaSticker}${extra}${s}
