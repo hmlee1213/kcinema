@@ -1199,13 +1199,11 @@ function openPopup(movie, cinema, screen, movieUrl){
         const bookBtn=r.movie_url?`<a class="book-btn" href="${esc(r.movie_url)}" target="_blank" onclick="event.stopPropagation()">예매 →</a>`:'';
         const {dow:sdow2} = splitDt(r.start_dt);
         const cinemaLine = cinema+(screen?` · ${screen}`:"");
-        return `<div class="sched-row" style="display:flex;flex-direction:column;gap:3px;padding:7px 0;border-bottom:1px solid var(--border);">
-          <div style="display:flex;align-items:center;gap:6px;">
-            <span style="font-size:12px;font-weight:700;color:var(--text);min-width:44px;padding-left:4px;">${mmdd}<span style="font-size:11px;font-weight:600;color:var(--text-muted);margin-left:3px;">${sdow2||""}</span></span>
-            <span class="sched-time-chip">${time} – ${end}</span>${s}${bookBtn}
-            <button class="sched-wish-btn swb${wished?" on":""}" data-key="${schedKey}" style="margin-left:auto;" onclick="toggleSchedWish('${schedKey}','${esc(movie)}','${esc(cinema)}','${esc(screen||"")}','${r.start_dt||""}','${r.end_dt||""}','${esc(r.poster_url||"")}',this)">${wished?"⏰":"➕"}</button>
-          </div>
-          <div style="font-size:11px;color:var(--text-muted);padding-left:2px;">${esc(cinemaLine)}</div>
+        return `<div class="sched-row" style="display:grid;grid-template-columns:80px 90px 1fr auto;align-items:center;gap:6px;padding:7px 4px;border-bottom:1px solid var(--border);">
+          <span style="font-size:12px;font-weight:700;color:var(--text);">${mmdd} <span style="font-size:11px;font-weight:500;color:var(--text-muted);">${sdow2||""}</span></span>
+          <span class="sched-time-chip" style="white-space:nowrap;">${time}–${end}${s}</span>
+          <span style="font-size:11px;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(cinemaLine)}</span>
+          <span style="display:flex;align-items:center;gap:4px;justify-content:flex-end;">${bookBtn}<button class="sched-wish-btn swb${wished?" on":""}" data-key="${schedKey}" onclick="toggleSchedWish('${schedKey}','${esc(movie)}','${esc(cinema)}','${esc(screen||"")}','${r.start_dt||""}','${r.end_dt||""}','${esc(r.poster_url||"")}',this)">${wished?"⏰":"➕"}</button></span>
         </div>`;
       }).join("")
     : "";

@@ -871,8 +871,7 @@ def admin_dashboard():
     cur.execute("""
         SELECT DISTINCT sq.movie,
                BOOL_OR(sq.is_event) AS is_event,
-               m.poster_url, m.director, m.director_en, m.synopsis,
-               m.title_en, m.year,
+               m.poster_url, m.director, m.synopsis,
                COALESCE(m.is_4k, FALSE) AS is_4k,
                COALESCE(m.is_dolby, FALSE) AS is_dolby,
                r.id AS rec_id, r.is_rec, r.comment, r.awards,
@@ -885,7 +884,7 @@ def admin_dashboard():
         ) sq
         LEFT JOIN movies m ON m.title = sq.movie
         LEFT JOIN recommended r ON r.title = sq.movie
-        GROUP BY sq.movie, m.poster_url, m.director, m.director_en, m.synopsis, m.title_en, m.year, m.is_4k, m.is_dolby, r.id, r.is_rec, r.comment, r.awards
+        GROUP BY sq.movie, m.poster_url, m.director, m.synopsis, m.is_4k, m.is_dolby, r.id, r.is_rec, r.comment, r.awards
         ORDER BY sq.movie
     """)
     screening_movies = [dict(r) for r in cur.fetchall()]
@@ -1162,8 +1161,6 @@ a{color:#2D5A1B;text-decoration:none}
            data-title="{{ m.movie }}"
            data-poster="{{ (m.poster_url or '')|e }}"
            data-director="{{ (m.director or '')|e }}"
-           data-director-en="{{ (m.director_en or '')|e }}"
-           data-year="{{ m.year or '' }}"
            data-synopsis="{{ (m.synopsis or '')|e }}"
            data-stars="{{ m.stars or 0 }}"
            data-comment="{{ (m.comment or '')|e }}"
@@ -1171,7 +1168,6 @@ a{color:#2D5A1B;text-decoration:none}
            data-rec-id="{{ m.rec_id or '' }}"
            data-is4k="{{ 'true' if m.is_4k else '' }}"
            data-isdolby="{{ 'true' if m.is_dolby else '' }}"
-           data-title-en="{{ (m.title_en or '')|e }}"
            onclick="selectMovieCard(this)">
         {# 우상단 배지: 추천★ / 특별 / 정보✓ 중 하나만 #}
         {% if m.rec_id %}<span class="m-badge rec-badge">★</span>
@@ -1488,8 +1484,8 @@ function fillMoviePanel(card){
   document.getElementById("epSynopsis").value = d.synopsis||"";
   document.getElementById("epIs4k").checked     = !!(d.is_4k || card.dataset.is4k === "true");
   document.getElementById("epIsDolby").checked   = !!(d.is_dolby || card.dataset.isdolby === "true");
-  document.getElementById("epTitleEn").value     = d.titleEn||"";
-  document.getElementById("epDirectorEn").value  = d.directorEn||"";
+  document.getElementById("epTitleEn").value     = d.title_en||"";
+  document.getElementById("epDirectorEn").value  = d.director_en||"";
   document.getElementById("epComment").value  = d.comment||"";
   document.getElementById("epAwards").value   = d.awards||"";
   document.getElementById("epMsg").textContent= "";
